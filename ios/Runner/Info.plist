@@ -54,7 +54,7 @@
 
 
 	<key>CFBundleVersion</key>
-	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<string>15</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 
