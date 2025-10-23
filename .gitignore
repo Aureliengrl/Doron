@@ -1,0 +1,13 @@
+
+# DORON ignores
+.env
+*.log
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.dart_tool/
+android/key.properties
+ios/Runner/GoogleService-Info.plist
+android/app/google-services.json
+
+assets/environment_values/environment.json
