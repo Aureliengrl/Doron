@@ -905,21 +905,25 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
                 icon: Icons.home,
                 label: 'Accueil',
                 isActive: false,
+                onTap: () => Navigator.pushReplacementNamed(context, '/homeAlgoace'),
               ),
               _buildNavButton(
                 icon: Icons.favorite,
                 label: 'Favoris',
                 isActive: false,
+                onTap: () => Navigator.pushReplacementNamed(context, '/Favourites'),
               ),
               _buildNavButton(
                 icon: Icons.search,
                 label: 'Recherche',
                 isActive: false,
+                onTap: () => Navigator.pushReplacementNamed(context, '/search-page'),
               ),
               _buildNavButton(
                 icon: Icons.person,
                 label: 'Profil',
                 isActive: false,
+                onTap: () => Navigator.pushReplacementNamed(context, '/profile'),
               ),
             ],
           ),
@@ -932,11 +936,12 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
     required IconData icon,
     required String label,
     required bool isActive,
+    VoidCallback? onTap,
   }) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () {},
+        onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.all(8),
