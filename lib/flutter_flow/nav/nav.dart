@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '/backend/backend.dart';
 import '/backend/schema/structs/index.dart';
 import '/backend/schema/enums/enums.dart';
@@ -79,6 +80,30 @@ class AppStateNotifier extends ChangeNotifier {
   }
 }
 
+/// Détermine la route initiale selon l'état de l'utilisateur
+Future<String> _determineInitialRoute() async {
+  try {
+    // Import dynamique pour éviter les dépendances circulaires
+    final prefs = await SharedPreferences.getInstance();
+
+    final isFirstTime = !prefs.containsKey('not_first_time');
+    final hasCompletedOnboarding = prefs.getBool('onboarding_completed') ?? false;
+
+    print('🔍 Détermination route initiale: isFirstTime=$isFirstTime, hasCompletedOnboarding=$hasCompletedOnboarding');
+
+    if (isFirstTime && !hasCompletedOnboarding) {
+      return '/onboarding-advanced';
+    } else {
+      // Si pas première fois, on va vers auth (le système redirectera vers home si déjà connecté)
+      return '/authentification';
+    }
+  } catch (e) {
+    print('❌ Erreur détermination route: $e');
+    // Par défaut, onboarding
+    return '/onboarding-advanced';
+  }
+}
+
 GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
       initialLocation: '/',
       debugLogDiagnostics: true,
@@ -90,7 +115,30 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: '_initialize',
           path: '/',
-          builder: (context, _) => SplashScreenWidget(),
+          builder: (context, _) {
+            // Redirection intelligente selon l'état de l'utilisateur
+            // Le splash screen s'affiche automatiquement pendant le chargement
+            return FutureBuilder(
+              future: _determineInitialRoute(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  // Pendant le chargement, on affiche rien (le splash natif est déjà là)
+                  return const SizedBox.shrink();
+                }
+
+                final route = snapshot.data as String? ?? '/onboarding-advanced';
+
+                // Navigation immédiate après chargement
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (context.mounted) {
+                    context.go(route);
+                  }
+                });
+
+                return const SizedBox.shrink();
+              },
+            );
+          },
         ),
         FFRoute(
           name: AuthentificationWidget.routeName,
@@ -385,9 +433,9 @@ class FFRoute {
               : builder(context, ffParams);
           final child = appStateNotifier.loading
               ? Container(
-                  color: FlutterFlowTheme.of(context).primary,
+                  color: Colors.black,
                   child: Image.asset(
-                    'assets/images/IMG_1926-1741775187718.jpeg',
+                    'assets/images/splash_screen.jpeg',
                     fit: BoxFit.cover,
                   ),
                 )
