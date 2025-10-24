@@ -150,13 +150,27 @@ class _FavouritesWidgetState extends State<FavouritesWidget>
                 width: double.infinity,
                 height: MediaQuery.sizeOf(context).height * 0.15,
                 decoration: BoxDecoration(
-                  color: FlutterFlowTheme.of(context).primary,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFF9D4EDD),
+                      const Color(0xFFEC4899),
+                    ],
+                  ),
                   borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(30.0),
-                    bottomRight: Radius.circular(30.0),
+                    bottomLeft: Radius.circular(32.0),
+                    bottomRight: Radius.circular(32.0),
                     topLeft: Radius.circular(0.0),
                     topRight: Radius.circular(0.0),
                   ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF9D4EDD).withOpacity(0.3),
+                      blurRadius: 24,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
                 ),
                 child: Padding(
                   padding:
@@ -174,16 +188,16 @@ class _FavouritesWidgetState extends State<FavouritesWidget>
                           textAlign: TextAlign.start,
                           style:
                               FlutterFlowTheme.of(context).bodyMedium.override(
-                                    font: GoogleFonts.inter(
-                                      fontWeight: FontWeight.w500,
+                                    font: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.bold,
                                       fontStyle: FlutterFlowTheme.of(context)
                                           .bodyMedium
                                           .fontStyle,
                                     ),
                                     color: Colors.white,
-                                    fontSize: 20.0,
+                                    fontSize: 24.0,
                                     letterSpacing: 0.0,
-                                    fontWeight: FontWeight.w500,
+                                    fontWeight: FontWeight.bold,
                                     fontStyle: FlutterFlowTheme.of(context)
                                         .bodyMedium
                                         .fontStyle,
@@ -200,16 +214,16 @@ class _FavouritesWidgetState extends State<FavouritesWidget>
                           textAlign: TextAlign.start,
                           style:
                               FlutterFlowTheme.of(context).bodyMedium.override(
-                                    font: GoogleFonts.inter(
-                                      fontWeight: FontWeight.w300,
+                                    font: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.w400,
                                       fontStyle: FlutterFlowTheme.of(context)
                                           .bodyMedium
                                           .fontStyle,
                                     ),
-                                    color: Colors.white,
-                                    fontSize: 13.0,
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontSize: 14.0,
                                     letterSpacing: 0.0,
-                                    fontWeight: FontWeight.w300,
+                                    fontWeight: FontWeight.w400,
                                     fontStyle: FlutterFlowTheme.of(context)
                                         .bodyMedium
                                         .fontStyle,

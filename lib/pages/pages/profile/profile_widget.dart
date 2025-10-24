@@ -48,51 +48,83 @@ class _ProfileWidgetState extends State<ProfileWidget> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: scaffoldKey,
-      appBar: AppBar(
-        backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
-        automaticallyImplyLeading: false,
-        title: Text(
-          FFLocalizations.of(context).getText(
-            's2pb5jum' /* Profil */,
-          ),
-          style: FlutterFlowTheme.of(context).displaySmall.override(
-                font: GoogleFonts.interTight(
-                  fontWeight: FontWeight.bold,
-                  fontStyle:
-                      FlutterFlowTheme.of(context).displaySmall.fontStyle,
-                ),
-                color: Color(0xFF090993),
-                letterSpacing: 0.0,
-                fontWeight: FontWeight.bold,
-                fontStyle: FlutterFlowTheme.of(context).displaySmall.fontStyle,
-              ),
-        ),
-        actions: [],
-        centerTitle: false,
-        elevation: 0.0,
-      ),
+      backgroundColor: const Color(0xFFF9FAFB),
       body: Column(
         mainAxisSize: MainAxisSize.max,
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
+          // Violet gradient header
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFF9D4EDD),
+                  const Color(0xFFEC4899),
+                ],
+              ),
+              borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(32),
+                bottomRight: Radius.circular(32),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF9D4EDD).withOpacity(0.3),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      FFLocalizations.of(context).getText(
+                        's2pb5jum' /* Profil */,
+                      ),
+                      style: GoogleFonts.poppins(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Gérez vos informations personnelles',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Profile info section
           Row(
             mainAxisSize: MainAxisSize.max,
             children: [
               Container(
                 width: MediaQuery.sizeOf(context).width * 1.0,
                 decoration: BoxDecoration(
-                  color: FlutterFlowTheme.of(context).secondaryBackground,
+                  color: Colors.white,
                   boxShadow: [
                     BoxShadow(
-                      blurRadius: 1.0,
-                      color: FlutterFlowTheme.of(context).primaryBackground,
-                      offset: Offset(
-                        0.0,
-                        0.0,
-                      ),
+                      blurRadius: 4.0,
+                      color: Colors.black.withOpacity(0.05),
+                      offset: const Offset(0, 2),
                     )
                   ],
+                  borderRadius: BorderRadius.circular(20),
                 ),
+                margin: const EdgeInsets.all(16),
                 child: Padding(
                   padding:
                       EdgeInsetsDirectional.fromSTEB(24.0, 12.0, 24.0, 12.0),
@@ -112,20 +144,16 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                               style: FlutterFlowTheme.of(context)
                                   .headlineSmall
                                   .override(
-                                    font: GoogleFonts.interTight(
-                                      fontWeight: FlutterFlowTheme.of(context)
-                                          .headlineSmall
-                                          .fontWeight,
+                                    font: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.bold,
                                       fontStyle: FlutterFlowTheme.of(context)
                                           .headlineSmall
                                           .fontStyle,
                                     ),
-                                    color: FlutterFlowTheme.of(context)
-                                        .primaryText,
+                                    color: const Color(0xFF1F2937),
+                                    fontSize: 20.0,
                                     letterSpacing: 0.0,
-                                    fontWeight: FlutterFlowTheme.of(context)
-                                        .headlineSmall
-                                        .fontWeight,
+                                    fontWeight: FontWeight.bold,
                                     fontStyle: FlutterFlowTheme.of(context)
                                         .headlineSmall
                                         .fontStyle,
@@ -143,16 +171,16 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                               style: FlutterFlowTheme.of(context)
                                   .bodySmall
                                   .override(
-                                    font: GoogleFonts.outfit(
-                                      fontWeight: FontWeight.normal,
+                                    font: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.w400,
                                       fontStyle: FlutterFlowTheme.of(context)
                                           .bodySmall
                                           .fontStyle,
                                     ),
-                                    color: Color(0xFF0303CD),
+                                    color: const Color(0xFF6B7280),
                                     fontSize: 14.0,
                                     letterSpacing: 0.0,
-                                    fontWeight: FontWeight.normal,
+                                    fontWeight: FontWeight.w400,
                                     fontStyle: FlutterFlowTheme.of(context)
                                         .bodySmall
                                         .fontStyle,
