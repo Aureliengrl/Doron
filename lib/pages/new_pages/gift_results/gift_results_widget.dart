@@ -37,21 +37,27 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
     return Scaffold(
       key: scaffoldKey,
       backgroundColor: const Color(0xFFF9FAFB),
-      body: Column(
+      body: Stack(
         children: [
-          // Header violet arrondi avec résumé
-          _buildHeader(),
+          Column(
+            children: [
+              // Header violet arrondi avec résumé
+              _buildHeader(),
 
-          // Message IA personnalisé
-          _buildAIMessage(),
+              // Message IA personnalisé
+              _buildAIMessage(),
 
-          // Filtres de catégories
-          _buildFilters(),
+              // Filtres de catégories
+              _buildFilters(),
 
-          // Liste des résultats
-          Expanded(
-            child: _buildResultsList(),
+              // Liste des résultats
+              Expanded(
+                child: _buildResultsList(),
+              ),
+            ],
           ),
+          // Boutons Enregistrer / Refaire
+          _buildActionButtons(),
         ],
       ),
       bottomNavigationBar: _buildBottomNav(),
@@ -769,6 +775,77 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Positioned(
+      bottom: 90, // Au-dessus de la bottom nav
+      left: 0,
+      right: 0,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Row(
+          children: [
+            // Bouton REFAIRE (secondaire)
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  // Retour à l'onboarding
+                  Navigator.pushReplacementNamed(context, '/onboarding-advanced');
+                },
+                icon: const Icon(Icons.refresh, size: 20),
+                label: Text(
+                  'Refaire',
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey[300],
+                  foregroundColor: const Color(0xFF6B7280),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  elevation: 2,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            // Bouton ENREGISTRER (primaire)
+            Expanded(
+              flex: 2,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  // TODO: Sauvegarder les données dans Firebase
+                  // Navigation vers la page recherche
+                  Navigator.pushReplacementNamed(context, '/search-page');
+                },
+                icon: const Icon(Icons.check_circle, size: 20),
+                label: Text(
+                  'Enregistrer',
+                  style: GoogleFonts.poppins(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: violetColor,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  elevation: 6,
+                  shadowColor: violetColor.withOpacity(0.5),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -174,7 +174,28 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: ForgotPasswordWidget.routeName,
           path: ForgotPasswordWidget.routePath,
           builder: (context, params) => ForgotPasswordWidget(),
-        )
+        ),
+        // New pages
+        FFRoute(
+          name: OnboardingAdvancedWidget.routeName,
+          path: OnboardingAdvancedWidget.routePath,
+          builder: (context, params) => OnboardingAdvancedWidget(),
+        ),
+        FFRoute(
+          name: HomePinterestWidget.routeName,
+          path: HomePinterestWidget.routePath,
+          builder: (context, params) => HomePinterestWidget(),
+        ),
+        FFRoute(
+          name: SearchPageWidget.routeName,
+          path: SearchPageWidget.routePath,
+          builder: (context, params) => SearchPageWidget(),
+        ),
+        FFRoute(
+          name: GiftResultsWidget.routeName,
+          path: GiftResultsWidget.routePath,
+          builder: (context, params) => GiftResultsWidget(),
+        ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
 

@@ -430,13 +430,8 @@ class OnboardingAdvancedModel {
     } else {
       // Onboarding terminé
       print('✅ Onboarding terminé: $answers');
-      // Navigation vers la page de résultats
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('🎉 Onboarding terminé ! Direction les résultats IA...'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      // Navigation vers la page de résultats GIFT RESULTS
+      Navigator.pushReplacementNamed(context, '/gift-results');
     }
   }
 
