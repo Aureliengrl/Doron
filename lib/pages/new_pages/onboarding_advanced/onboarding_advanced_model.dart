@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import '/services/firebase_data_service.dart';
+import '/services/first_time_service.dart';
 
 class OnboardingAdvancedModel {
   int currentStep = 0;
@@ -424,12 +426,19 @@ class OnboardingAdvancedModel {
         (fieldValue is! double || fieldValue > 0);
   }
 
-  void handleNext(List<Map<String, dynamic>> steps, BuildContext context) {
+  void handleNext(List<Map<String, dynamic>> steps, BuildContext context) async {
     if (currentStep < steps.length - 1) {
       currentStep++;
     } else {
       // Onboarding terminé
       print('✅ Onboarding terminé: $answers');
+
+      // Sauvegarder les réponses dans Firebase
+      await FirebaseDataService.saveOnboardingAnswers(answers);
+
+      // Marquer l'onboarding comme complété
+      await FirstTimeService.setOnboardingCompleted();
+
       // Navigation vers la page de résultats GIFT RESULTS
       Navigator.pushReplacementNamed(context, '/gift-results');
     }

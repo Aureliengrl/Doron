@@ -90,9 +90,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: '_initialize',
           path: '/',
-          builder: (context, _) => appStateNotifier.loggedIn
-              ? NavBarPage()
-              : AuthentificationWidget(),
+          builder: (context, _) => SplashScreenWidget(),
         ),
         FFRoute(
           name: AuthentificationWidget.routeName,
@@ -195,6 +193,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: GiftResultsWidget.routeName,
           path: GiftResultsWidget.routePath,
           builder: (context, params) => GiftResultsWidget(),
+        ),
+        FFRoute(
+          name: SplashScreenWidget.routeName,
+          path: SplashScreenWidget.routePath,
+          builder: (context, params) => SplashScreenWidget(),
         ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );

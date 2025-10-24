@@ -23,7 +23,15 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
   void initState() {
     super.initState();
     _model = GiftResultsModel();
-    _model.initAnimations(this);
+    _loadGiftsAndInitAnimations();
+  }
+
+  Future<void> _loadGiftsAndInitAnimations() async {
+    await _model.loadGifts();
+    if (mounted) {
+      _model.initAnimations(this);
+      setState(() {});
+    }
   }
 
   @override
@@ -37,29 +45,47 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
     return Scaffold(
       key: scaffoldKey,
       backgroundColor: const Color(0xFFF9FAFB),
-      body: Stack(
-        children: [
-          Column(
-            children: [
-              // Header violet arrondi avec résumé
-              _buildHeader(),
-
-              // Message IA personnalisé
-              _buildAIMessage(),
-
-              // Filtres de catégories
-              _buildFilters(),
-
-              // Liste des résultats
-              Expanded(
-                child: _buildResultsList(),
+      body: _model.isLoading
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: violetColor),
+                  const SizedBox(height: 24),
+                  Text(
+                    '🤖 Génération des cadeaux...',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      color: violetColor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-          // Boutons Enregistrer / Refaire
-          _buildActionButtons(),
-        ],
-      ),
+            )
+          : Stack(
+              children: [
+                Column(
+                  children: [
+                    // Header violet arrondi avec résumé
+                    _buildHeader(),
+
+                    // Message IA personnalisé
+                    _buildAIMessage(),
+
+                    // Filtres de catégories
+                    _buildFilters(),
+
+                    // Liste des résultats
+                    Expanded(
+                      child: _buildResultsList(),
+                    ),
+                  ],
+                ),
+                // Boutons Enregistrer / Refaire
+                _buildActionButtons(),
+              ],
+            ),
       bottomNavigationBar: _buildBottomNav(),
     );
   }
