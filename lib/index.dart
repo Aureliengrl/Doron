@@ -26,3 +26,5 @@ export '/pages/new_pages/search_page/search_page_widget.dart'
     show SearchPageWidget;
 export '/pages/new_pages/gift_results/gift_results_widget.dart'
     show GiftResultsWidget;
+export '/pages/splash_screen/splash_screen_widget.dart'
+    show SplashScreenWidget;
