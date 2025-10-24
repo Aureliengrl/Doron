@@ -228,6 +228,8 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
   }
 
   Widget _buildWelcomeScreen(Map<String, dynamic> stepData) {
+    final useLogo = stepData['useLogo'] as bool? ?? false;
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -237,10 +239,32 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
           builder: (context, double value, child) {
             return Transform.scale(
               scale: value,
-              child: Text(
-                stepData['emoji'] as String,
-                style: const TextStyle(fontSize: 100),
-              ),
+              child: useLogo
+                  ? Image.asset(
+                      'assets/images/doron_logo.png', // Logo DORÕN (vague)
+                      width: 150,
+                      height: 150,
+                      errorBuilder: (context, error, stackTrace) {
+                        // Fallback si l'image n'existe pas encore
+                        return Container(
+                          width: 150,
+                          height: 150,
+                          decoration: BoxDecoration(
+                            color: violetColor.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.card_giftcard,
+                            size: 80,
+                            color: violetColor,
+                          ),
+                        );
+                      },
+                    )
+                  : Text(
+                      stepData['emoji'] as String,
+                      style: const TextStyle(fontSize: 100),
+                    ),
             );
           },
         ),

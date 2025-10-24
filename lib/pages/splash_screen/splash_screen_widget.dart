@@ -46,29 +46,64 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget>
   }
 
   Future<void> _navigate() async {
-    // Attendre l'animation
-    await Future.delayed(const Duration(milliseconds: 2000));
+    try {
+      print('🚀 Début navigation splash screen');
 
-    if (!mounted) return;
+      // Attendre l'animation
+      await Future.delayed(const Duration(milliseconds: 2000));
 
-    // Vérifier la première utilisation
-    final isFirst = await FirstTimeService.isFirstTime();
-    final hasCompleted = await FirstTimeService.hasCompletedOnboarding();
+      if (!mounted) {
+        print('⚠️ Widget non monté après animation');
+        return;
+      }
 
-    // Vérifier si l'utilisateur est connecté
-    final isLoggedIn = loggedIn;
+      print('🔍 Vérification première utilisation...');
 
-    if (!mounted) return;
+      // Timeout de sécurité : 5 secondes max pour les checks
+      final futures = await Future.wait([
+        FirstTimeService.isFirstTime(),
+        FirstTimeService.hasCompletedOnboarding(),
+      ]).timeout(
+        const Duration(seconds: 5),
+        onTimeout: () {
+          print('⚠️ Timeout sur FirstTimeService - Défaut: première utilisation');
+          return [true, false]; // Par défaut, première utilisation
+        },
+      );
 
-    if (isFirst && !hasCompleted) {
-      // Première utilisation → Onboarding
-      Navigator.pushReplacementNamed(context, '/onboarding-advanced');
-    } else if (!isLoggedIn) {
-      // Pas connecté → Authentification
-      Navigator.pushReplacementNamed(context, '/authentification');
-    } else {
-      // Connecté → Home
-      Navigator.pushReplacementNamed(context, '/homeAlgoace');
+      final isFirst = futures[0] as bool;
+      final hasCompleted = futures[1] as bool;
+
+      // Vérifier si l'utilisateur est connecté
+      final isLoggedIn = loggedIn;
+
+      print('📊 Navigation - isFirst: $isFirst, hasCompleted: $hasCompleted, isLoggedIn: $isLoggedIn');
+
+      if (!mounted) {
+        print('⚠️ Widget non monté après checks');
+        return;
+      }
+
+      if (isFirst && !hasCompleted) {
+        // Première utilisation → Onboarding
+        print('➡️ Navigation vers onboarding');
+        Navigator.pushReplacementNamed(context, '/onboarding-advanced');
+      } else if (!isLoggedIn) {
+        // Pas connecté → Authentification
+        print('➡️ Navigation vers authentification');
+        Navigator.pushReplacementNamed(context, '/authentification');
+      } else {
+        // Connecté → Home
+        print('➡️ Navigation vers home');
+        Navigator.pushReplacementNamed(context, '/homeAlgoace');
+      }
+    } catch (e) {
+      print('❌ Erreur navigation splash: $e');
+      // En cas d'erreur, aller vers onboarding par sécurité
+      if (mounted) {
+        print('➡️ Fallback vers onboarding après erreur');
+        Navigator.pushReplacementNamed(context, '/onboarding-advanced');
+      }
     }
   }
 

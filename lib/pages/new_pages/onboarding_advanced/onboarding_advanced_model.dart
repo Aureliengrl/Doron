@@ -69,9 +69,10 @@ class OnboardingAdvancedModel {
       {
         'id': 'welcome',
         'type': 'welcome',
-        'title': 'Bienvenue sur DORÕN',
-        'subtitle': 'L\'IA qui trouve LE cadeau parfait',
-        'emoji': '🎁',
+        'title': 'DORÕN',
+        'subtitle': 'Find the perfect gift',
+        'emoji': '', // Logo remplacera l'emoji
+        'useLogo': true, // Indique d'utiliser le logo au lieu de l'emoji
       },
       // PARTIE "TOI"
       {
