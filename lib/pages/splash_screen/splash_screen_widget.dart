@@ -110,88 +110,43 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFF9D4EDD),
-              const Color(0xFFEC4899),
-              const Color(0xFF9D4EDD),
-            ],
-          ),
-        ),
-        child: Center(
-          child: AnimatedBuilder(
-            animation: _controller,
-            builder: (context, child) {
-              return Opacity(
-                opacity: _fadeAnimation.value,
-                child: Transform.scale(
-                  scale: _scaleAnimation.value,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Image de fond personnalisée
+          Image.asset(
+            'assets/images/splash_screen.jpeg',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) {
+              // Fallback en cas d'erreur de chargement
+              return Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFF9D4EDD),
+                      const Color(0xFFEC4899),
+                      const Color(0xFF9D4EDD),
+                    ],
+                  ),
+                ),
+                child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Logo / Emoji
-                      Container(
+                      Image.asset(
+                        'assets/images/doron_logo.png',
                         width: 150,
                         height: 150,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 30,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: const Center(
-                          child: Text(
-                            '🎁',
-                            style: TextStyle(fontSize: 80),
-                          ),
-                        ),
                       ),
-                      const SizedBox(height: 40),
-                      // Nom de l'app
+                      const SizedBox(height: 20),
                       Text(
                         'DORÕN',
                         style: GoogleFonts.poppins(
-                          fontSize: 56,
+                          fontSize: 48,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
-                          letterSpacing: 2,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withOpacity(0.3),
-                              offset: const Offset(0, 4),
-                              blurRadius: 10,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Tagline
-                      Text(
-                        'L\'IA qui trouve LE cadeau parfait',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          color: Colors.white.withOpacity(0.9),
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 60),
-                      // Loading indicator
-                      SizedBox(
-                        width: 40,
-                        height: 40,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 3,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
                         ),
                       ),
                     ],
@@ -200,7 +155,20 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget>
               );
             },
           ),
-        ),
+          // Animation de fade-in
+          AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              return Opacity(
+                opacity: _fadeAnimation.value,
+                child: child,
+              );
+            },
+            child: Container(
+              color: Colors.transparent,
+            ),
+          ),
+        ],
       ),
     );
   }
