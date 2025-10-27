@@ -66,7 +66,7 @@ class OnboardingAdvancedModel {
     }
   }
 
-  List<Map<String, dynamic>> getSteps() {
+  List<Map<String, dynamic>> getSteps({bool skipUserQuestions = false}) {
     final baseSteps = <Map<String, dynamic>>[
       {
         'id': 'welcome',
@@ -76,6 +76,11 @@ class OnboardingAdvancedModel {
         'emoji': '', // Logo remplacera l'emoji
         'useLogo': true, // Indique d'utiliser le logo au lieu de l'emoji
       },
+    ];
+
+    // Si on ne skip pas, ajouter les questions sur l'utilisateur
+    if (!skipUserQuestions) {
+      baseSteps.addAll([
       // PARTIE "TOI"
       {
         'section': 'user',

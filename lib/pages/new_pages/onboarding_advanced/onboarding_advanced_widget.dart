@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
 import 'onboarding_advanced_model.dart';
 export 'onboarding_advanced_model.dart';
 
@@ -38,7 +39,10 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
 
   @override
   Widget build(BuildContext context) {
-    final steps = _model.getSteps();
+    // Lire le paramètre de query pour savoir si on doit skip les questions utilisateur
+    final skipUserQuestions = GoRouterState.of(context).uri.queryParameters['skipUserQuestions'] == 'true';
+
+    final steps = _model.getSteps(skipUserQuestions: skipUserQuestions);
     final currentStepData = steps[_model.currentStep];
     final progress = (_model.currentStep + 1) / steps.length;
 

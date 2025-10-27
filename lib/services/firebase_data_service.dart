@@ -93,6 +93,28 @@ class FirebaseDataService {
 
   /// Sauvegarde un profil créé (Maman, Papa, etc.)
   static Future<String?> saveGiftProfile(Map<String, dynamic> profile) async {
+    // Sauvegarder localement TOUJOURS
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final profilesJson = prefs.getString('local_gift_profiles') ?? '[]';
+      final profiles = (json.decode(profilesJson) as List).cast<Map<String, dynamic>>();
+
+      // Générer un ID unique pour le profil
+      final profileId = DateTime.now().millisecondsSinceEpoch.toString();
+      final profileWithId = {
+        'id': profileId,
+        ...profile,
+        'createdAt': DateTime.now().toIso8601String(),
+      };
+
+      profiles.add(profileWithId);
+      await prefs.setString('local_gift_profiles', json.encode(profiles));
+      print('✅ Profile saved locally: $profileId');
+    } catch (e) {
+      print('❌ Error saving profile locally: $e');
+    }
+
+    // Sauvegarder sur Firebase si connecté
     if (!isLoggedIn) return null;
 
     try {
@@ -105,34 +127,52 @@ class FirebaseDataService {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      print('✅ Profile saved: ${docRef.id}');
+      print('✅ Profile saved to Firebase: ${docRef.id}');
       return docRef.id;
     } catch (e) {
-      print('❌ Error saving profile: $e');
+      print('❌ Error saving profile to Firebase: $e');
       return null;
     }
   }
 
   /// Charge tous les profils de cadeaux
   static Future<List<Map<String, dynamic>>> loadGiftProfiles() async {
-    if (!isLoggedIn) return [];
+    // Essayer de charger depuis Firebase si connecté
+    if (isLoggedIn) {
+      try {
+        final snapshot = await _firestore
+            .collection('users')
+            .doc(currentUserId)
+            .collection('gift_profiles')
+            .orderBy('createdAt', descending: true)
+            .get();
 
+        if (snapshot.docs.isNotEmpty) {
+          print('✅ Loaded ${snapshot.docs.length} profiles from Firebase');
+          return snapshot.docs.map((doc) {
+            return {
+              'id': doc.id,
+              ...doc.data(),
+            };
+          }).toList();
+        }
+      } catch (e) {
+        print('❌ Error loading profiles from Firebase: $e');
+      }
+    }
+
+    // Fallback : charger depuis SharedPreferences
     try {
-      final snapshot = await _firestore
-          .collection('users')
-          .doc(currentUserId)
-          .collection('gift_profiles')
-          .orderBy('createdAt', descending: true)
-          .get();
+      final prefs = await SharedPreferences.getInstance();
+      final profilesJson = prefs.getString('local_gift_profiles') ?? '[]';
+      final profiles = (json.decode(profilesJson) as List)
+          .map((e) => e as Map<String, dynamic>)
+          .toList();
 
-      return snapshot.docs.map((doc) {
-        return {
-          'id': doc.id,
-          ...doc.data(),
-        };
-      }).toList();
+      print('✅ Loaded ${profiles.length} profiles from local storage');
+      return profiles;
     } catch (e) {
-      print('❌ Error loading profiles: $e');
+      print('❌ Error loading profiles from local storage: $e');
       return [];
     }
   }

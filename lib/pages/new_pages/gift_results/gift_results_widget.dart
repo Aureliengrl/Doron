@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'gift_results_model.dart';
 export 'gift_results_model.dart';
 
@@ -125,7 +127,7 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
                   Material(
                     color: Colors.transparent,
                     child: InkWell(
-                      onTap: () => Navigator.pop(context),
+                      onTap: () => context.go('/home-pinterest'),
                       borderRadius: BorderRadius.circular(50),
                       child: Container(
                         padding: const EdgeInsets.all(8),
@@ -765,7 +767,17 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
                         Expanded(
                           flex: 3,
                           child: ElevatedButton(
-                            onPressed: () {},
+                            onPressed: () async {
+                              final url = gift['url'] as String?;
+                              if (url != null && url.isNotEmpty) {
+                                final uri = Uri.parse(url);
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                } else {
+                                  print('❌ Cannot launch URL: $url');
+                                }
+                              }
+                            },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: violetColor,
                               padding: const EdgeInsets.symmetric(vertical: 14),
@@ -819,8 +831,8 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
             Expanded(
               child: ElevatedButton.icon(
                 onPressed: () {
-                  // Retour à l'onboarding
-                  Navigator.pushReplacementNamed(context, '/onboarding-advanced');
+                  // Retour à l'onboarding (skip questions sur soi)
+                  context.go('/onboarding-advanced?skipUserQuestions=true');
                 },
                 icon: const Icon(Icons.refresh, size: 20),
                 label: Text(
@@ -846,10 +858,13 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
             Expanded(
               flex: 2,
               child: ElevatedButton.icon(
-                onPressed: () {
-                  // TODO: Sauvegarder les données dans Firebase
+                onPressed: () async {
+                  // Sauvegarder le profil avant de naviguer
+                  await _model.saveCurrentProfile();
                   // Navigation vers la page recherche
-                  Navigator.pushReplacementNamed(context, '/search-page');
+                  if (context.mounted) {
+                    context.go('/search-page');
+                  }
                 },
                 icon: const Icon(Icons.check_circle, size: 20),
                 label: Text(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'search_page_model.dart';
 export 'search_page_model.dart';
 
@@ -22,6 +24,14 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
   void initState() {
     super.initState();
     _model = SearchPageModel();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    await _model.loadProfiles();
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -191,7 +201,7 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: _model.handleAddNewPerson,
+                  onTap: () => context.go('/onboarding-advanced?skipUserQuestions=true'),
                   borderRadius: BorderRadius.circular(50),
                   child: Column(
                     children: [
@@ -237,7 +247,9 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
           }
 
           final profile = _model.profiles[index];
-          final isSelected = _model.selectedProfileId == profile['id'];
+          final profileId = profile['id'];
+          final int profileIdInt = profileId is int ? profileId : (profileId as String).hashCode;
+          final isSelected = _model.selectedProfileId == profileIdInt;
 
           return Padding(
             padding: const EdgeInsets.only(right: 16),
@@ -246,7 +258,7 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
               child: InkWell(
                 onTap: () {
                   setState(() {
-                    _model.selectProfile(profile['id'] as int);
+                    _model.selectProfile(profileIdInt);
                   });
                 },
                 borderRadius: BorderRadius.circular(50),
@@ -699,7 +711,17 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () async {
+                          final url = product['url'] as String?;
+                          if (url != null && url.isNotEmpty) {
+                            final uri = Uri.parse(url);
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri, mode: LaunchMode.externalApplication);
+                            } else {
+                              print('❌ Cannot launch URL: $url');
+                            }
+                          }
+                        },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: violetColor,
                           padding: const EdgeInsets.symmetric(vertical: 14),
@@ -742,7 +764,7 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
     return Container(
       margin: const EdgeInsets.only(bottom: 60),
       child: ElevatedButton(
-        onPressed: _model.handleAddNewPerson,
+        onPressed: () => context.go('/onboarding-advanced?skipUserQuestions=true'),
         style: ElevatedButton.styleFrom(
           backgroundColor: violetColor,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
@@ -800,25 +822,25 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                 icon: Icons.home,
                 label: 'Accueil',
                 isActive: false,
-                onTap: () => Navigator.pushReplacementNamed(context, '/home-pinterest'),
+                onTap: () => context.go('/home-pinterest'),
               ),
               _buildNavButton(
                 icon: Icons.favorite,
                 label: 'Favoris',
                 isActive: false,
-                onTap: () => Navigator.pushReplacementNamed(context, '/Favourites'),
+                onTap: () => context.go('/Favourites'),
               ),
               _buildNavButton(
                 icon: Icons.search,
                 label: 'Recherche',
                 isActive: true,
-                onTap: () => Navigator.pushReplacementNamed(context, '/search-page'),
+                onTap: () => context.go('/search-page'),
               ),
               _buildNavButton(
                 icon: Icons.person,
                 label: 'Profil',
                 isActive: false,
-                onTap: () => Navigator.pushReplacementNamed(context, '/profile'),
+                onTap: () => context.go('/profile'),
               ),
             ],
           ),
