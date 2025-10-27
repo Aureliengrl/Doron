@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import '/services/firebase_data_service.dart';
 import '/services/first_time_service.dart';
+import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class OnboardingAdvancedModel {
   int currentStep = 0;
@@ -434,14 +436,31 @@ class OnboardingAdvancedModel {
       // Onboarding terminé
       print('✅ Onboarding terminé: $answers');
 
-      // Sauvegarder les réponses dans Firebase
-      await FirebaseDataService.saveOnboardingAnswers(answers);
+      try {
+        // 1. Sauvegarder les réponses LOCALEMENT (pour fonctionner sans auth)
+        final prefs = await SharedPreferences.getInstance();
+        final answersJson = answers.map((key, value) => MapEntry(key, value.toString()));
+        await prefs.setString('onboarding_answers_json', answersJson.toString());
+        print('✅ Réponses sauvegardées localement');
 
-      // Marquer l'onboarding comme complété
-      await FirstTimeService.setOnboardingCompleted();
+        // 2. Sauvegarder dans Firebase si connecté
+        await FirebaseDataService.saveOnboardingAnswers(answers);
 
-      // Navigation vers la page de résultats GIFT RESULTS
-      Navigator.pushReplacementNamed(context, '/gift-results');
+        // 3. Marquer l'onboarding comme complété
+        await FirstTimeService.setOnboardingCompleted();
+
+        // 4. Navigation vers la page de résultats avec GoRouter
+        if (context.mounted) {
+          print('🚀 Navigation vers gift-results');
+          context.go('/gift-results');
+        }
+      } catch (e) {
+        print('❌ Erreur sauvegarde onboarding: $e');
+        // Même en cas d'erreur, on navigue vers les résultats
+        if (context.mounted) {
+          context.go('/gift-results');
+        }
+      }
     }
   }
 

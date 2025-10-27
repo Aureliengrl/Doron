@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 /// Service pour gérer les données Firebase
 class FirebaseDataService {
@@ -18,7 +20,20 @@ class FirebaseDataService {
   static Future<void> saveOnboardingAnswers(
     Map<String, dynamic> answers,
   ) async {
-    if (!isLoggedIn) return;
+    // Sauvegarder localement TOUJOURS (que l'utilisateur soit connecté ou non)
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('local_onboarding_answers', json.encode(answers));
+      print('✅ Onboarding answers saved locally');
+    } catch (e) {
+      print('❌ Error saving onboarding locally: $e');
+    }
+
+    // Sauvegarder sur Firebase si connecté
+    if (!isLoggedIn) {
+      print('⚠️ User not logged in, skipping Firebase save');
+      return;
+    }
 
     try {
       await _firestore
@@ -31,30 +46,46 @@ class FirebaseDataService {
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      print('✅ Onboarding answers saved');
+      print('✅ Onboarding answers saved to Firebase');
     } catch (e) {
-      print('❌ Error saving onboarding: $e');
+      print('❌ Error saving onboarding to Firebase: $e');
     }
   }
 
   /// Charge les réponses d'onboarding
   static Future<Map<String, dynamic>?> loadOnboardingAnswers() async {
-    if (!isLoggedIn) return null;
+    // Essayer de charger depuis Firebase d'abord si connecté
+    if (isLoggedIn) {
+      try {
+        final doc = await _firestore
+            .collection('users')
+            .doc(currentUserId)
+            .collection('onboarding')
+            .doc('latest')
+            .get();
 
+        if (doc.exists) {
+          print('✅ Loaded onboarding from Firebase');
+          return doc.data()?['answers'] as Map<String, dynamic>?;
+        }
+      } catch (e) {
+        print('❌ Error loading onboarding from Firebase: $e');
+      }
+    }
+
+    // Fallback : charger depuis SharedPreferences
     try {
-      final doc = await _firestore
-          .collection('users')
-          .doc(currentUserId)
-          .collection('onboarding')
-          .doc('latest')
-          .get();
-
-      if (doc.exists) {
-        return doc.data()?['answers'] as Map<String, dynamic>?;
+      final prefs = await SharedPreferences.getInstance();
+      final localData = prefs.getString('local_onboarding_answers');
+      if (localData != null) {
+        print('✅ Loaded onboarding from local storage');
+        return json.decode(localData) as Map<String, dynamic>;
       }
     } catch (e) {
-      print('❌ Error loading onboarding: $e');
+      print('❌ Error loading onboarding from local storage: $e');
     }
+
+    print('⚠️ No onboarding data found');
     return null;
   }
 
