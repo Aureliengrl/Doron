@@ -905,7 +905,7 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
                 icon: Icons.home,
                 label: 'Accueil',
                 isActive: false,
-                onTap: () => Navigator.pushReplacementNamed(context, '/homeAlgoace'),
+                onTap: () => Navigator.pushReplacementNamed(context, '/home-pinterest'),
               ),
               _buildNavButton(
                 icon: Icons.favorite,

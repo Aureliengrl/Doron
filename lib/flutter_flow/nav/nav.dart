@@ -94,8 +94,8 @@ Future<String> _determineInitialRoute() async {
     if (isFirstTime && !hasCompletedOnboarding) {
       return '/onboarding-advanced';
     } else {
-      // Si pas première fois, on va vers auth (le système redirectera vers home si déjà connecté)
-      return '/authentification';
+      // Si pas première fois, on va vers la page d'accueil Pinterest
+      return '/home-pinterest';
     }
   } catch (e) {
     print('❌ Erreur détermination route: $e');

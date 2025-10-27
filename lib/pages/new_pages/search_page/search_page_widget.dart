@@ -800,7 +800,7 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                 icon: Icons.home,
                 label: 'Accueil',
                 isActive: false,
-                onTap: () => Navigator.pushReplacementNamed(context, '/homeAlgoace'),
+                onTap: () => Navigator.pushReplacementNamed(context, '/home-pinterest'),
               ),
               _buildNavButton(
                 icon: Icons.favorite,
