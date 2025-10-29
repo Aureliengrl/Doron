@@ -458,16 +458,16 @@ class OnboardingAdvancedModel {
         // 3. Marquer l'onboarding comme complété
         await FirstTimeService.setOnboardingCompleted();
 
-        // 4. Navigation vers la page de résultats avec GoRouter
+        // 4. Navigation vers l'authentification AVANT les résultats
         if (context.mounted) {
-          print('🚀 Navigation vers gift-results');
-          context.go('/gift-results');
+          print('🚀 Navigation vers authentification');
+          context.go('/authentification');
         }
       } catch (e) {
         print('❌ Erreur sauvegarde onboarding: $e');
-        // Même en cas d'erreur, on navigue vers les résultats
+        // Même en cas d'erreur, on navigue vers l'authentification
         if (context.mounted) {
-          context.go('/gift-results');
+          context.go('/authentification');
         }
       }
     }

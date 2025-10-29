@@ -65,27 +65,25 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
                 ],
               ),
             )
-          : Stack(
-              children: [
-                Column(
-                  children: [
-                    // Header violet arrondi avec résumé
-                    _buildHeader(),
+          : CustomScrollView(
+              slivers: [
+                // Header violet arrondi avec résumé
+                SliverToBoxAdapter(child: _buildHeader()),
 
-                    // Message IA personnalisé
-                    _buildAIMessage(),
+                // Message IA personnalisé
+                SliverToBoxAdapter(child: _buildAIMessage()),
 
-                    // Filtres de catégories
-                    _buildFilters(),
+                // Filtres de catégories
+                SliverToBoxAdapter(child: _buildFilters()),
 
-                    // Liste des résultats
-                    Expanded(
-                      child: _buildResultsList(),
-                    ),
-                  ],
-                ),
-                // Boutons Enregistrer / Refaire
-                _buildActionButtons(),
+                // Liste des résultats
+                _buildResultsList(),
+
+                // Boutons Enregistrer / Refaire (dans le scroll, pas fixes)
+                SliverToBoxAdapter(child: _buildActionButtons()),
+
+                // Espacement pour la bottom nav
+                const SliverToBoxAdapter(child: SizedBox(height: 80)),
               ],
             ),
       bottomNavigationBar: _buildBottomNav(),
@@ -117,7 +115,7 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -332,19 +330,23 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
   }
 
   Widget _buildResultsList() {
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 96),
-      itemCount: _model.giftResults.length,
-      itemBuilder: (context, index) {
-        final gift = _model.giftResults[index];
-        return FadeTransition(
-          opacity: _model.fadeAnimations[index],
-          child: SlideTransition(
-            position: _model.slideAnimations[index],
-            child: _buildGiftCard(gift, index),
-          ),
-        );
-      },
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final gift = _model.giftResults[index];
+            return FadeTransition(
+              opacity: _model.fadeAnimations[index],
+              child: SlideTransition(
+                position: _model.slideAnimations[index],
+                child: _buildGiftCard(gift, index),
+              ),
+            );
+          },
+          childCount: _model.giftResults.length,
+        ),
+      ),
     );
   }
 
@@ -819,75 +821,70 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
   }
 
   Widget _buildActionButtons() {
-    return Positioned(
-      bottom: 90, // Au-dessus de la bottom nav
-      left: 0,
-      right: 0,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Row(
-          children: [
-            // Bouton REFAIRE (secondaire)
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  // Retour à l'onboarding (skip questions sur soi)
-                  context.go('/onboarding-advanced?skipUserQuestions=true');
-                },
-                icon: const Icon(Icons.refresh, size: 20),
-                label: Text(
-                  'Refaire',
-                  style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.grey[300],
-                  foregroundColor: const Color(0xFF6B7280),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  elevation: 2,
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
+      child: Row(
+        children: [
+          // Bouton REFAIRE (secondaire)
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: () {
+                // Retour à l'onboarding (skip questions sur soi)
+                context.go('/onboarding-advanced?skipUserQuestions=true');
+              },
+              icon: const Icon(Icons.refresh, size: 20),
+              label: Text(
+                'Refaire',
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            // Bouton ENREGISTRER (primaire)
-            Expanded(
-              flex: 2,
-              child: ElevatedButton.icon(
-                onPressed: () async {
-                  // Sauvegarder le profil avant de naviguer
-                  await _model.saveCurrentProfile();
-                  // Navigation vers la page recherche
-                  if (context.mounted) {
-                    context.go('/search-page');
-                  }
-                },
-                icon: const Icon(Icons.check_circle, size: 20),
-                label: Text(
-                  'Enregistrer',
-                  style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey[300],
+                foregroundColor: const Color(0xFF6B7280),
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: violetColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  elevation: 6,
-                  shadowColor: violetColor.withOpacity(0.5),
-                ),
+                elevation: 2,
               ),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(width: 12),
+          // Bouton ENREGISTRER (primaire)
+          Expanded(
+            flex: 2,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                // Sauvegarder le profil avant de naviguer
+                await _model.saveCurrentProfile();
+                // Navigation vers la page recherche
+                if (context.mounted) {
+                  context.go('/search-page');
+                }
+              },
+              icon: const Icon(Icons.check_circle, size: 20),
+              label: Text(
+                'Enregistrer',
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: violetColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                elevation: 6,
+                shadowColor: violetColor.withOpacity(0.5),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
