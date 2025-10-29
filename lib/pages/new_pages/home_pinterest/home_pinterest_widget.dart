@@ -35,21 +35,22 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
     return Scaffold(
       key: scaffoldKey,
       backgroundColor: const Color(0xFFF9FAFB),
-      body: Column(
-        children: [
+      body: CustomScrollView(
+        slivers: [
           // Header violet arrondi
-          _buildHeader(),
+          SliverToBoxAdapter(child: _buildHeader()),
 
           // Message de bienvenue
-          _buildWelcomeMessage(),
+          SliverToBoxAdapter(child: _buildWelcomeMessage()),
 
           // Catégories
-          _buildCategories(),
+          SliverToBoxAdapter(child: _buildCategories()),
 
           // Grille Pinterest 2 colonnes
-          Expanded(
-            child: _buildPinterestGrid(),
-          ),
+          _buildPinterestGrid(),
+
+          // Espacement pour la bottom nav
+          const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
       bottomNavigationBar: _buildBottomNav(),
@@ -94,7 +95,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 30, 20, 20),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
               child: Column(
                 children: [
                   Text(
@@ -245,37 +246,39 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
     final column2 =
         _model.products.where((p) => _model.products.indexOf(p) % 2 != 0).toList();
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 96),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Colonne 1
-          Expanded(
-            child: Column(
-              children: column1.map((product) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8, bottom: 16),
-                  child: _buildProductCard(product),
-                );
-              }).toList(),
-            ),
-          ),
-          // Colonne 2 (décalée)
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 32),
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+      sliver: SliverToBoxAdapter(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Colonne 1
+            Expanded(
               child: Column(
-                children: column2.map((product) {
+                children: column1.map((product) {
                   return Padding(
-                    padding: const EdgeInsets.only(left: 8, bottom: 16),
+                    padding: const EdgeInsets.only(right: 8, bottom: 16),
                     child: _buildProductCard(product),
                   );
                 }).toList(),
               ),
             ),
-          ),
-        ],
+            // Colonne 2 (décalée)
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.only(top: 32),
+                child: Column(
+                  children: column2.map((product) {
+                    return Padding(
+                      padding: const EdgeInsets.only(left: 8, bottom: 16),
+                      child: _buildProductCard(product),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -45,28 +45,34 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
     return Scaffold(
       key: scaffoldKey,
       backgroundColor: const Color(0xFFF9FAFB),
-      body: Column(
-        children: [
+      body: CustomScrollView(
+        slivers: [
           // Header violet arrondi
-          _buildHeader(),
+          SliverToBoxAdapter(child: _buildHeader()),
 
           // Message de bienvenue
-          _buildWelcomeMessage(),
+          SliverToBoxAdapter(child: _buildWelcomeMessage()),
 
           // Profils en scroll horizontal + Bouton ajouter
-          _buildProfilesRow(),
+          SliverToBoxAdapter(child: _buildProfilesRow()),
 
           // Info sur la personne sélectionnée
-          if (_model.currentProfile != null) _buildProfileInfo(),
+          if (_model.currentProfile != null)
+            SliverToBoxAdapter(child: _buildProfileInfo()),
 
           // Grille de produits
-          Expanded(
-            child: _buildProductsGrid(),
-          ),
+          _buildProductsGrid(),
+
+          // Bouton ajouter en bas du scroll (pas fixe)
+          SliverToBoxAdapter(child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 24),
+            child: _buildAddPersonButton(),
+          )),
+
+          // Espacement pour la bottom nav
+          const SliverToBoxAdapter(child: SizedBox(height: 80)),
         ],
       ),
-      floatingActionButton: _buildAddPersonButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       bottomNavigationBar: _buildBottomNav(),
     );
   }
@@ -109,7 +115,7 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
           ),
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 30, 20, 20),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
               child: Column(
                 children: [
                   Text(
@@ -407,19 +413,23 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
   Widget _buildProductsGrid() {
     final products = _model.getFilteredProducts();
 
-    return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 160),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.7,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
+    return SliverPadding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.7,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final product = products[index];
+            return _buildProductCard(product);
+          },
+          childCount: products.length,
+        ),
       ),
-      itemCount: products.length,
-      itemBuilder: (context, index) {
-        final product = products[index];
-        return _buildProductCard(product);
-      },
     );
   }
 
@@ -762,7 +772,7 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
 
   Widget _buildAddPersonButton() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 60),
+      margin: const EdgeInsets.symmetric(horizontal: 20),
       child: ElevatedButton(
         onPressed: () => context.go('/onboarding-advanced?skipUserQuestions=true'),
         style: ElevatedButton.styleFrom(
