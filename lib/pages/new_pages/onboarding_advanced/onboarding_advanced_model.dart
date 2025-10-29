@@ -81,96 +81,100 @@ class OnboardingAdvancedModel {
     // Si on ne skip pas, ajouter les questions sur l'utilisateur
     if (!skipUserQuestions) {
       baseSteps.addAll([
-      // PARTIE "TOI"
-      {
-        'section': 'user',
-        'id': 'age',
-        'type': 'single',
-        'question': 'Quel âge as-tu ?',
-        'subtitle': '✨ Pour personnaliser ton expérience',
-        'field': 'age',
-        'options': ['18-25', '26-35', '36-45', '46-60', '60+'],
-        'icon': '🎂',
-      },
-      {
-        'section': 'user',
-        'id': 'gender',
-        'type': 'single',
-        'question': 'Tu es... ?',
-        'field': 'gender',
-        'options': [
-          '🙋‍♀️ Une femme',
-          '🙋‍♂️ Un homme',
-          '🌈 Autre',
-          '🤐 Préfère ne pas dire'
-        ],
-        'icon': '👤',
-      },
-      {
-        'section': 'user',
-        'id': 'interests',
-        'type': 'multiple',
-        'question': 'Quels sont tes centres d\'intérêt ?',
-        'field': 'interests',
-        'options': [
-          '🎨 Art & Créativité',
-          '⚽ Sport',
-          '🎮 Gaming',
-          '📚 Lecture',
-          '🎵 Musique',
-          '✈️ Voyages',
-          '🍳 Cuisine',
-          '🎬 Cinéma',
-          '🧘 Bien-être',
-          '🔬 Sciences',
-          '🎭 Spectacles',
-          '🌱 Nature'
-        ],
-        'icon': '💫',
-      },
-      {
-        'section': 'user',
-        'id': 'style',
-        'type': 'single',
-        'question': 'Quel est ton style ?',
-        'field': 'style',
-        'options': [
-          '✨ Chic',
-          '😎 Décontracté',
-          '🎨 Créatif',
-          '🏃 Sportif',
-          '🌿 Minimaliste',
-          '🌟 Tendance'
-        ],
-        'icon': '👕',
-      },
-      {
-        'section': 'user',
-        'id': 'giftTypes',
-        'type': 'multiple',
-        'question': 'Quels types de cadeaux aimes-tu ?',
-        'field': 'giftTypes',
-        'options': [
-          '🎁 Pratique',
-          '💝 Sentimental',
-          '🎉 Original',
-          '🌟 Luxe',
-          '🎯 Tech',
-          '🌱 Éco-responsable',
-          '🎨 Artisanal',
-          '🍽️ Gastronomique'
-        ],
-        'icon': '🎀',
-      },
-      // TRANSITION
-      {
-        'id': 'transition',
-        'type': 'transition',
-        'title': 'Super ! 🎉',
-        'subtitle': 'Maintenant, parlons du cadeau parfait...',
-        'emoji': '💝',
-      },
-      // PARTIE "CADEAU" - AMÉLIORÉE
+        // PARTIE "TOI"
+        {
+          'section': 'user',
+          'id': 'age',
+          'type': 'single',
+          'question': 'Quel âge as-tu ?',
+          'subtitle': '✨ Pour personnaliser ton expérience',
+          'field': 'age',
+          'options': ['18-25', '26-35', '36-45', '46-60', '60+'],
+          'icon': '🎂',
+        },
+        {
+          'section': 'user',
+          'id': 'gender',
+          'type': 'single',
+          'question': 'Tu es... ?',
+          'field': 'gender',
+          'options': [
+            '🙋‍♀️ Une femme',
+            '🙋‍♂️ Un homme',
+            '🌈 Autre',
+            '🤐 Préfère ne pas dire'
+          ],
+          'icon': '👤',
+        },
+        {
+          'section': 'user',
+          'id': 'interests',
+          'type': 'multiple',
+          'question': 'Quels sont tes centres d\'intérêt ?',
+          'field': 'interests',
+          'options': [
+            '🎨 Art & Créativité',
+            '⚽ Sport',
+            '🎮 Gaming',
+            '📚 Lecture',
+            '🎵 Musique',
+            '✈️ Voyages',
+            '🍳 Cuisine',
+            '🎬 Cinéma',
+            '🧘 Bien-être',
+            '🔬 Sciences',
+            '🎭 Spectacles',
+            '🌱 Nature'
+          ],
+          'icon': '💫',
+        },
+        {
+          'section': 'user',
+          'id': 'style',
+          'type': 'single',
+          'question': 'Quel est ton style ?',
+          'field': 'style',
+          'options': [
+            '✨ Chic',
+            '😎 Décontracté',
+            '🎨 Créatif',
+            '🏃 Sportif',
+            '🌿 Minimaliste',
+            '🌟 Tendance'
+          ],
+          'icon': '👕',
+        },
+        {
+          'section': 'user',
+          'id': 'giftTypes',
+          'type': 'multiple',
+          'question': 'Quels types de cadeaux aimes-tu ?',
+          'field': 'giftTypes',
+          'options': [
+            '🎁 Pratique',
+            '💝 Sentimental',
+            '🎉 Original',
+            '🌟 Luxe',
+            '🎯 Tech',
+            '🌱 Éco-responsable',
+            '🎨 Artisanal',
+            '🍽️ Gastronomique'
+          ],
+          'icon': '🎀',
+        },
+        // TRANSITION
+        {
+          'id': 'transition',
+          'type': 'transition',
+          'title': 'Super ! 🎉',
+          'subtitle': 'Maintenant, parlons du cadeau parfait...',
+          'emoji': '💝',
+        },
+      ]);
+    }
+
+    // PARTIE "CADEAU" - TOUJOURS INCLUSE
+    baseSteps.addAll([
       {
         'section': 'gift',
         'id': 'recipient',
@@ -201,7 +205,7 @@ class OnboardingAdvancedModel {
         'max': 500,
         'icon': '💶',
       },
-    ];
+    ]);
 
     // Questions conditionnelles basées sur le destinataire
     final recipient = answers['recipient'] as String;
