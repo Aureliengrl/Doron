@@ -154,7 +154,7 @@ class _FavouritesWidgetState extends State<FavouritesWidget>
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      const Color(0xFF9D4EDD),
+                      const Color(0xFF8A2BE2),
                       const Color(0xFFEC4899),
                     ],
                   ),
@@ -166,7 +166,7 @@ class _FavouritesWidgetState extends State<FavouritesWidget>
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF9D4EDD).withOpacity(0.3),
+                      color: const Color(0xFF8A2BE2).withOpacity(0.3),
                       blurRadius: 24,
                       offset: const Offset(0, 8),
                     ),

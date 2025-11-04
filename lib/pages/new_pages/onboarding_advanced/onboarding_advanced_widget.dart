@@ -22,7 +22,7 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
   // Couleur principale
-  final Color violetColor = const Color(0xFF9D4EDD);
+  final Color violetColor = const Color(0xFF8A2BE2);
 
   @override
   void initState() {

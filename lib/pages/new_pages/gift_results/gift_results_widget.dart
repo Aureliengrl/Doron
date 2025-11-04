@@ -19,7 +19,7 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
     with TickerProviderStateMixin {
   late GiftResultsModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
-  final Color violetColor = const Color(0xFF9D4EDD);
+  final Color violetColor = const Color(0xFF8A2BE2);
 
   @override
   void initState() {

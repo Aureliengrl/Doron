@@ -89,9 +89,9 @@ class FirebaseDataService {
     return null;
   }
 
-  // ============= GIFT PROFILES =============
+  // ============= GIFT SEARCHES (renamed from gift_profiles to match spec) =============
 
-  /// Sauvegarde un profil créé (Maman, Papa, etc.)
+  /// Sauvegarde une recherche de cadeau (Maman, Papa, etc.)
   static Future<String?> saveGiftProfile(Map<String, dynamic> profile) async {
     // Sauvegarder localement TOUJOURS
     try {
@@ -109,46 +109,44 @@ class FirebaseDataService {
 
       profiles.add(profileWithId);
       await prefs.setString('local_gift_profiles', json.encode(profiles));
-      print('✅ Profile saved locally: $profileId');
+      print('✅ Gift search saved locally: $profileId');
     } catch (e) {
-      print('❌ Error saving profile locally: $e');
+      print('❌ Error saving gift search locally: $e');
     }
 
-    // Sauvegarder sur Firebase si connecté
+    // Sauvegarder sur Firebase si connecté (collection giftSearches selon spec)
     if (!isLoggedIn) return null;
 
     try {
       final docRef = await _firestore
-          .collection('users')
-          .doc(currentUserId)
-          .collection('gift_profiles')
+          .collection('giftSearches')
           .add({
+        'userId': currentUserId,
         ...profile,
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      print('✅ Profile saved to Firebase: ${docRef.id}');
+      print('✅ Gift search saved to Firebase: ${docRef.id}');
       return docRef.id;
     } catch (e) {
-      print('❌ Error saving profile to Firebase: $e');
+      print('❌ Error saving gift search to Firebase: $e');
       return null;
     }
   }
 
-  /// Charge tous les profils de cadeaux
+  /// Charge toutes les recherches de cadeaux
   static Future<List<Map<String, dynamic>>> loadGiftProfiles() async {
     // Essayer de charger depuis Firebase si connecté
     if (isLoggedIn) {
       try {
         final snapshot = await _firestore
-            .collection('users')
-            .doc(currentUserId)
-            .collection('gift_profiles')
+            .collection('giftSearches')
+            .where('userId', isEqualTo: currentUserId)
             .orderBy('createdAt', descending: true)
             .get();
 
         if (snapshot.docs.isNotEmpty) {
-          print('✅ Loaded ${snapshot.docs.length} profiles from Firebase');
+          print('✅ Loaded ${snapshot.docs.length} gift searches from Firebase');
           return snapshot.docs.map((doc) {
             return {
               'id': doc.id,
@@ -157,7 +155,7 @@ class FirebaseDataService {
           }).toList();
         }
       } catch (e) {
-        print('❌ Error loading profiles from Firebase: $e');
+        print('❌ Error loading gift searches from Firebase: $e');
       }
     }
 
@@ -169,15 +167,15 @@ class FirebaseDataService {
           .map((e) => e as Map<String, dynamic>)
           .toList();
 
-      print('✅ Loaded ${profiles.length} profiles from local storage');
+      print('✅ Loaded ${profiles.length} gift searches from local storage');
       return profiles;
     } catch (e) {
-      print('❌ Error loading profiles from local storage: $e');
+      print('❌ Error loading gift searches from local storage: $e');
       return [];
     }
   }
 
-  /// Met à jour un profil
+  /// Met à jour une recherche de cadeau
   static Future<void> updateGiftProfile(
     String profileId,
     Map<String, dynamic> updates,
@@ -186,74 +184,69 @@ class FirebaseDataService {
 
     try {
       await _firestore
-          .collection('users')
-          .doc(currentUserId)
-          .collection('gift_profiles')
+          .collection('giftSearches')
           .doc(profileId)
           .update(updates);
 
-      print('✅ Profile updated: $profileId');
+      print('✅ Gift search updated: $profileId');
     } catch (e) {
-      print('❌ Error updating profile: $e');
+      print('❌ Error updating gift search: $e');
     }
   }
 
-  /// Supprime un profil
+  /// Supprime une recherche de cadeau
   static Future<void> deleteGiftProfile(String profileId) async {
     if (!isLoggedIn) return;
 
     try {
       await _firestore
-          .collection('users')
-          .doc(currentUserId)
-          .collection('gift_profiles')
+          .collection('giftSearches')
           .doc(profileId)
           .delete();
 
-      print('✅ Profile deleted: $profileId');
+      print('✅ Gift search deleted: $profileId');
     } catch (e) {
-      print('❌ Error deleting profile: $e');
+      print('❌ Error deleting gift search: $e');
     }
   }
 
-  // ============= GIFT SUGGESTIONS =============
+  // ============= SUGGESTIONS (AI-generated gifts) =============
 
   /// Sauvegarde les suggestions générées par l'IA
   static Future<void> saveGiftSuggestions({
-    required String profileId,
+    required String searchId,
     required List<Map<String, dynamic>> gifts,
   }) async {
     if (!isLoggedIn) return;
 
     try {
       await _firestore
-          .collection('users')
-          .doc(currentUserId)
-          .collection('gift_suggestions')
-          .doc(profileId)
+          .collection('suggestions')
+          .doc(searchId)
           .set({
+        'userId': currentUserId,
+        'searchId': searchId,
         'gifts': gifts,
+        'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      print('✅ Gift suggestions saved for profile: $profileId');
+      print('✅ Gift suggestions saved for search: $searchId');
     } catch (e) {
       print('❌ Error saving suggestions: $e');
     }
   }
 
-  /// Charge les suggestions pour un profil
+  /// Charge les suggestions pour une recherche
   static Future<List<Map<String, dynamic>>?> loadGiftSuggestions(
-    String profileId,
+    String searchId,
   ) async {
     if (!isLoggedIn) return null;
 
     try {
       final doc = await _firestore
-          .collection('users')
-          .doc(currentUserId)
-          .collection('gift_suggestions')
-          .doc(profileId)
+          .collection('suggestions')
+          .doc(searchId)
           .get();
 
       if (doc.exists) {
@@ -341,6 +334,160 @@ class FirebaseDataService {
       return doc.exists;
     } catch (e) {
       return false;
+    }
+  }
+
+  // ============= WISHLISTS =============
+
+  /// Crée une nouvelle liste de souhaits
+  static Future<String?> createWishlist({
+    required String name,
+    String? description,
+  }) async {
+    if (!isLoggedIn) return null;
+
+    try {
+      final docRef = await _firestore.collection('wishlists').add({
+        'userId': currentUserId,
+        'name': name,
+        'description': description ?? '',
+        'giftIds': [],
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      print('✅ Wishlist created: ${docRef.id}');
+      return docRef.id;
+    } catch (e) {
+      print('❌ Error creating wishlist: $e');
+      return null;
+    }
+  }
+
+  /// Charge toutes les listes de souhaits
+  static Future<List<Map<String, dynamic>>> loadWishlists() async {
+    if (!isLoggedIn) return [];
+
+    try {
+      final snapshot = await _firestore
+          .collection('wishlists')
+          .where('userId', isEqualTo: currentUserId)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      return snapshot.docs.map((doc) {
+        return {'id': doc.id, ...doc.data()};
+      }).toList();
+    } catch (e) {
+      print('❌ Error loading wishlists: $e');
+      return [];
+    }
+  }
+
+  /// Ajoute un cadeau à une liste de souhaits
+  static Future<void> addToWishlist(String wishlistId, String giftId) async {
+    if (!isLoggedIn) return;
+
+    try {
+      await _firestore.collection('wishlists').doc(wishlistId).update({
+        'giftIds': FieldValue.arrayUnion([giftId]),
+      });
+
+      print('✅ Gift added to wishlist');
+    } catch (e) {
+      print('❌ Error adding to wishlist: $e');
+    }
+  }
+
+  // ============= GIFTS CATALOG =============
+
+  /// Récupère les produits du catalogue
+  static Future<List<Map<String, dynamic>>> getGifts({
+    int? limit,
+    List<String>? categories,
+    double? minPrice,
+    double? maxPrice,
+  }) async {
+    try {
+      var query = _firestore.collection('gifts').where('active', isEqualTo: true);
+
+      if (categories != null && categories.isNotEmpty) {
+        query = query.where('category', whereIn: categories);
+      }
+
+      if (minPrice != null) {
+        query = query.where('price', isGreaterThanOrEqualTo: minPrice);
+      }
+
+      if (maxPrice != null) {
+        query = query.where('price', isLessThanOrEqualTo: maxPrice);
+      }
+
+      if (limit != null) {
+        query = query.limit(limit);
+      }
+
+      final snapshot = await query.get();
+
+      return snapshot.docs.map((doc) {
+        return {'id': doc.id, ...doc.data()};
+      }).toList();
+    } catch (e) {
+      print('❌ Error loading gifts: $e');
+      return [];
+    }
+  }
+
+  /// Récupère un produit spécifique
+  static Future<Map<String, dynamic>?> getGift(String giftId) async {
+    try {
+      final doc = await _firestore.collection('gifts').doc(giftId).get();
+
+      if (doc.exists) {
+        return {'id': doc.id, ...doc.data() ?? {}};
+      }
+    } catch (e) {
+      print('❌ Error loading gift: $e');
+    }
+    return null;
+  }
+
+  // ============= TRANSLATIONS =============
+
+  /// Récupère les traductions pour une clé
+  static Future<Map<String, String>?> getTranslation(String key) async {
+    try {
+      final doc = await _firestore.collection('translations').doc(key).get();
+
+      if (doc.exists) {
+        final data = doc.data();
+        return {
+          'fr': data?['fr'] ?? '',
+          'en': data?['en'] ?? '',
+          'es': data?['es'] ?? '',
+        };
+      }
+    } catch (e) {
+      print('❌ Error loading translation: $e');
+    }
+    return null;
+  }
+
+  /// Charge toutes les traductions pour une langue
+  static Future<Map<String, String>> loadTranslationsForLanguage(String languageCode) async {
+    try {
+      final snapshot = await _firestore.collection('translations').get();
+
+      final translations = <String, String>{};
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        translations[doc.id] = data[languageCode] ?? '';
+      }
+
+      print('✅ Loaded ${translations.length} translations for $languageCode');
+      return translations;
+    } catch (e) {
+      print('❌ Error loading translations: $e');
+      return {};
     }
   }
 

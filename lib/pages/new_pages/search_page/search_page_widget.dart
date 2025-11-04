@@ -18,7 +18,7 @@ class SearchPageWidget extends StatefulWidget {
 class _SearchPageWidgetState extends State<SearchPageWidget> {
   late SearchPageModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
-  final Color violetColor = const Color(0xFF9D4EDD);
+  final Color violetColor = const Color(0xFF8A2BE2);
 
   @override
   void initState() {

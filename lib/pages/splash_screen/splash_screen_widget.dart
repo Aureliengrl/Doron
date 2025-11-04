@@ -125,9 +125,9 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget>
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      const Color(0xFF9D4EDD),
+                      const Color(0xFF8A2BE2),
                       const Color(0xFFEC4899),
-                      const Color(0xFF9D4EDD),
+                      const Color(0xFF8A2BE2),
                     ],
                   ),
                 ),

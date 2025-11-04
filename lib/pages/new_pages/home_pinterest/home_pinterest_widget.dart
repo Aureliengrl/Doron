@@ -16,7 +16,7 @@ class HomePinterestWidget extends StatefulWidget {
 class _HomePinterestWidgetState extends State<HomePinterestWidget> {
   late HomePinterestModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
-  final Color violetColor = const Color(0xFF9D4EDD);
+  final Color violetColor = const Color(0xFF8A2BE2);
 
   @override
   void initState() {
