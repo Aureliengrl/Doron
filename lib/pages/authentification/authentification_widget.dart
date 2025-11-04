@@ -317,7 +317,7 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                               }
 
                                               context.goNamedAuth(
-                                                  HomeAlgoaceWidget.routeName,
+                                                  HomePinterestWidget.routeName,
                                                   context.mounted);
                                             }
                                           ][i]();
@@ -1450,7 +1450,7 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                               return;
                                                                             }
 
-                                                                            context.goNamedAuth(HomeAlgoaceWidget.routeName,
+                                                                            context.goNamedAuth(HomePinterestWidget.routeName,
                                                                                 context.mounted);
                                                                           },
                                                                           text:
@@ -1522,7 +1522,7 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                                   return;
                                                                                 }
 
-                                                                                context.goNamedAuth(HomeAlgoaceWidget.routeName, context.mounted);
+                                                                                context.goNamedAuth(HomePinterestWidget.routeName, context.mounted);
                                                                               },
                                                                               text: FFLocalizations.of(context).getText(
                                                                                 'xy6o5xqi' /* Continue with Apple */,
@@ -2336,7 +2336,7 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                         }
 
                                                                         context.goNamedAuth(
-                                                                            HomeAlgoaceWidget.routeName,
+                                                                            HomePinterestWidget.routeName,
                                                                             context.mounted);
                                                                       },
                                                                       text: FFLocalizations.of(

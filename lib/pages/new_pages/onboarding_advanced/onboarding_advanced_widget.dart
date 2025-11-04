@@ -135,7 +135,11 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
                 Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: _model.handleBack,
+                    onTap: () {
+                      setState(() {
+                        _model.handleBack();
+                      });
+                    },
                     borderRadius: BorderRadius.circular(50),
                     child: Container(
                       padding: const EdgeInsets.all(12),

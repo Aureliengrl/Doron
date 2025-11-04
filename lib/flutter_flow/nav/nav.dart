@@ -151,7 +151,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => GiftGeneratorWidget(),
         ),
         FFRoute(
-          name: HomeAlgoaceWidget.routeName,
+          name: HomePinterestWidget.routeName,
           path: HomeAlgoaceWidget.routePath,
           builder: (context, params) => params.isEmpty
               ? NavBarPage(initialPage: 'HomeAlgoace')
