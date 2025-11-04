@@ -8,7 +8,7 @@ class OpenAIService {
 
   /// Récupère la clé API depuis les variables d'environnement
   /// Avec fallback pour export GitHub direct
-  static String get _apiKey {
+  static String get apiKey {
     final envKey = FFDevEnvironmentValues().openAiApiKey;
     if (envKey.isNotEmpty) return envKey;
 
@@ -95,7 +95,7 @@ class OpenAIService {
         Uri.parse('$_baseUrl/chat/completions'),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_apiKey',
+          'Authorization': 'Bearer $apiKey',
         },
         body: json.encode({
           'model': 'gpt-4o', // ou 'gpt-4-turbo' ou 'gpt-3.5-turbo'

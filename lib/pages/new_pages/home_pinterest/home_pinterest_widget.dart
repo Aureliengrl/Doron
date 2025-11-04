@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '/services/openai_home_service.dart';
+import '/services/firebase_data_service.dart';
 import 'home_pinterest_model.dart';
 export 'home_pinterest_model.dart';
 
@@ -22,6 +24,42 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
   void initState() {
     super.initState();
     _model = HomePinterestModel();
+    _loadProducts();
+  }
+
+  /// Charge les produits depuis ChatGPT selon la catégorie active
+  Future<void> _loadProducts() async {
+    if (mounted) {
+      setState(() {
+        _model.setLoading(true);
+      });
+    }
+
+    try {
+      // Charger le profil utilisateur depuis Firebase
+      final userProfile = await FirebaseDataService.loadOnboardingAnswers();
+
+      // Générer les produits via ChatGPT
+      final products = await OpenAIHomeService.generateHomeProducts(
+        category: _model.activeCategory,
+        userProfile: userProfile,
+        count: 10,
+      );
+
+      if (mounted) {
+        setState(() {
+          _model.setProducts(products);
+          _model.setLoading(false);
+        });
+      }
+    } catch (e) {
+      print('❌ Erreur chargement produits: $e');
+      if (mounted) {
+        setState(() {
+          _model.setLoading(false);
+        });
+      }
+    }
   }
 
   @override
@@ -62,86 +100,64 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
       decoration: BoxDecoration(
         color: violetColor,
         borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
+          bottomLeft: Radius.circular(20),
+          bottomRight: Radius.circular(20),
         ),
         boxShadow: [
           BoxShadow(
-            color: violetColor.withOpacity(0.25),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: violetColor.withOpacity(0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          // Effet de cercle flottant
-          Positioned(
-            top: -50,
-            right: -50,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    Colors.white.withOpacity(0.15),
-                    Colors.transparent,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'DORÕN',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.auto_awesome,
+                      color: Colors.white,
+                      size: 13,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'IA',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ),
+            ],
           ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-              child: Column(
-                children: [
-                  Text(
-                    'DORÕN',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withOpacity(0.1),
-                          offset: const Offset(0, 2),
-                          blurRadius: 8,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.3),
-                      ),
-                    ),
-                    child: Text(
-                      'Recommandations selon tes goûts',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -190,6 +206,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                   setState(() {
                     _model.activeCategory = category['name'] as String;
                   });
+                  _loadProducts(); // Recharger les produits pour la nouvelle catégorie
                 },
                 borderRadius: BorderRadius.circular(50),
                 child: AnimatedContainer(
@@ -240,6 +257,53 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
   }
 
   Widget _buildPinterestGrid() {
+    // Afficher un loader pendant le chargement
+    if (_model.isLoading) {
+      return SliverToBoxAdapter(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(40),
+            child: Column(
+              children: [
+                CircularProgressIndicator(
+                  color: violetColor,
+                  strokeWidth: 3,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '✨ ChatGPT génère des cadeaux pour toi...',
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFF6B7280),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Afficher un message si aucun produit
+    if (_model.products.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(40),
+            child: Text(
+              'Aucun produit disponible',
+              style: GoogleFonts.poppins(
+                color: const Color(0xFF9CA3AF),
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     // Séparer en 2 colonnes
     final column1 =
         _model.products.where((p) => _model.products.indexOf(p) % 2 == 0).toList();
