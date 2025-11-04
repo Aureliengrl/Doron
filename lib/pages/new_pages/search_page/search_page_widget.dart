@@ -82,86 +82,64 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
       decoration: BoxDecoration(
         color: violetColor,
         borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
+          bottomLeft: Radius.circular(20),
+          bottomRight: Radius.circular(20),
         ),
         boxShadow: [
           BoxShadow(
-            color: violetColor.withOpacity(0.25),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: violetColor.withOpacity(0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          // Effet de cercle flottant
-          Positioned(
-            top: -50,
-            right: -50,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    Colors.white.withOpacity(0.15),
-                    Colors.transparent,
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'DORÕN',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.search,
+                      color: Colors.white,
+                      size: 13,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Recherche',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ),
+            ],
           ),
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-              child: Column(
-                children: [
-                  Text(
-                    'DORÕN',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withOpacity(0.1),
-                          offset: const Offset(0, 2),
-                          blurRadius: 8,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.3),
-                      ),
-                    ),
-                    child: Text(
-                      'Trouve le cadeau idéal',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.3,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -838,7 +816,7 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                 icon: Icons.favorite,
                 label: 'Favoris',
                 isActive: false,
-                onTap: () => context.go('/Favourites'),
+                onTap: () => context.go('/favourites'),
               ),
               _buildNavButton(
                 icon: Icons.search,

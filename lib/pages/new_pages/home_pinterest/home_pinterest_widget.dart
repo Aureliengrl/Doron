@@ -687,7 +687,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                 icon: Icons.favorite,
                 label: 'Favoris',
                 isActive: false,
-                onTap: () => Navigator.pushReplacementNamed(context, '/Favourites'),
+                onTap: () => Navigator.pushReplacementNamed(context, '/favourites'),
               ),
               _buildNavButton(
                 icon: Icons.search,

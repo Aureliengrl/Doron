@@ -132,18 +132,22 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
           Row(
             children: [
               if (_model.currentStep > 0)
-                InkWell(
-                  onTap: _model.handleBack,
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(50),
-                    ),
-                    child: Icon(
-                      Icons.arrow_back,
-                      color: violetColor,
-                      size: 24,
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _model.handleBack,
+                    borderRadius: BorderRadius.circular(50),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(50),
+                      ),
+                      child: Icon(
+                        Icons.arrow_back,
+                        color: violetColor,
+                        size: 24,
+                      ),
                     ),
                   ),
                 ),

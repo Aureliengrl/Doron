@@ -102,92 +102,78 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
           ],
         ),
         borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
+          bottomLeft: Radius.circular(20),
+          bottomRight: Radius.circular(20),
         ),
         boxShadow: [
           BoxShadow(
-            color: violetColor.withOpacity(0.3),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: violetColor.withOpacity(0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+          child: Row(
             children: [
               // Bouton retour
-              Row(
-                children: [
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => context.go('/home-pinterest'),
-                      borderRadius: BorderRadius.circular(50),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.arrow_back,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                      ),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => context.go('/home-pinterest'),
+                  borderRadius: BorderRadius.circular(50),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      color: Colors.white,
+                      size: 20,
                     ),
                   ),
-                  const Spacer(),
-                  const Icon(
-                    Icons.auto_awesome,
-                    color: Color(0xFFFBBF24),
-                    size: 28,
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              // Titre
-              Text(
-                'Résultats IA',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  height: 1.2,
                 ),
               ),
-              const SizedBox(height: 8),
-              // Sous-titre avec info
+              const SizedBox(width: 12),
+              // Titre
+              Expanded(
+                child: Text(
+                  'Résultats IA',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              // Badge IA
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
+                  horizontal: 10,
+                  vertical: 4,
                 ),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Colors.white.withOpacity(0.3),
-                  ),
+                  borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Icon(
-                      Icons.person,
-                      color: Colors.white,
-                      size: 16,
+                      Icons.auto_awesome,
+                      color: Color(0xFFFBBF24),
+                      size: 13,
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
                     Text(
-                      'Pour Maman • Anniversaire • 50€',
+                      'IA',
                       style: GoogleFonts.poppins(
                         color: Colors.white,
-                        fontSize: 13,
+                        fontSize: 11,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -923,7 +909,7 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
                 icon: Icons.favorite,
                 label: 'Favoris',
                 isActive: false,
-                onTap: () => Navigator.pushReplacementNamed(context, '/Favourites'),
+                onTap: () => Navigator.pushReplacementNamed(context, '/favourites'),
               ),
               _buildNavButton(
                 icon: Icons.search,
