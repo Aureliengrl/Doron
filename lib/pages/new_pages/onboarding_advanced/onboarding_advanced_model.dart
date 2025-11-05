@@ -67,16 +67,19 @@ class OnboardingAdvancedModel {
   }
 
   List<Map<String, dynamic>> getSteps({bool skipUserQuestions = false}) {
-    final baseSteps = <Map<String, dynamic>>[
-      {
+    final baseSteps = <Map<String, dynamic>>[];
+
+    // Ajouter l'écran de bienvenue SEULEMENT si c'est la première fois
+    if (!skipUserQuestions) {
+      baseSteps.add({
         'id': 'welcome',
         'type': 'welcome',
         'title': 'DORÕN',
         'subtitle': 'Find the perfect gift',
         'emoji': '', // Logo remplacera l'emoji
         'useLogo': true, // Indique d'utiliser le logo au lieu de l'emoji
-      },
-    ];
+      });
+    }
 
     // Si on ne skip pas, ajouter les questions sur l'utilisateur
     if (!skipUserQuestions) {

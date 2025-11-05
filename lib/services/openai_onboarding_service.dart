@@ -36,8 +36,11 @@ class OpenAIOnboardingService {
               'content': prompt,
             },
           ],
-          'temperature': 1.0,
+          'temperature': 1.3,
+          'top_p': 0.95,
           'max_tokens': 3500,
+          'frequency_penalty': 0.7,
+          'presence_penalty': 0.7,
         }),
       );
 
@@ -102,12 +105,21 @@ class OpenAIOnboardingService {
     // Seed de variation pour forcer ChatGPT à générer des produits différents
     final refreshSeed = userProfile['_refresh_seed'] ?? '';
     final variation = userProfile['_variation'] ?? 0;
+    final randomSeed = DateTime.now().microsecondsSinceEpoch % 10000;
     final variationInstructions = refreshSeed != ''
-        ? '🔄 VARIATION #$refreshSeed - GÉNÈRE DES PRODUITS COMPLÈTEMENT DIFFÉRENTS ! Explore de nouvelles marques, catégories et styles.'
+        ? '''
+🔄 NOUVELLE SÉLECTION #$randomSeed 🔄
+IMPORTANT: Cette requête nécessite des produits COMPLÈTEMENT DIFFÉRENTS des précédentes recommandations.
+- Explore d'AUTRES marques que d'habitude
+- Choisis des catégories VARIÉES et originales
+- Propose des styles INNOVANTS et surprenants
+- ÉVITE les produits classiques/prévisibles (écouteurs, t-shirts basiques, etc.)
+'''
         : '';
 
     return '''
 Génère $count produits cadeaux PERSONNALISÉS ET RÉELS pour un utilisateur.
+Timestamp unique: $randomSeed
 $variationInstructions
 
 ═══════════════════════════════════════════════════════════
@@ -139,16 +151,32 @@ $brandsString
 ═══════════════════════════════════════════════════════════
 📋 INSTRUCTIONS STRICTES
 ═══════════════════════════════════════════════════════════
-1. **ULTRA-PERSONNALISÉ**: Utilise TOUTES les informations du profil pour choisir des produits parfaitement adaptés
-2. **PRODUITS RÉELS UNIQUEMENT**: Produits qui EXISTENT vraiment dans ces marques
-3. **BUDGET RESPECTÉ**: Prix entre 20€ et ${budget * 1.2}€ (légèrement au-dessus du budget si pertinent)
-4. **IMAGES UNSPLASH**: Fournis des URLs d'images Unsplash de haute qualité et pertinentes
+1. **ANALYSE DES TAGS OBLIGATOIRE**:
+   - Lis attentivement TOUTES les infos du profil (passions: $recipientHobbies, personnalité: $recipientPersonality, style: $recipientStyle, occasion: $occasion)
+   - Choisis les cadeaux EN FONCTION de ces tags spécifiques
+   - Par exemple: "créative" → produits artistiques/DIY, "sportif" → équipement sport, "intellectuel" → livres/culture
+
+2. **ULTRA-PERSONNALISÉ**: Chaque produit DOIT correspondre au profil exact du destinataire
+   - Si c'est pour Noël: privilégie les cadeaux festifs
+   - Si la personne est créative: propose des produits artistiques, DIY, design
+   - Si elle aime le sport: équipements sportifs, vêtements techniques
+
+3. **PRODUITS RÉELS UNIQUEMENT**: Produits qui EXISTENT vraiment dans ces marques
+
+4. **BUDGET RESPECTÉ**: Prix entre 20€ et ${budget * 1.2}€ (légèrement au-dessus du budget si pertinent)
+
+5. **IMAGES UNSPLASH**: Fournis des URLs d'images Unsplash de haute qualité et pertinentes
    Format: https://images.unsplash.com/photo-[ID]?w=600&q=80
-5. **URLs OFFICIELLES**: Liens vers les sites officiels des marques (Apple, Zara, Sephora, etc.)
-6. **DESCRIPTIONS ENGAGEANTES**: 2-3 phrases qui expliquent pourquoi ce cadeau est parfait pour cette personne
-7. **DIVERSITÉ**: Varie les marques, les catégories, les styles
-8. **MATCH SCORE**: Score de 80 à 100 selon la pertinence pour le destinataire
-9. **FORMAT JSON STRICT**: Réponds UNIQUEMENT en JSON valide
+
+6. **URLs OFFICIELLES**: Liens vers les sites officiels des marques (Apple, Zara, Sephora, etc.)
+
+7. **DESCRIPTIONS ENGAGEANTES**: 2-3 phrases qui expliquent pourquoi ce cadeau est parfait pour cette personne SELON SES TAGS
+
+8. **DIVERSITÉ MAXIMALE**: Varie les marques, les catégories, les styles - pas toujours les mêmes produits !
+
+9. **MATCH SCORE**: Score de 80 à 100 selon la pertinence pour le destinataire
+
+10. **FORMAT JSON STRICT**: Réponds UNIQUEMENT en JSON valide
 
 ═══════════════════════════════════════════════════════════
 💡 CATÉGORIES À MÉLANGER INTELLIGEMMENT

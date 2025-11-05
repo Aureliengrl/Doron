@@ -235,12 +235,16 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: HomePinterestWidget.routeName,
           path: HomePinterestWidget.routePath,
-          builder: (context, params) => HomePinterestWidget(),
+          builder: (context, params) => params.isEmpty
+              ? NavBarPage(initialPage: 'HomePinterest')
+              : HomePinterestWidget(),
         ),
         FFRoute(
           name: SearchPageWidget.routeName,
           path: SearchPageWidget.routePath,
-          builder: (context, params) => SearchPageWidget(),
+          builder: (context, params) => params.isEmpty
+              ? NavBarPage(initialPage: 'SearchPage')
+              : SearchPageWidget(),
         ),
         FFRoute(
           name: GiftResultsWidget.routeName,
