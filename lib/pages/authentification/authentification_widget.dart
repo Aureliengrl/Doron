@@ -1265,9 +1265,9 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                 0.0, 0.0),
                                                         child: FFButtonWidget(
                                                           onPressed: () async {
-                                                            context.pushNamed(
+                                                            context.go(
                                                                 OnboardingGiftsResultWidget
-                                                                    .routeName);
+                                                                    .routePath);
                                                           },
                                                           text: FFLocalizations
                                                                   .of(context)

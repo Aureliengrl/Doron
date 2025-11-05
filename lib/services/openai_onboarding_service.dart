@@ -28,6 +28,7 @@ class OpenAIOnboardingService {
               'content':
                   'Tu es un expert en curation de cadeaux personnalisés. '
                   'Tu recommandes des produits réels de marques premium et accessibles. '
+                  'Tu aimes explorer différentes marques et catégories pour offrir une grande variété. '
                   'Réponds UNIQUEMENT en JSON valide sans texte avant ou après.',
             },
             {
@@ -35,7 +36,7 @@ class OpenAIOnboardingService {
               'content': prompt,
             },
           ],
-          'temperature': 0.9,
+          'temperature': 1.0,
           'max_tokens': 3500,
         }),
       );
@@ -98,8 +99,16 @@ class OpenAIOnboardingService {
     final occasion = userProfile['occasion'] ?? '';
     final preferredCategories = (userProfile['preferredCategories'] as List?)?.join(', ') ?? '';
 
+    // Seed de variation pour forcer ChatGPT à générer des produits différents
+    final refreshSeed = userProfile['_refresh_seed'] ?? '';
+    final variation = userProfile['_variation'] ?? 0;
+    final variationInstructions = refreshSeed != ''
+        ? '🔄 VARIATION #$refreshSeed - GÉNÈRE DES PRODUITS COMPLÈTEMENT DIFFÉRENTS ! Explore de nouvelles marques, catégories et styles.'
+        : '';
+
     return '''
 Génère $count produits cadeaux PERSONNALISÉS ET RÉELS pour un utilisateur.
+$variationInstructions
 
 ═══════════════════════════════════════════════════════════
 🎯 PROFIL UTILISATEUR

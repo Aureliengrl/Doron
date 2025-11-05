@@ -32,7 +32,7 @@ class _OnboardingGiftsResultWidgetState
   }
 
   /// Charge les cadeaux personnalisés basés sur l'onboarding
-  Future<void> _loadGifts() async {
+  Future<void> _loadGifts({bool forceRefresh = false}) async {
     if (mounted) {
       setState(() {
         _model.setLoading(true);
@@ -44,9 +44,16 @@ class _OnboardingGiftsResultWidgetState
       final userProfile = await FirebaseDataService.loadOnboardingAnswers();
       _model.setUserProfile(userProfile);
 
+      // Ajouter un seed aléatoire pour forcer ChatGPT à générer de nouveaux produits
+      final profileWithVariation = {
+        ...?userProfile,
+        if (forceRefresh) '_refresh_seed': DateTime.now().millisecondsSinceEpoch,
+        '_variation': DateTime.now().second, // Variation basée sur la seconde
+      };
+
       // Générer les cadeaux via ChatGPT
       final gifts = await OpenAIOnboardingService.generateOnboardingGifts(
-        userProfile: userProfile ?? {},
+        userProfile: profileWithVariation,
         count: 30, // 30 produits minimum
       );
 
@@ -427,7 +434,9 @@ class _OnboardingGiftsResultWidgetState
           SizedBox(
             width: double.infinity,
             child: OutlinedButton(
-              onPressed: _model.isLoading ? null : _loadGifts,
+              onPressed: _model.isLoading
+                ? null
+                : () => _loadGifts(forceRefresh: true),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 side: BorderSide(color: violetColor, width: 2),
@@ -441,7 +450,7 @@ class _OnboardingGiftsResultWidgetState
                   Icon(Icons.refresh, color: violetColor),
                   const SizedBox(width: 8),
                   Text(
-                    'Refaire',
+                    'Générer de nouveaux cadeaux',
                     style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
