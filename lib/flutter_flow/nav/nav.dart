@@ -228,6 +228,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => OnboardingAdvancedWidget(),
         ),
         FFRoute(
+          name: OnboardingGiftsResultWidget.routeName,
+          path: OnboardingGiftsResultWidget.routePath,
+          builder: (context, params) => OnboardingGiftsResultWidget(),
+        ),
+        FFRoute(
           name: HomePinterestWidget.routeName,
           path: HomePinterestWidget.routePath,
           builder: (context, params) => HomePinterestWidget(),

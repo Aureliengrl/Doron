@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '/services/openai_home_service.dart';
 import '/services/firebase_data_service.dart';
 import 'home_pinterest_model.dart';
@@ -43,7 +44,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
       final products = await OpenAIHomeService.generateHomeProducts(
         category: _model.activeCategory,
         userProfile: userProfile,
-        count: 10,
+        count: 30, // 30 produits minimum comme demandé
       );
 
       if (mounted) {
@@ -73,23 +74,41 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
     return Scaffold(
       key: scaffoldKey,
       backgroundColor: const Color(0xFFF9FAFB),
-      body: CustomScrollView(
-        slivers: [
-          // Header violet arrondi
-          SliverToBoxAdapter(child: _buildHeader()),
+      body: RefreshIndicator(
+        color: violetColor,
+        onRefresh: _loadProducts,
+        child: CustomScrollView(
+          slivers: [
+            // Header violet arrondi
+            SliverToBoxAdapter(child: _buildHeader()),
 
-          // Message de bienvenue
-          SliverToBoxAdapter(child: _buildWelcomeMessage()),
+            // Message de bienvenue
+            SliverToBoxAdapter(child: _buildWelcomeMessage()),
 
-          // Catégories
-          SliverToBoxAdapter(child: _buildCategories()),
+            // Catégories
+            SliverToBoxAdapter(child: _buildCategories()),
 
-          // Grille Pinterest 2 colonnes
-          _buildPinterestGrid(),
+            // Grille Pinterest 2 colonnes
+            _buildPinterestGrid(),
 
-          // Espacement pour la bottom nav
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
-        ],
+            // Loader pour infinite scroll
+            if (_model.isLoading && _model.products.isNotEmpty)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      color: violetColor,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                ),
+              ),
+
+            // Espacement pour la bottom nav
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
+        ),
       ),
       bottomNavigationBar: _buildBottomNav(),
     );
@@ -114,45 +133,58 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Column(
             children: [
-              Text(
-                'DORÕN',
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
-                ),
+              Row(
+                children: [
+                  const Icon(
+                    Icons.card_giftcard,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.auto_awesome,
+                          color: Colors.white,
+                          size: 13,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'IA',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.auto_awesome,
-                      color: Colors.white,
-                      size: 13,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'IA',
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+              const SizedBox(height: 8),
+              // DORÕN centré
+              Center(
+                child: Text(
+                  'DORÕN',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
+                  ),
                 ),
               ),
             ],
@@ -164,21 +196,24 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
 
   Widget _buildWelcomeMessage() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
         children: [
           const Icon(
             Icons.auto_awesome,
             color: Color(0xFFFBBF24),
-            size: 18,
+            size: 16,
           ),
-          const SizedBox(width: 6),
-          Text(
-            'Bienvenu Aurelien ! Voici ta sélection personnalisée',
-            style: GoogleFonts.poppins(
-              color: const Color(0xFF4B5563),
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Bienvenue Aurélien !\nVoici ta sélection personnalisée',
+              style: GoogleFonts.poppins(
+                color: const Color(0xFF4B5563),
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                height: 1.4,
+              ),
             ),
           ),
         ],
@@ -188,7 +223,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
 
   Widget _buildCategories() {
     return SizedBox(
-      height: 60,
+      height: 50,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         scrollDirection: Axis.horizontal,
@@ -198,7 +233,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           final isActive = _model.activeCategory == category['name'];
 
           return Padding(
-            padding: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.only(right: 10),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
@@ -212,8 +247,8 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
+                    horizontal: 16,
+                    vertical: 8,
                   ),
                   decoration: BoxDecoration(
                     color: isActive
@@ -224,24 +259,25 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                         ? [
                             BoxShadow(
                               color: violetColor.withOpacity(0.2),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
                             ),
                           ]
                         : [],
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         category['emoji'] as String,
-                        style: const TextStyle(fontSize: 18),
+                        style: const TextStyle(fontSize: 14),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Text(
                         category['name'] as String,
                         style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                           color: isActive ? Colors.white : violetColor,
                         ),
                       ),
@@ -610,8 +646,17 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           // Ouvrir le lien du produit
+                          final url = product['url'] as String? ?? '';
+                          if (url.isNotEmpty) {
+                            try {
+                              final uri = Uri.parse(url);
+                              await launchUrl(uri, mode: LaunchMode.externalApplication);
+                            } catch (e) {
+                              print('❌ Erreur ouverture URL: $e');
+                            }
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: violetColor,

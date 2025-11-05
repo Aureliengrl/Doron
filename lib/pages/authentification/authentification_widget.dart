@@ -317,7 +317,7 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                               }
 
                                               context.goNamedAuth(
-                                                  HomePinterestWidget.routeName,
+                                                  OnboardingGiftsResultWidget.routeName,
                                                   context.mounted);
                                             }
                                           ][i]();
@@ -1187,7 +1187,7 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                   () {});
 
                                                               context.goNamedAuth(
-                                                                  HomeAlgoaceWidget
+                                                                  OnboardingGiftsResultWidget
                                                                       .routeName,
                                                                   context
                                                                       .mounted);
@@ -1450,7 +1450,7 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                               return;
                                                                             }
 
-                                                                            context.goNamedAuth(HomePinterestWidget.routeName,
+                                                                            context.goNamedAuth(OnboardingGiftsResultWidget.routeName,
                                                                                 context.mounted);
                                                                           },
                                                                           text:
@@ -1522,7 +1522,7 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                                   return;
                                                                                 }
 
-                                                                                context.goNamedAuth(HomePinterestWidget.routeName, context.mounted);
+                                                                                context.goNamedAuth(OnboardingGiftsResultWidget.routeName, context.mounted);
                                                                               },
                                                                               text: FFLocalizations.of(context).getText(
                                                                                 'xy6o5xqi' /* Continue with Apple */,
@@ -2240,7 +2240,7 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                   }
 
                                                                   context.goNamedAuth(
-                                                                      HomeAlgoaceWidget
+                                                                      OnboardingGiftsResultWidget
                                                                           .routeName,
                                                                       context
                                                                           .mounted);
@@ -2336,7 +2336,7 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                         }
 
                                                                         context.goNamedAuth(
-                                                                            HomePinterestWidget.routeName,
+                                                                            OnboardingGiftsResultWidget.routeName,
                                                                             context.mounted);
                                                                       },
                                                                       text: FFLocalizations.of(
