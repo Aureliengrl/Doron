@@ -118,7 +118,7 @@ class OpenAIHomeService {
     switch (category) {
       case 'Pour toi':
         categoryInstructions = '''
-🎯 CATÉGORIE: POUR TOI (Ultra-personnalisé)
+🎯 CATÉGORIE: POUR TOI (Mix 70% Trending + 30% Personnalisé)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Profil utilisateur:
 • Âge: $userAge
@@ -126,11 +126,27 @@ Profil utilisateur:
 • Centres d'intérêt: $userInterests
 • Style: $userStyle
 
-**Mission**: Suggère des produits PARFAITEMENT adaptés à ce profil.
-- Utilise SES centres d'intérêt pour choisir les produits
-- Adapte le style à SA personnalité
-- Mélange différentes catégories (Mode, Tech, Beauté, Déco, Sport, Culture)
-- Match score: 85-100 (très personnalisé)
+**Mission IMPORTANTE**: Génère un mix intelligent de produits:
+
+📊 RÉPARTITION OBLIGATOIRE:
+• 70% TRENDING (Best-sellers, produits populaires)
+  → iPhone 15 Pro, AirPods Pro, Apple Watch, Stanley Cup, Lululemon leggings
+  → Derniers produits viraux TikTok/Instagram
+  → Top produits des marques premium (Apple, Nike, Zara, Sephora)
+  → Must-have du moment, nouveautés 2025
+  → Match score: 80-92
+
+• 30% PERSONNALISÉ (Basé sur le profil utilisateur)
+  → Utilise SES centres d'intérêt: $userInterests
+  → Adapte au style: $userStyle
+  → Produits qui correspondent à SA personnalité
+  → Match score: 90-100
+
+🎯 STRATÉGIE:
+- Commence avec les best-sellers universels (iPhone, AirPods, Stanley, etc.)
+- Puis insère des produits personnalisés selon ses intérêts
+- Alterne intelligemment entre trending et personnalisé
+- Diversifie les catégories: Mode, Tech, Beauté, Déco, Sport, Culture
 ''';
         break;
 

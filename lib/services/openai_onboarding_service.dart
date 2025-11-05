@@ -9,7 +9,7 @@ class OpenAIOnboardingService {
   /// Génère des cadeaux personnalisés basés sur le profil utilisateur de l'onboarding
   static Future<List<Map<String, dynamic>>> generateOnboardingGifts({
     required Map<String, dynamic> userProfile,
-    int count = 30,
+    int count = 50,
   }) async {
     try {
       final prompt = _buildOnboardingPrompt(userProfile, count);
@@ -38,7 +38,7 @@ class OpenAIOnboardingService {
           ],
           'temperature': 1.3,
           'top_p': 0.95,
-          'max_tokens': 3500,
+          'max_tokens': 6000,
           'frequency_penalty': 0.7,
           'presence_penalty': 0.7,
         }),
