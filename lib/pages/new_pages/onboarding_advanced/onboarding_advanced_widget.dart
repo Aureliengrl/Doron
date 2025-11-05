@@ -39,10 +39,14 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
 
   @override
   Widget build(BuildContext context) {
-    // Lire le paramètre de query pour savoir si on doit skip les questions utilisateur
+    // Lire les paramètres de query
     final skipUserQuestions = GoRouterState.of(context).uri.queryParameters['skipUserQuestions'] == 'true';
+    final onlyUserQuestions = GoRouterState.of(context).uri.queryParameters['onlyUserQuestions'] == 'true';
 
-    final steps = _model.getSteps(skipUserQuestions: skipUserQuestions);
+    final steps = _model.getSteps(
+      skipUserQuestions: skipUserQuestions,
+      onlyUserQuestions: onlyUserQuestions,
+    );
     final currentStepData = steps[_model.currentStep];
     final progress = (_model.currentStep + 1) / steps.length;
 

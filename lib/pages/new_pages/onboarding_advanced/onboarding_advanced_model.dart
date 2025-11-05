@@ -66,7 +66,10 @@ class OnboardingAdvancedModel {
     }
   }
 
-  List<Map<String, dynamic>> getSteps({bool skipUserQuestions = false}) {
+  List<Map<String, dynamic>> getSteps({
+    bool skipUserQuestions = false,
+    bool onlyUserQuestions = false,
+  }) {
     final baseSteps = <Map<String, dynamic>>[];
 
     // Ajouter l'écran de bienvenue SEULEMENT si c'est la première fois
@@ -82,7 +85,7 @@ class OnboardingAdvancedModel {
     }
 
     // Si on ne skip pas, ajouter les questions sur l'utilisateur
-    if (!skipUserQuestions) {
+    if (!skipUserQuestions || onlyUserQuestions) {
       baseSteps.addAll([
         // PARTIE "TOI"
         {
@@ -176,8 +179,9 @@ class OnboardingAdvancedModel {
       ]);
     }
 
-    // PARTIE "CADEAU" - TOUJOURS INCLUSE
-    baseSteps.addAll([
+    // PARTIE "CADEAU" - Incluse uniquement si on ne veut pas SEULEMENT les questions utilisateur
+    if (!onlyUserQuestions) {
+      baseSteps.addAll([
       {
         'section': 'gift',
         'id': 'recipient',
@@ -393,6 +397,7 @@ class OnboardingAdvancedModel {
         },
       ]);
     }
+    } // Fin de if (!onlyUserQuestions)
 
     return baseSteps;
   }

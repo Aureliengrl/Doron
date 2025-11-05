@@ -116,32 +116,47 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
   Widget _buildHeader() {
     return Container(
       decoration: BoxDecoration(
-        color: violetColor,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            const Color(0xFF8A2BE2),
+            const Color(0xFFEC4899),
+          ],
+        ),
         borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(20),
-          bottomRight: Radius.circular(20),
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
         ),
         boxShadow: [
           BoxShadow(
-            color: violetColor.withOpacity(0.15),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: const Color(0xFF8A2BE2).withOpacity(0.3),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Icon(
-                    Icons.card_giftcard,
-                    color: Colors.white,
-                    size: 24,
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.card_giftcard,
+                      color: Colors.white,
+                      size: 24,
+                    ),
                   ),
-                  const Spacer(),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
@@ -173,17 +188,25 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              // DORÕN centré
-              Center(
-                child: Text(
-                  'DORÕN',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2,
-                  ),
+              const SizedBox(height: 16),
+              Text(
+                'Accueil',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Découvrez votre sélection personnalisée',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  color: Colors.white.withOpacity(0.9),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w400,
                 ),
               ),
             ],
