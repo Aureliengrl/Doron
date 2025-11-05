@@ -438,7 +438,7 @@ class OnboardingAdvancedModel {
         (fieldValue is! double || fieldValue > 0);
   }
 
-  void handleNext(List<Map<String, dynamic>> steps, BuildContext context) async {
+  void handleNext(List<Map<String, dynamic>> steps, BuildContext context, {bool skipUserQuestions = false}) async {
     if (currentStep < steps.length - 1) {
       currentStep++;
     } else {
@@ -455,19 +455,33 @@ class OnboardingAdvancedModel {
         // 2. Sauvegarder dans Firebase si connecté
         await FirebaseDataService.saveOnboardingAnswers(answers);
 
-        // 3. Marquer l'onboarding comme complété
-        await FirstTimeService.setOnboardingCompleted();
+        // 3. Marquer l'onboarding comme complété (seulement si c'est le premier onboarding)
+        if (!skipUserQuestions) {
+          await FirstTimeService.setOnboardingCompleted();
+        }
 
-        // 4. Navigation vers l'authentification AVANT les résultats
+        // 4. Navigation
         if (context.mounted) {
-          print('🚀 Navigation vers authentification');
-          context.go('/authentification');
+          if (skipUserQuestions) {
+            // Si on a skip les questions utilisateur (= ajout nouvelle personne)
+            // On va directement vers la page de cadeaux
+            print('🚀 Navigation vers page de cadeaux (nouvelle personne)');
+            context.go('/onboarding-gifts-result');
+          } else {
+            // Sinon, on va vers l'authentification (premier onboarding)
+            print('🚀 Navigation vers authentification');
+            context.go('/authentification');
+          }
         }
       } catch (e) {
         print('❌ Erreur sauvegarde onboarding: $e');
-        // Même en cas d'erreur, on navigue vers l'authentification
+        // Même en cas d'erreur, on navigue
         if (context.mounted) {
-          context.go('/authentification');
+          if (skipUserQuestions) {
+            context.go('/onboarding-gifts-result');
+          } else {
+            context.go('/authentification');
+          }
         }
       }
     }

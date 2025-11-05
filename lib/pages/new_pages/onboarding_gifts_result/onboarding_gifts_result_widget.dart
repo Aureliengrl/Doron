@@ -228,14 +228,8 @@ class _OnboardingGiftsResultWidgetState
   }
 
   Widget _buildGiftsList() {
-    return GridView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 16,
-        childAspectRatio: 0.7,
-      ),
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
       itemCount: _model.gifts.length,
       itemBuilder: (context, index) {
         final gift = _model.gifts[index];
@@ -245,95 +239,159 @@ class _OnboardingGiftsResultWidgetState
   }
 
   Widget _buildGiftCard(Map<String, dynamic> gift) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () => _openProductUrl(gift['url'] ?? ''),
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Image
-              ClipRRect(
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => _openProductUrl(gift['url'] ?? ''),
+          borderRadius: BorderRadius.circular(24),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
                 ),
-                child: Image.network(
-                  gift['image'] ?? '',
-                  height: 150,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(
-                      height: 150,
-                      color: Colors.grey[200],
-                      child: Icon(
-                        Icons.image_not_supported,
-                        color: Colors.grey[400],
-                        size: 50,
-                      ),
-                    );
-                  },
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Image du produit
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                  child: Image.network(
+                    gift['image'] ?? '',
+                    height: 250,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        height: 250,
+                        color: Colors.grey[100],
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.card_giftcard,
+                              color: violetColor.withOpacity(0.3),
+                              size: 60,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'Image non disponible',
+                              style: GoogleFonts.poppins(
+                                color: Colors.grey[400],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
-              // Infos
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
+                // Informations du produit
+                Padding(
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Marque
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: violetColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          gift['source'] ?? 'En ligne',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: violetColor,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Nom du produit
                       Text(
                         gift['name'] ?? 'Produit',
                         style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.grey[800],
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1F2937),
+                          height: 1.3,
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                      const Spacer(),
+                      const SizedBox(height: 12),
+                      // Description
+                      if (gift['description'] != null && gift['description'].toString().isNotEmpty)
+                        Text(
+                          gift['description'] ?? '',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            color: const Color(0xFF6B7280),
+                            height: 1.6,
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      const SizedBox(height: 16),
+                      // Prix et bouton
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
+                          // Prix
                           Text(
                             '${gift['price']}€',
                             style: GoogleFonts.poppins(
-                              fontSize: 16,
+                              fontSize: 28,
                               fontWeight: FontWeight.bold,
                               color: violetColor,
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: violetColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              gift['source'] ?? '',
-                              style: GoogleFonts.poppins(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: violetColor,
+                          // Bouton voir
+                          ElevatedButton(
+                            onPressed: () => _openProductUrl(gift['url'] ?? ''),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: violetColor,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 12,
                               ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              elevation: 2,
+                            ),
+                            child: Row(
+                              children: [
+                                Text(
+                                  'Voir',
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Icon(
+                                  Icons.arrow_forward,
+                                  color: Colors.white,
+                                  size: 18,
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -341,8 +399,8 @@ class _OnboardingGiftsResultWidgetState
                     ],
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -401,9 +459,22 @@ class _OnboardingGiftsResultWidgetState
             child: ElevatedButton(
               onPressed: _model.isLoading
                   ? null
-                  : () {
-                      // Sauvegarder et naviguer vers la page Recherche
-                      context.go('/search-page');
+                  : () async {
+                      // Sauvegarder le profil avec les cadeaux dans Firebase
+                      if (_model.userProfile != null) {
+                        // Ajouter les cadeaux au profil
+                        final profileWithGifts = {
+                          ..._model.userProfile!,
+                          'gifts': _model.gifts,
+                          'savedAt': DateTime.now().toIso8601String(),
+                        };
+                        await FirebaseDataService.saveGiftProfile(profileWithGifts);
+                        print('✅ Profil et ${_model.gifts.length} cadeaux sauvegardés');
+                      }
+                      // Naviguer vers la page Recherche
+                      if (mounted) {
+                        context.go('/search-page');
+                      }
                     },
               style: ElevatedButton.styleFrom(
                 backgroundColor: violetColor,

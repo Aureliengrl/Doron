@@ -172,10 +172,10 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8.0),
                     child: Image.asset(
-                      'assets/images/IMG_1926.jpeg',
-                      width: 308.7,
-                      height: 161.77,
-                      fit: BoxFit.cover,
+                      'assets/images/doron_logo.png',
+                      width: 200,
+                      height: 200,
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
@@ -1266,7 +1266,7 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                         child: FFButtonWidget(
                                                           onPressed: () async {
                                                             context.pushNamed(
-                                                                HomeAlgoaceWidget
+                                                                OnboardingGiftsResultWidget
                                                                     .routeName);
                                                           },
                                                           text: FFLocalizations

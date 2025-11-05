@@ -616,6 +616,7 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
   Widget _buildContinueButton(List<Map<String, dynamic>> steps) {
     final canProceed = _model.canProceed(steps[_model.currentStep]);
     final isLastStep = _model.currentStep == steps.length - 1;
+    final skipUserQuestions = GoRouterState.of(context).uri.queryParameters['skipUserQuestions'] == 'true';
 
     return Positioned(
       bottom: 0,
@@ -638,7 +639,7 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
           onPressed: canProceed
               ? () {
                   setState(() {
-                    _model.handleNext(steps, context);
+                    _model.handleNext(steps, context, skipUserQuestions: skipUserQuestions);
                   });
                 }
               : null,
