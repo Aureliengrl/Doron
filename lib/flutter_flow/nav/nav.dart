@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '/backend/backend.dart';
 import '/backend/schema/structs/index.dart';
 import '/backend/schema/enums/enums.dart';
@@ -83,20 +84,43 @@ class AppStateNotifier extends ChangeNotifier {
 /// Détermine la route initiale selon l'état de l'utilisateur
 Future<String> _determineInitialRoute() async {
   try {
-    // Import dynamique pour éviter les dépendances circulaires
+    // Import Firebase Auth pour vérifier l'état de connexion
+    final FirebaseAuth auth = FirebaseAuth.instance;
     final prefs = await SharedPreferences.getInstance();
+
+    // Vérifier si l'utilisateur est déjà connecté via Firebase
+    final User? currentUser = auth.currentUser;
+    final bool isLoggedIn = currentUser != null;
 
     final isFirstTime = !prefs.containsKey('not_first_time');
     final hasCompletedOnboarding = prefs.getBool('onboarding_completed') ?? false;
 
-    print('🔍 Détermination route initiale: isFirstTime=$isFirstTime, hasCompletedOnboarding=$hasCompletedOnboarding');
+    print('🔍 Détermination route initiale:');
+    print('   - isLoggedIn: $isLoggedIn');
+    print('   - isFirstTime: $isFirstTime');
+    print('   - hasCompletedOnboarding: $hasCompletedOnboarding');
 
-    if (isFirstTime && !hasCompletedOnboarding) {
-      return '/onboarding-advanced';
-    } else {
-      // Si pas première fois, on va vers la page d'accueil Pinterest
+    // Si l'utilisateur est déjà connecté (session Firebase active), aller directement à l'accueil
+    if (isLoggedIn && hasCompletedOnboarding) {
+      print('✅ Utilisateur déjà connecté → /home-pinterest');
       return '/home-pinterest';
     }
+
+    // Si c'est la première fois ET pas d'onboarding complété, aller à l'onboarding
+    if (isFirstTime && !hasCompletedOnboarding) {
+      print('🆕 Première fois → /onboarding-advanced');
+      return '/onboarding-advanced';
+    }
+
+    // Si onboarding complété mais pas connecté, aller à l'authentification
+    if (hasCompletedOnboarding && !isLoggedIn) {
+      print('🔐 Onboarding fait mais pas connecté → /authentification');
+      return '/authentification';
+    }
+
+    // Par défaut, page d'accueil
+    print('🏠 Par défaut → /home-pinterest');
+    return '/home-pinterest';
   } catch (e) {
     print('❌ Erreur détermination route: $e');
     // Par défaut, onboarding
