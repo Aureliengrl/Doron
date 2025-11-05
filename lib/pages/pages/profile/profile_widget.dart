@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import 'profile_model.dart';
 export 'profile_model.dart';
 
@@ -46,13 +47,16 @@ class _ProfileWidgetState extends State<ProfileWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final Color violetColor = const Color(0xFF8A2BE2);
+
     return Scaffold(
       key: scaffoldKey,
       backgroundColor: const Color(0xFFF9FAFB),
-      body: Column(
-        mainAxisSize: MainAxisSize.max,
-        mainAxisAlignment: MainAxisAlignment.start,
-        children: [
+      body: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.max,
+          mainAxisAlignment: MainAxisAlignment.start,
+          children: [
           // Violet gradient header
           Container(
             width: double.infinity,
@@ -444,8 +448,78 @@ class _ProfileWidgetState extends State<ProfileWidget> {
           Column(
             mainAxisSize: MainAxisSize.max,
             children: [
+              // NOUVEAU : Option pour modifier les préférences personnelles
               Padding(
                 padding: EdgeInsetsDirectional.fromSTEB(20.0, 0.0, 20.0, 0.0),
+                child: InkWell(
+                  splashColor: Colors.transparent,
+                  focusColor: Colors.transparent,
+                  hoverColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  onTap: () async {
+                    context.go('/onboarding-advanced?returnTo=/profile');
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    height: 60.0,
+                    decoration: BoxDecoration(
+                      color: FlutterFlowTheme.of(context).secondaryBackground,
+                      boxShadow: [
+                        BoxShadow(
+                          blurRadius: 5.0,
+                          color: Color(0x3416202A),
+                          offset: Offset(
+                            0.0,
+                            2.0,
+                          ),
+                        )
+                      ],
+                      borderRadius: BorderRadius.circular(12.0),
+                      shape: BoxShape.rectangle,
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          Icon(
+                            Icons.tune,
+                            color: violetColor,
+                            size: 20.0,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            'Modifier mes préférences',
+                            style: FlutterFlowTheme.of(context)
+                                .labelMedium
+                                .override(
+                                  font: GoogleFonts.inter(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  color: const Color(0xFF1F2937),
+                                  letterSpacing: 0.0,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                          Expanded(
+                            child: Align(
+                              alignment: AlignmentDirectional(0.9, 0.0),
+                              child: FaIcon(
+                                FontAwesomeIcons.angleDown,
+                                color:
+                                    FlutterFlowTheme.of(context).secondaryText,
+                                size: 16.0,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsetsDirectional.fromSTEB(20.0, 12.0, 20.0, 0.0),
                 child: InkWell(
                   splashColor: Colors.transparent,
                   focusColor: Colors.transparent,
@@ -854,7 +928,125 @@ class _ProfileWidgetState extends State<ProfileWidget> {
               ),
             ],
           ),
+          // Espacement pour la bottom nav
+          const SizedBox(height: 100),
+          ],
+        ),
+      ),
+      bottomNavigationBar: _buildBottomNav(violetColor),
+    );
+  }
+
+  Widget _buildBottomNav(Color violetColor) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(
+            color: violetColor.withOpacity(0.1),
+            width: 2,
+          ),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
         ],
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavButton(
+                icon: Icons.home,
+                label: 'Accueil',
+                isActive: false,
+                violetColor: violetColor,
+                onTap: () => context.go('/home-pinterest'),
+              ),
+              _buildNavButton(
+                icon: Icons.favorite,
+                label: 'Favoris',
+                isActive: false,
+                violetColor: violetColor,
+                onTap: () => context.go('/favourites'),
+              ),
+              _buildNavButton(
+                icon: Icons.search,
+                label: 'Recherche',
+                isActive: false,
+                violetColor: violetColor,
+                onTap: () => context.go('/search-page'),
+              ),
+              _buildNavButton(
+                icon: Icons.person,
+                label: 'Profil',
+                isActive: true,
+                violetColor: violetColor,
+                onTap: () => context.go('/profile'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavButton({
+    required IconData icon,
+    required String label,
+    required bool isActive,
+    required Color violetColor,
+    VoidCallback? onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: isActive ? violetColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: isActive
+                      ? [
+                          BoxShadow(
+                            color: violetColor.withOpacity(0.4),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : [],
+                ),
+                child: Icon(
+                  icon,
+                  color: isActive ? Colors.white : const Color(0xFF9CA3AF),
+                  size: 24,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isActive ? violetColor : const Color(0xFF9CA3AF),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

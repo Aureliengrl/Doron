@@ -617,6 +617,7 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
     final canProceed = _model.canProceed(steps[_model.currentStep]);
     final isLastStep = _model.currentStep == steps.length - 1;
     final skipUserQuestions = GoRouterState.of(context).uri.queryParameters['skipUserQuestions'] == 'true';
+    final returnTo = GoRouterState.of(context).uri.queryParameters['returnTo'];
 
     return Positioned(
       bottom: 0,
@@ -639,7 +640,7 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
           onPressed: canProceed
               ? () {
                   setState(() {
-                    _model.handleNext(steps, context, skipUserQuestions: skipUserQuestions);
+                    _model.handleNext(steps, context, skipUserQuestions: skipUserQuestions, returnTo: returnTo);
                   });
                 }
               : null,

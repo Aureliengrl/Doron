@@ -438,7 +438,7 @@ class OnboardingAdvancedModel {
         (fieldValue is! double || fieldValue > 0);
   }
 
-  void handleNext(List<Map<String, dynamic>> steps, BuildContext context, {bool skipUserQuestions = false}) async {
+  void handleNext(List<Map<String, dynamic>> steps, BuildContext context, {bool skipUserQuestions = false, String? returnTo}) async {
     if (currentStep < steps.length - 1) {
       currentStep++;
     } else {
@@ -462,7 +462,11 @@ class OnboardingAdvancedModel {
 
         // 4. Navigation
         if (context.mounted) {
-          if (skipUserQuestions) {
+          // Si returnTo est spécifié, naviguer vers cette page
+          if (returnTo != null && returnTo.isNotEmpty) {
+            print('🚀 Navigation vers $returnTo');
+            context.go(returnTo);
+          } else if (skipUserQuestions) {
             // Si on a skip les questions utilisateur (= ajout nouvelle personne)
             // On va directement vers la page de cadeaux
             print('🚀 Navigation vers page de cadeaux (nouvelle personne)');
@@ -477,7 +481,9 @@ class OnboardingAdvancedModel {
         print('❌ Erreur sauvegarde onboarding: $e');
         // Même en cas d'erreur, on navigue
         if (context.mounted) {
-          if (skipUserQuestions) {
+          if (returnTo != null && returnTo.isNotEmpty) {
+            context.go(returnTo);
+          } else if (skipUserQuestions) {
             context.go('/onboarding-gifts-result');
           } else {
             context.go('/authentification');
