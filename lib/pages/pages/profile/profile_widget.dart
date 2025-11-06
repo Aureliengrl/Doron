@@ -576,7 +576,20 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                   hoverColor: Colors.transparent,
                   highlightColor: Colors.transparent,
                   onTap: () async {
-                    context.pushNamed(AuthentificationWidget.routeName);
+                    // Déconnecter l'utilisateur de Firebase
+                    GoRouter.of(context).prepareAuthEvent();
+                    await authManager.signOut();
+
+                    // Nettoyer toutes les données locales pour repartir de zéro
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.clear();
+                    print('✅ SharedPreferences cleared after logout');
+
+                    // Rediriger vers l'onboarding initial (comme première connexion)
+                    context.goNamedAuth(
+                      OnboardingAdvancedWidget.routeName,
+                      context.mounted,
+                    );
                   },
                   child: Container(
                     width: double.infinity,
