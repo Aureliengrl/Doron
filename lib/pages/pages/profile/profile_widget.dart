@@ -251,7 +251,8 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                   hoverColor: Colors.transparent,
                   highlightColor: Colors.transparent,
                   onTap: () async {
-                    context.go('/onboarding-advanced?onlyUserQuestions=true&returnTo=/profile');
+                    // Skip welcome screen and go directly to age question
+                    context.go('/onboarding-advanced?skipUserQuestions=true&onlyUserQuestions=true&returnTo=/profile');
                   },
                   child: Container(
                     width: double.infinity,

@@ -42,6 +42,7 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
     // Lire les paramètres de query
     final skipUserQuestions = GoRouterState.of(context).uri.queryParameters['skipUserQuestions'] == 'true';
     final onlyUserQuestions = GoRouterState.of(context).uri.queryParameters['onlyUserQuestions'] == 'true';
+    final returnTo = GoRouterState.of(context).uri.queryParameters['returnTo'];
 
     final steps = _model.getSteps(
       skipUserQuestions: skipUserQuestions,
@@ -75,7 +76,7 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
               Column(
                 children: [
                   // Header avec progression
-                  _buildHeader(progress, steps.length),
+                  _buildHeader(progress, steps.length, returnTo: returnTo),
 
                   // Contenu de l'étape
                   Expanded(
@@ -128,20 +129,27 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
     });
   }
 
-  Widget _buildHeader(double progress, int totalSteps) {
+  Widget _buildHeader(double progress, int totalSteps, {String? returnTo}) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
           Row(
             children: [
-              if (_model.currentStep > 0)
+              // Show back button if: we're not at step 0, OR we have a returnTo destination
+              if (_model.currentStep > 0 || (returnTo != null && returnTo.isNotEmpty))
                 Material(
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: () {
                       setState(() {
-                        _model.handleBack();
+                        // If at step 0 and returnTo exists, go back to that page
+                        if (_model.currentStep == 0 && returnTo != null && returnTo.isNotEmpty) {
+                          context.go(returnTo);
+                        } else {
+                          // Otherwise, go to previous step
+                          _model.handleBack();
+                        }
                       });
                     },
                     borderRadius: BorderRadius.circular(50),
