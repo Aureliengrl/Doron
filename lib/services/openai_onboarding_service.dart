@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'openai_service.dart';
+import 'brand_list.dart';
 
 /// Service dédié à la génération de cadeaux personnalisés après l'onboarding
 class OpenAIOnboardingService {
@@ -78,12 +79,43 @@ class OpenAIOnboardingService {
     }
   }
 
+  /// Analyse les tags et retourne les marques recommandées
+  static String _getBrandRecommendations(String hobbies, String personality, String style, String categories) {
+    final Set<String> recommendedBrands = {};
+    final allTags = [
+      ...hobbies.toLowerCase().split(',').map((e) => e.trim()),
+      ...personality.toLowerCase().split(',').map((e) => e.trim()),
+      ...style.toLowerCase().split(',').map((e) => e.trim()),
+      ...categories.toLowerCase().split(',').map((e) => e.trim()),
+    ].where((tag) => tag.isNotEmpty).toSet();
+
+    // Pour chaque tag, ajouter les marques correspondantes
+    for (final tag in allTags) {
+      if (BrandList.tagToBrands.containsKey(tag)) {
+        recommendedBrands.addAll(BrandList.tagToBrands[tag]!);
+      }
+    }
+
+    if (recommendedBrands.isEmpty) {
+      return 'Utilise une grande variété de marques de la liste complète.';
+    }
+
+    return '''
+📌 MARQUES PRIORITAIRES basées sur les tags détectés:
+${recommendedBrands.take(20).join(', ')}
+
+💡 Ces marques correspondent parfaitement aux tags: ${allTags.join(', ')}
+Privilégie CES marques pour au moins 60% de tes recommandations.
+Pour les 40% restants, explore d'autres marques de la liste complète pour diversifier.''';
+  }
+
   /// Construit le prompt pour générer des cadeaux personnalisés
   static String _buildOnboardingPrompt(
     Map<String, dynamic> userProfile,
     int count,
   ) {
-    final brandsString = OpenAIService.priorityBrands.take(60).join(', ');
+    // Utiliser la liste COMPLÈTE des marques
+    final allBrands = BrandList.brands;
 
     // Extraire les informations utilisateur
     final age = userProfile['age'] ?? '';
@@ -104,103 +136,167 @@ class OpenAIOnboardingService {
 
     // Seed de variation pour forcer ChatGPT à générer des produits différents
     final refreshSeed = userProfile['_refresh_seed'] ?? '';
-    final variation = userProfile['_variation'] ?? 0;
     final randomSeed = DateTime.now().microsecondsSinceEpoch % 10000;
+    final personName = recipient.replaceAll('👩 Ma ', '').replaceAll('👨 Mon ', '').replaceAll('💑 Mon/Ma ', '').replaceAll('👶 Mon ', '').replaceAll('👯 Un(e) ', '').replaceAll('👔 Un ', '').replaceAll('👴 ', '').replaceAll('🎓 ', '');
+
+    // Analyser les tags pour recommander les bonnes marques
+    String brandRecommendations = _getBrandRecommendations(recipientHobbies, recipientPersonality, recipientStyle, preferredCategories);
+
     final variationInstructions = refreshSeed != ''
         ? '''
-🔄 NOUVELLE SÉLECTION #$randomSeed 🔄
-IMPORTANT: Cette requête nécessite des produits COMPLÈTEMENT DIFFÉRENTS des précédentes recommandations.
-- Explore d'AUTRES marques que d'habitude
-- Choisis des catégories VARIÉES et originales
-- Propose des styles INNOVANTS et surprenants
-- ÉVITE les produits classiques/prévisibles (écouteurs, t-shirts basiques, etc.)
+🔄 NOUVELLE SÉLECTION #$randomSeed - PRODUITS 100% DIFFÉRENTS 🔄
+⚠️ CRITIQUE: Tu as déjà fait des recommandations pour $personName.
+Cette fois, génère des produits COMPLÈTEMENT NOUVEAUX ET DIFFÉRENTS:
+- EXPLORE D'AUTRES MARQUES (pas les mêmes que la dernière fois)
+- CHOISIS D'AUTRES CATÉGORIES (change complètement d'univers)
+- PROPOSE DES STYLES TOTALEMENT DIFFÉRENTS
+- INNOVATION: Sois créatif, surprends avec des idées originales
+- RAPPEL: Chaque personne a des goûts uniques, adapte-toi à SES tags spécifiques
 '''
         : '';
 
     return '''
-Génère $count produits cadeaux PERSONNALISÉS ET RÉELS pour un utilisateur.
-Timestamp unique: $randomSeed
+🎁 MISSION: Génère $count produits cadeaux ULTRA-PERSONNALISÉS pour $personName
+🆔 Identifiant unique de cette génération: $randomSeed
+
 $variationInstructions
 
 ═══════════════════════════════════════════════════════════
-🎯 PROFIL UTILISATEUR
+👤 PROFIL DE L'UTILISATEUR (celui qui cherche le cadeau)
 ═══════════════════════════════════════════════════════════
-• Âge: $age
+• Âge: $age ans
 • Genre: $gender
 • Centres d'intérêt: $interests
 • Style: $style
 • Types de cadeaux aimés: $giftTypes
 
 ═══════════════════════════════════════════════════════════
-🎁 INFORMATIONS SUR LE CADEAU À TROUVER
+🎯 PROFIL DU DESTINATAIRE: $personName
 ═══════════════════════════════════════════════════════════
-• Destinataire: $recipient
-• Budget: ${budget}€
-• Âge du destinataire: $recipientAge
-• Passions du destinataire: $recipientHobbies
-• Personnalité du destinataire: $recipientPersonality
-• Style du destinataire: $recipientStyle
-• Occasion: $occasion
-• Catégories préférées: $preferredCategories
+⚠️ MÉMORISE CES INFORMATIONS - ELLES SONT CRUCIALES ⚠️
 
-═══════════════════════════════════════════════════════════
-🏪 MARQUES À UTILISER PRIORITAIREMENT
-═══════════════════════════════════════════════════════════
-$brandsString
+• Relation: $recipient
+• Budget disponible: ${budget}€
+• Âge: $recipientAge ans
+• 🏷️ PASSIONS/HOBBIES: $recipientHobbies
+• 🏷️ PERSONNALITÉ: $recipientPersonality
+• 🏷️ STYLE: $recipientStyle
+• 🏷️ CATÉGORIES PRÉFÉRÉES: $preferredCategories
+• 🎉 OCCASION: $occasion
 
 ═══════════════════════════════════════════════════════════
-📋 INSTRUCTIONS STRICTES
+🏪 MARQUES RECOMMANDÉES (basées sur l'analyse des tags)
 ═══════════════════════════════════════════════════════════
-1. **ANALYSE DES TAGS OBLIGATOIRE**:
-   - Lis attentivement TOUTES les infos du profil (passions: $recipientHobbies, personnalité: $recipientPersonality, style: $recipientStyle, occasion: $occasion)
-   - Choisis les cadeaux EN FONCTION de ces tags spécifiques
-   - Par exemple: "créative" → produits artistiques/DIY, "sportif" → équipement sport, "intellectuel" → livres/culture
-
-2. **ULTRA-PERSONNALISÉ**: Chaque produit DOIT correspondre au profil exact du destinataire
-   - Si c'est pour Noël: privilégie les cadeaux festifs
-   - Si la personne est créative: propose des produits artistiques, DIY, design
-   - Si elle aime le sport: équipements sportifs, vêtements techniques
-
-3. **PRODUITS RÉELS UNIQUEMENT**: Produits qui EXISTENT vraiment dans ces marques
-
-4. **BUDGET RESPECTÉ**: Prix entre 20€ et ${budget * 1.2}€ (légèrement au-dessus du budget si pertinent)
-
-5. **IMAGES UNSPLASH**: Fournis des URLs d'images Unsplash de haute qualité et pertinentes
-   Format: https://images.unsplash.com/photo-[ID]?w=600&q=80
-
-6. **URLs OFFICIELLES**: Liens vers les sites officiels des marques (Apple, Zara, Sephora, etc.)
-
-7. **DESCRIPTIONS ENGAGEANTES**: 2-3 phrases qui expliquent pourquoi ce cadeau est parfait pour cette personne SELON SES TAGS
-
-8. **DIVERSITÉ MAXIMALE**: Varie les marques, les catégories, les styles - pas toujours les mêmes produits !
-
-9. **MATCH SCORE**: Score de 80 à 100 selon la pertinence pour le destinataire
-
-10. **FORMAT JSON STRICT**: Réponds UNIQUEMENT en JSON valide
+$brandRecommendations
 
 ═══════════════════════════════════════════════════════════
-💡 CATÉGORIES À MÉLANGER INTELLIGEMMENT
+📜 LISTE COMPLÈTE DES MARQUES DISPONIBLES (400+)
 ═══════════════════════════════════════════════════════════
-• Mode & Accessoires (Zara, H&M, Mango, Sandro, Sézane, Nike, Adidas)
-• Tech & Innovation (Apple, Samsung, Sony, Bose, JBL, Dyson)
-• Beauté & Soin (Sephora, Fenty, Kiehl's, Charlotte Tilbury, Diptyque)
-• Maison & Déco (IKEA, Maisons du Monde, Zara Home, Philips Hue)
-• Food & Gastronomie (Pierre Hermé, Ladurée, Kusmi Tea, Nespresso)
-• Sport & Outdoor (Nike, Adidas, Decathlon, Lululemon)
-• Culture & Loisirs (Fnac, Amazon, Moleskine)
+$allBrands
+
+💡 STRATÉGIE: Utilise prioritairement les marques recommandées ci-dessus (basées sur les tags),
+puis explore la liste complète pour diversifier.
 
 ═══════════════════════════════════════════════════════════
-📦 FORMAT DE RÉPONSE (JSON UNIQUEMENT)
+🎯 INSTRUCTIONS CRITIQUES - LIS ATTENTIVEMENT
+═══════════════════════════════════════════════════════════
+
+1️⃣ **MÉMORISATION DES TAGS - ULTRA PRIORITAIRE**
+   🏷️ Les tags sont LA CLÉ de la personnalisation:
+   • PASSIONS: $recipientHobbies
+   • PERSONNALITÉ: $recipientPersonality
+   • STYLE: $recipientStyle
+   • CATÉGORIES: $preferredCategories
+
+   📌 EXEMPLES D'APPLICATION DES TAGS:
+   • Tag "bien-être" → Privilégie Sephora, Rituals, L'Occitane, Aesop, Lush
+   • Tag "sport" → Privilégie Nike, Adidas, Lululemon, Decathlon, On Running
+   • Tag "tech" → Privilégie Apple, Samsung, Dyson, Bose, Sony
+   • Tag "créative" → Privilégie produits artistiques, DIY, design, Fnac Culture
+   • Tag "mode" → Privilégie Zara, H&M, Mango, Sézane, Sandro
+   • Tag "luxe" → Privilégie Louis Vuitton, Dior, Hermès, Gucci
+   • Tag "minimaliste" → Privilégie COS, Arket, A.P.C., Muji
+   • Tag "gourmand" → Privilégie Pierre Hermé, Ladurée, Kusmi Tea
+
+2️⃣ **DIFFÉRENCIATION PAR PERSONNE - ABSOLUMENT ESSENTIEL**
+   ⚠️ Chaque personne EST UNIQUE - Les cadeaux pour MAMAN ≠ PAPA ≠ FRÈRE ≠ AMIE
+
+   🔍 ANALYSE le destinataire:
+   • Quel est son âge? ($recipientAge ans)
+   • Quelle est sa relation? ($recipient)
+   • Quels sont SES tags uniques? (pas ceux de quelqu'un d'autre!)
+
+   💡 EXEMPLE CONCRET:
+   - Maman (bien-être, cuisine) → Coffret Sephora, Robot KitchenAid, Thé Kusmi
+   - Papa (tech, sport) → AirPods Pro, Nike Air Max, Montre Garmin
+   - Sœur (mode, créative) → Sac Polène, Kit DIY Fnac, Pull Sézane
+
+3️⃣ **ADAPTATION PARFAITE AUX TAGS**
+   Chaque produit DOIT avoir un lien DIRECT avec les tags:
+
+   ✅ BON EXEMPLE (tag "bien-être"):
+   • Coffret Rituals "The Ritual of Sakura" (Rituals) - 35€
+   • Description: "Parfait pour quelqu'un qui aime le bien-être et la relaxation.
+     Ce coffret transforme la routine quotidienne en moment de détente."
+
+   ❌ MAUVAIS EXEMPLE (tag "bien-être"):
+   • PlayStation 5 (Sony) - 549€
+   • Description: "Console de jeux moderne" → AUCUN LIEN avec le bien-être!
+
+4️⃣ **PRODUITS RÉELS ET VÉRIFIABLES**
+   • Utilise des produits qui EXISTENT VRAIMENT dans ces marques
+   • Noms commerciaux exacts (ex: "AirPods Pro 2ème génération", pas juste "écouteurs")
+   • Prix réalistes et actuels
+
+5️⃣ **BUDGET INTELLIGENT**
+   • Prix entre 15€ et ${budget * 1.2}€
+   • Mélange différentes gammes de prix
+   • Majorité des produits entre ${budget * 0.5}€ et $budget€
+
+6️⃣ **DESCRIPTIONS ULTRA-PERSONNALISÉES**
+   Chaque description DOIT:
+   • Mentionner POURQUOI c'est parfait pour $personName
+   • Faire référence à au moins UN de ses tags
+   • Être engageante et convaincante (2-3 phrases)
+
+   ✅ BON EXEMPLE:
+   "Idéal pour votre maman passionnée de bien-être. Ce diffuseur Diptyque
+   transforme son intérieur en spa personnel, parfait pour ses moments de détente."
+
+   ❌ MAUVAIS EXEMPLE:
+   "Un bon produit de qualité." → Trop générique!
+
+7️⃣ **DIVERSITÉ MAXIMALE**
+   • Varie les MARQUES (n'utilise pas 10 fois Zara!)
+   • Varie les CATÉGORIES (mode, tech, beauté, maison, food...)
+   • Varie les PRIX (du petit cadeau au cadeau premium)
+   • Explore TOUTE la liste de 400+ marques
+
+8️⃣ **IMAGES UNSPLASH DE QUALITÉ**
+   Format obligatoire: https://images.unsplash.com/photo-[ID]?w=600&q=80
+   Choisis des images pertinentes et esthétiques
+
+9️⃣ **URLS OFFICIELLES DES MARQUES**
+   Liens vers les vrais sites (Apple.com, Zara.com, Sephora.fr, etc.)
+
+🔟 **MATCH SCORE PRÉCIS**
+   • 95-100: Cadeau PARFAIT, correspond exactement aux tags
+   • 90-94: Très bon cadeau, correspond bien au profil
+   • 85-89: Bon cadeau, correspond à certains tags
+   • 80-84: Cadeau correct mais moins personnalisé
+
+═══════════════════════════════════════════════════════════
+📦 FORMAT JSON STRICT (réponds UNIQUEMENT en JSON)
 ═══════════════════════════════════════════════════════════
 {
   "products": [
     {
       "id": 1,
-      "name": "Nom commercial exact du produit",
-      "description": "Description personnalisée expliquant pourquoi ce cadeau est parfait pour le destinataire (2-3 phrases)",
+      "name": "Nom commercial EXACT du produit",
+      "description": "Description personnalisée mentionnant les tags de $personName et pourquoi c'est parfait pour lui/elle (2-3 phrases)",
       "price": 89,
       "brand": "Marque exacte",
-      "source": "Nom du magasin",
+      "source": "Nom du magasin/site",
       "url": "https://www.siteofficial.com/product",
       "match": 95,
       "image": "https://images.unsplash.com/photo-xxxxx?w=600&q=80",
@@ -209,11 +305,14 @@ $brandsString
   ]
 }
 
-⚠️ CRUCIAL:
-- Réponds SEULEMENT avec le JSON, pas de texte explicatif avant ou après
-- Privilégie les produits qui correspondent vraiment au profil
-- Assure-toi que les liens URL sont vers les vrais sites officiels des marques
-- Les images Unsplash doivent être pertinentes et de haute qualité
+⚠️⚠️⚠️ RAPPELS FINAUX CRITIQUES ⚠️⚠️⚠️
+✓ MÉMORISE les tags de $personName - ils sont LA CLÉ
+✓ Chaque personne est UNIQUE - adapte-toi à SES tags spécifiques
+✓ Utilise les MARQUES RECOMMANDÉES basées sur les tags
+✓ Varie les marques et catégories - explore les 400+ marques
+✓ Descriptions personnalisées mentionnant POURQUOI c'est parfait
+✓ JSON UNIQUEMENT - pas de texte avant ou après
+✓ Prix réalistes et produits qui existent vraiment
 ''';
   }
 
