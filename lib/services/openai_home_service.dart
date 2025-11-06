@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'openai_service.dart';
+import 'brand_list.dart';
 
 /// Service dédié à la génération de produits pour la page d'accueil
 class OpenAIHomeService {
@@ -28,8 +29,11 @@ class OpenAIHomeService {
             {
               'role': 'system',
               'content':
-                  'Tu es un expert en curation de produits et tendances. '
-                  'Tu recommandes des produits réels de marques premium et accessibles. '
+                  'Tu es un expert en curation de produits et tendances pour un feed d\'inspiration général. '
+                  'Tu recommandes des produits POPULAIRES, TRENDING et UNIVERSELS de marques premium et accessibles. '
+                  'CONTEXTE IMPORTANT: Ceci est un feed GÉNÉRAL d\'inspiration, PAS des cadeaux personnalisés pour une personne spécifique. '
+                  'Focus sur les best-sellers, produits viraux, must-have du moment. '
+                  'Explore la diversité des 400+ marques disponibles. '
                   'Réponds UNIQUEMENT en JSON valide sans texte avant ou après.',
             },
             {
@@ -37,8 +41,11 @@ class OpenAIHomeService {
               'content': prompt,
             },
           ],
-          'temperature': 0.9,
-          'max_tokens': 2500,
+          'temperature': 1.2,
+          'top_p': 0.95,
+          'max_tokens': 6000,
+          'frequency_penalty': 0.8,
+          'presence_penalty': 0.8,
         }),
       );
 
@@ -105,7 +112,8 @@ class OpenAIHomeService {
     Map<String, dynamic>? userProfile,
     int count,
   ) {
-    final brandsString = OpenAIService.priorityBrands.take(60).join(', ');
+    // Utiliser la liste COMPLÈTE des 400+ marques
+    final allBrands = BrandList.brands;
 
     // Récupérer les tags utilisateur si disponibles
     final userAge = userProfile?['age'] ?? '';
@@ -254,14 +262,29 @@ Profil utilisateur:
     }
 
     return '''
+🎯 CONTEXTE CRITIQUE - LIS ATTENTIVEMENT 🎯
+═══════════════════════════════════════════════════════════
+⚠️ CECI EST UN FEED D'INSPIRATION GÉNÉRAL ⚠️
+Tu génères des produits pour un FEED PUBLIC d'inspiration (type Pinterest).
+Ce N'EST PAS pour une personne spécifique avec des tags personnalisés.
+
+Focus: Produits POPULAIRES, TRENDING, UNIVERSELS
+Approche: Best-sellers, Must-have, Produits viraux
+Différence clé: Inspiration LARGE vs. Cadeau PERSONNALISÉ
+
+═══════════════════════════════════════════════════════════
+📋 MISSION
+═══════════════════════════════════════════════════════════
 Génère $count produits RÉELS pour un feed d'inspiration type Pinterest.
 
 $categoryInstructions
 
 ═══════════════════════════════════════════════════════════
-🏪 MARQUES À UTILISER PRIORITAIREMENT
+🏪 LISTE COMPLÈTE DES MARQUES DISPONIBLES (400+)
 ═══════════════════════════════════════════════════════════
-$brandsString
+$allBrands
+
+💡 Explore TOUTE cette diversité de marques, pas juste les classiques
 
 ═══════════════════════════════════════════════════════════
 📋 INSTRUCTIONS STRICTES

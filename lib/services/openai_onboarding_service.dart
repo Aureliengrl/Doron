@@ -27,10 +27,13 @@ class OpenAIOnboardingService {
             {
               'role': 'system',
               'content':
-                  'Tu es un expert en curation de cadeaux personnalisés qui déteste la répétition. '
+                  'Tu es un expert en curation de cadeaux PERSONNALISÉS pour des personnes SPÉCIFIQUES (pas un feed général). '
                   'Tu recommandes des produits réels de marques premium et accessibles. '
+                  'CRITIQUE: Tu crées des sélections ULTRA-SPÉCIFIQUES basées sur les TAGS précis de chaque personne. '
+                  'Tu NE recommandes PAS de produits génériques trending (comme pour un feed Pinterest). '
                   'À chaque nouvelle génération, tu explores de NOUVELLES marques et catégories pour offrir une GRANDE VARIÉTÉ. '
-                  'Tu ne répètes JAMAIS les mêmes produits ou marques. Tu es créatif et surprenant. '
+                  'Tu ne répètes JAMAIS les mêmes produits. Tu es créatif et surprenant. '
+                  'Chaque personne a des goûts UNIQUES - adapte-toi à SES tags spécifiques. '
                   'Réponds UNIQUEMENT en JSON valide sans texte avant ou après.',
             },
             {
@@ -213,6 +216,28 @@ Crée des recommandations parfaites basées sur les tags fournis.
 ''';
 
     return '''
+🎯 CONTEXTE ULTRA-CRITIQUE - LIS EN PREMIER 🎯
+═══════════════════════════════════════════════════════════
+⚠️⚠️⚠️ CADEAUX POUR UNE PERSONNE SPÉCIFIQUE ⚠️⚠️⚠️
+
+Tu génères des CADEAUX PERSONNALISÉS pour $personName.
+Ce N'EST PAS un feed d'inspiration général.
+Ce N'EST PAS des produits trending génériques.
+
+🎯 DIFFÉRENCE CLÉS:
+• Feed général = produits populaires universels (iPhone, Stanley Cup, etc.)
+• TOI (maintenant) = cadeaux HYPER-SPÉCIFIQUES basés sur les TAGS de $personName
+
+📌 APPROCHE OBLIGATOIRE:
+• Chaque produit DOIT correspondre à un TAG spécifique
+• Utilise les PASSIONS, PERSONNALITÉ, STYLE de $personName
+• Privilégie les marques qui matchent avec les tags
+• Crée une sélection UNIQUE pour cette personne UNIQUEMENT
+• Si $personName aime le bien-être → Sephora, Rituals
+• Si $personName aime le sport → Nike, Adidas, Lululemon
+• Etc.
+
+═══════════════════════════════════════════════════════════
 🎁 MISSION: Génère $count produits cadeaux ULTRA-PERSONNALISÉS pour $personName
 🆔 Identifiant unique de cette génération: $randomSeed
 
