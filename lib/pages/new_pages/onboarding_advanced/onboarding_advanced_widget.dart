@@ -438,16 +438,12 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
         const SizedBox(height: 40),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 40),
-          child: TextField(
+          child: TextFormField(
+            key: ValueKey('${field}_${currentValue.hashCode}'),
+            initialValue: currentValue,
             onChanged: (value) {
-              setState(() {
-                _model.answers[field] = value;
-              });
+              _model.answers[field] = value;
             },
-            controller: TextEditingController(text: currentValue)
-              ..selection = TextSelection.fromPosition(
-                TextPosition(offset: currentValue.length),
-              ),
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
               fontSize: 20,
