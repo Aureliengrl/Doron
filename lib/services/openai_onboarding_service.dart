@@ -27,9 +27,10 @@ class OpenAIOnboardingService {
             {
               'role': 'system',
               'content':
-                  'Tu es un expert en curation de cadeaux personnalisés. '
+                  'Tu es un expert en curation de cadeaux personnalisés qui déteste la répétition. '
                   'Tu recommandes des produits réels de marques premium et accessibles. '
-                  'Tu aimes explorer différentes marques et catégories pour offrir une grande variété. '
+                  'À chaque nouvelle génération, tu explores de NOUVELLES marques et catégories pour offrir une GRANDE VARIÉTÉ. '
+                  'Tu ne répètes JAMAIS les mêmes produits ou marques. Tu es créatif et surprenant. '
                   'Réponds UNIQUEMENT en JSON valide sans texte avant ou après.',
             },
             {
@@ -37,11 +38,11 @@ class OpenAIOnboardingService {
               'content': prompt,
             },
           ],
-          'temperature': 1.3,
-          'top_p': 0.95,
+          'temperature': 1.5,
+          'top_p': 0.98,
           'max_tokens': 6000,
-          'frequency_penalty': 0.7,
-          'presence_penalty': 0.7,
+          'frequency_penalty': 1.2,
+          'presence_penalty': 1.2,
         }),
       );
 
@@ -134,26 +135,82 @@ Pour les 40% restants, explore d'autres marques de la liste complète pour diver
     final occasion = userProfile['occasion'] ?? '';
     final preferredCategories = (userProfile['preferredCategories'] as List?)?.join(', ') ?? '';
 
-    // Seed de variation pour forcer ChatGPT à générer des produits différents
-    final refreshSeed = userProfile['_refresh_seed'] ?? '';
-    final randomSeed = DateTime.now().microsecondsSinceEpoch % 10000;
+    // Seed de variation ULTRA-FORT pour forcer ChatGPT à générer des produits différents
+    final previousSeed = userProfile['_refresh_seed'] ?? 0;
+    final newSeed = (previousSeed is int ? previousSeed : 0) + 1;
+    final randomSeed = DateTime.now().microsecondsSinceEpoch % 100000;
+    final uniqueTimestamp = DateTime.now().toIso8601String();
     final personName = recipient.replaceAll('👩 Ma ', '').replaceAll('👨 Mon ', '').replaceAll('💑 Mon/Ma ', '').replaceAll('👶 Mon ', '').replaceAll('👯 Un(e) ', '').replaceAll('👔 Un ', '').replaceAll('👴 ', '').replaceAll('🎓 ', '');
+
+    // Sauvegarder le nouveau seed
+    userProfile['_refresh_seed'] = newSeed;
+
+    // Liste de catégories pour forcer la diversité
+    final diversityCategories = [
+      'Mode & Accessoires', 'Tech & Innovation', 'Beauté & Soins',
+      'Maison & Déco', 'Sport & Outdoor', 'Culture & Loisirs',
+      'Gastronomie & Gourmandise', 'Bien-être & Relaxation'
+    ];
+
+    // Rotation des catégories selon le seed pour forcer la variation
+    final primaryCategory = diversityCategories[newSeed % diversityCategories.length];
+    final secondaryCategory = diversityCategories[(newSeed + 3) % diversityCategories.length];
 
     // Analyser les tags pour recommander les bonnes marques
     String brandRecommendations = _getBrandRecommendations(recipientHobbies, recipientPersonality, recipientStyle, preferredCategories);
 
-    final variationInstructions = refreshSeed != ''
+    final variationInstructions = newSeed > 1
         ? '''
-🔄 NOUVELLE SÉLECTION #$randomSeed - PRODUITS 100% DIFFÉRENTS 🔄
-⚠️ CRITIQUE: Tu as déjà fait des recommandations pour $personName.
-Cette fois, génère des produits COMPLÈTEMENT NOUVEAUX ET DIFFÉRENTS:
-- EXPLORE D'AUTRES MARQUES (pas les mêmes que la dernière fois)
-- CHOISIS D'AUTRES CATÉGORIES (change complètement d'univers)
-- PROPOSE DES STYLES TOTALEMENT DIFFÉRENTS
-- INNOVATION: Sois créatif, surprends avec des idées originales
-- RAPPEL: Chaque personne a des goûts uniques, adapte-toi à SES tags spécifiques
+🔄🔄🔄 GÉNÉRATION #$newSeed - NOUVEAUTÉ ABSOLUE EXIGÉE 🔄🔄🔄
+⚠️⚠️⚠️ ATTENTION CRITIQUE ⚠️⚠️⚠️
+
+Timestamp unique: $uniqueTimestamp
+Random Seed: $randomSeed
+
+TU AS DÉJÀ FAIT ${newSeed - 1} RECOMMANDATIONS pour $personName.
+Cette fois-ci est la génération #$newSeed.
+
+🚨 IMPÉRATIF ABSOLU 🚨
+Tu DOIS générer $count produits COMPLÈTEMENT NOUVEAUX qui n'ont JAMAIS été suggérés avant.
+
+📋 STRATÉGIE DE DIVERSITÉ FORCÉE:
+1. CATÉGORIES PRIORITAIRES pour cette génération #$newSeed:
+   - Catégorie principale: $primaryCategory
+   - Catégorie secondaire: $secondaryCategory
+
+2. MARQUES: Explore des marques que tu N'AS PAS utilisées dans les ${newSeed - 1} générations précédentes
+   - Si génération précédente = Zara → Cette fois = Mango, Sézane, Ba&sh
+   - Si génération précédente = Apple → Cette fois = Samsung, Dyson, Bose
+   - Si génération précédente = Nike → Cette fois = Adidas, On Running, Lululemon
+
+3. PRIX: Varie les gammes de prix (si dernière fois plutôt budget, cette fois plus premium)
+
+4. STYLES: Change complètement l'approche
+   - Si précédent = moderne → maintenant = classique ou vintage
+   - Si précédent = tech → maintenant = artisanal ou lifestyle
+   - Si précédent = pratique → maintenant = luxueux ou expérientiel
+
+5. CRÉATIVITÉ MAXIMALE: Pense "out of the box"
+   - Produits inattendus mais qui correspondent aux tags
+   - Combinaisons originales
+   - Idées surprenantes
+
+🎯 OBJECTIF: Que l'utilisateur dise "Wow, je n'y avais pas pensé !"
+
+⛔ INTERDICTIONS STRICTES:
+- NE répète PAS les mêmes types de produits
+- NE reste PAS dans les mêmes catégories que d'habitude
+- NE propose PAS les marques "évidentes" si tu les as déjà utilisées
+
+💡 RAPPEL: Respecte TOUJOURS les tags de $personName, mais explore DIFFÉREMMENT
 '''
-        : '';
+        : '''
+🎉 PREMIÈRE GÉNÉRATION pour $personName 🎉
+Timestamp: $uniqueTimestamp
+Random Seed: $randomSeed
+
+Crée des recommandations parfaites basées sur les tags fournis.
+''';
 
     return '''
 🎁 MISSION: Génère $count produits cadeaux ULTRA-PERSONNALISÉS pour $personName

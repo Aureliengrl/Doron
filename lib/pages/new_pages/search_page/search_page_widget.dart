@@ -42,6 +42,34 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // Afficher un indicateur de chargement si les données sont en cours de chargement
+    if (_model.isLoading) {
+      return Scaffold(
+        key: scaffoldKey,
+        backgroundColor: const Color(0xFFF9FAFB),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(
+                color: violetColor,
+                strokeWidth: 3,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Chargement...',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  color: const Color(0xFF6B7280),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       key: scaffoldKey,
       backgroundColor: const Color(0xFFF9FAFB),
