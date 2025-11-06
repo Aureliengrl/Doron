@@ -155,13 +155,13 @@ class _OnboardingGiftsResultWidgetState
         children: [
           Row(
             children: [
-              // Bouton retour pour modifier les réponses
+              // Bouton fermer
               IconButton(
                 onPressed: () {
-                  context.go('/onboarding-advanced?onlyUserQuestions=true');
+                  context.go('/home-pinterest');
                 },
-                icon: Icon(Icons.arrow_back, color: violetColor),
-                tooltip: 'Modifier mes réponses',
+                icon: Icon(Icons.close, color: violetColor),
+                tooltip: 'Fermer',
               ),
               Icon(Icons.auto_awesome, color: violetColor, size: 32),
               const SizedBox(width: 12),
@@ -510,9 +510,9 @@ class _OnboardingGiftsResultWidgetState
                           print('✅ Contexte de personne défini: $profileId');
                         }
                       }
-                      // Naviguer vers la page Recherche
+                      // Naviguer vers authentification (premier onboarding) ou home (si déjà auth)
                       if (mounted) {
-                        context.go('/search-page');
+                        context.go('/authentification');
                       }
                     },
               style: ElevatedButton.styleFrom(

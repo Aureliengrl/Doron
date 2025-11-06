@@ -375,50 +375,56 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
     final placeholder = stepData['placeholder'] as String? ?? '';
     final currentValue = _model.answers[field] as String? ?? '';
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          stepData['icon'] as String,
-          style: const TextStyle(fontSize: 80),
-        ),
-        const SizedBox(height: 32),
-        Text(
-          stepData['question'] as String,
-          textAlign: TextAlign.center,
-          style: GoogleFonts.poppins(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: violetColor,
-          ),
-        ),
-        if (stepData['subtitle'] != null) ...[
-          const SizedBox(height: 12),
+    return SingleChildScrollView(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom + 40,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(height: MediaQuery.of(context).size.height * 0.15),
           Text(
-            stepData['subtitle'] as String,
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
+            stepData['icon'] as String,
+            style: const TextStyle(fontSize: 80),
           ),
-        ],
-        const SizedBox(height: 40),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 40),
-          child: TextFormField(
-            key: ValueKey('${field}_${currentValue.hashCode}'),
-            initialValue: currentValue,
-            onChanged: (value) {
-              _model.answers[field] = value;
-            },
+          const SizedBox(height: 32),
+          Text(
+            stepData['question'] as String,
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
               color: violetColor,
             ),
-            decoration: InputDecoration(
+          ),
+          if (stepData['subtitle'] != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              stepData['subtitle'] as String,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+          const SizedBox(height: 40),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: TextFormField(
+              key: ValueKey('${field}_${currentValue.hashCode}'),
+              initialValue: currentValue,
+              onChanged: (value) {
+                _model.answers[field] = value;
+              },
+              autofocus: true,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: violetColor,
+              ),
+              decoration: InputDecoration(
               hintText: placeholder,
               hintStyle: GoogleFonts.poppins(
                 fontSize: 20,
@@ -445,7 +451,8 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
             ),
           ),
         ),
-      ],
+        ],
+      ),
     );
   }
 
