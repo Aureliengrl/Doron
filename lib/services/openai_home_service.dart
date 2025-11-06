@@ -144,6 +144,21 @@ class OpenAIHomeService {
     final userInterests = (userProfile?['interests'] as List?)?.join(', ') ?? '';
     final userStyle = userProfile?['style'] ?? '';
 
+    // Obtenir les marques prioritaires selon le profil démographique
+    final priorityBrands = userAge.isNotEmpty && userGender.isNotEmpty
+        ? BrandList.getPriorityBrandsByProfile(age: userAge, gender: userGender)
+        : <String>[];
+
+    final priorityBrandsText = priorityBrands.isNotEmpty
+        ? '''
+🌟 MARQUES PRIORITAIRES pour ce profil (âge: $userAge, genre: $userGender):
+${priorityBrands.join(', ')}
+
+⚠️ IMPORTANT: Ces marques correspondent au profil démographique.
+Privilégie-les pour au moins 40% de tes recommandations dans la catégorie "Pour toi".
+'''
+        : '';
+
     String categoryInstructions = '';
 
     switch (category) {
@@ -301,6 +316,8 @@ Différence clé: Inspiration LARGE vs. Cadeau PERSONNALISÉ
 Génère $count produits RÉELS pour un feed d'inspiration type Pinterest.
 
 $categoryInstructions
+
+$priorityBrandsText
 
 ═══════════════════════════════════════════════════════════
 🏪 LISTE COMPLÈTE DES MARQUES DISPONIBLES (400+)

@@ -185,6 +185,23 @@ Pour les 40% restants, explore d'autres marques de la liste complète pour diver
     // Analyser les tags pour recommander les bonnes marques
     String brandRecommendations = _getBrandRecommendations(recipientHobbies, recipientPersonality, recipientStyle, preferredCategories);
 
+    // Obtenir les marques prioritaires selon le profil démographique du DESTINATAIRE
+    final priorityBrands = recipientAge.isNotEmpty && recipient.isNotEmpty
+        ? BrandList.getPriorityBrandsByProfile(age: recipientAge, gender: recipient)
+        : <String>[];
+
+    final priorityBrandsDemo = priorityBrands.isNotEmpty
+        ? '''
+
+🌟 MARQUES PRIORITAIRES DÉMOGRAPHIQUES pour $personName (âge: $recipientAge):
+${priorityBrands.join(', ')}
+
+⚠️ ULTRA IMPORTANT: Ces marques correspondent au profil démographique de $personName.
+Combine-les avec les marques basées sur les tags ci-dessus.
+Au total, privilégie CES marques pour 50-60% de tes recommandations.
+'''
+        : '';
+
     final variationInstructions = newSeed > 1
         ? '''
 🔄🔄🔄 GÉNÉRATION #$newSeed - NOUVEAUTÉ ABSOLUE EXIGÉE 🔄🔄🔄
@@ -293,13 +310,14 @@ $variationInstructions
 🏪 MARQUES RECOMMANDÉES (basées sur l'analyse des tags)
 ═══════════════════════════════════════════════════════════
 $brandRecommendations
+$priorityBrandsDemo
 
 ═══════════════════════════════════════════════════════════
 📜 LISTE COMPLÈTE DES MARQUES DISPONIBLES (400+)
 ═══════════════════════════════════════════════════════════
 $allBrands
 
-💡 STRATÉGIE: Utilise prioritairement les marques recommandées ci-dessus (basées sur les tags),
+💡 STRATÉGIE: Utilise prioritairement les marques démographiques et celles basées sur les tags ci-dessus,
 puis explore la liste complète pour diversifier.
 
 ═══════════════════════════════════════════════════════════
