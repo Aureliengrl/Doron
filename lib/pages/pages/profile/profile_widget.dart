@@ -258,7 +258,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                     width: double.infinity,
                     height: 60.0,
                     decoration: BoxDecoration(
-                      color: FlutterFlowTheme.of(context).secondaryBackground,
+                      color: Colors.white,
                       boxShadow: [
                         BoxShadow(
                           blurRadius: 5.0,
@@ -301,8 +301,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                               alignment: AlignmentDirectional(0.9, 0.0),
                               child: FaIcon(
                                 FontAwesomeIcons.angleDown,
-                                color:
-                                    FlutterFlowTheme.of(context).secondaryText,
+                                color: Color(0xFF6B7280),
                                 size: 16.0,
                               ),
                             ),
@@ -338,7 +337,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                     width: double.infinity,
                     height: 60.0,
                     decoration: BoxDecoration(
-                      color: FlutterFlowTheme.of(context).secondaryBackground,
+                      color: Colors.white,
                       boxShadow: [
                         BoxShadow(
                           blurRadius: 5.0,
@@ -386,8 +385,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                               alignment: AlignmentDirectional(0.9, 0.0),
                               child: FaIcon(
                                 FontAwesomeIcons.angleDown,
-                                color:
-                                    FlutterFlowTheme.of(context).secondaryText,
+                                color: Color(0xFF6B7280),
                                 size: 16.0,
                               ),
                             ),
@@ -423,7 +421,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                     width: double.infinity,
                     height: 60.0,
                     decoration: BoxDecoration(
-                      color: FlutterFlowTheme.of(context).secondaryBackground,
+                      color: Colors.white,
                       boxShadow: [
                         BoxShadow(
                           blurRadius: 5.0,
@@ -471,8 +469,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                               alignment: AlignmentDirectional(0.9, 0.0),
                               child: FaIcon(
                                 FontAwesomeIcons.angleDown,
-                                color:
-                                    FlutterFlowTheme.of(context).secondaryText,
+                                color: Color(0xFF6B7280),
                                 size: 16.0,
                               ),
                             ),
@@ -508,7 +505,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                     width: double.infinity,
                     height: 60.0,
                     decoration: BoxDecoration(
-                      color: FlutterFlowTheme.of(context).secondaryBackground,
+                      color: Colors.white,
                       boxShadow: [
                         BoxShadow(
                           blurRadius: 5.0,
@@ -556,8 +553,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                               alignment: AlignmentDirectional(0.9, 0.0),
                               child: FaIcon(
                                 FontAwesomeIcons.angleDown,
-                                color:
-                                    FlutterFlowTheme.of(context).secondaryText,
+                                color: Color(0xFF6B7280),
                                 size: 16.0,
                               ),
                             ),
