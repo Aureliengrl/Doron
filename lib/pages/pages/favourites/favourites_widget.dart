@@ -60,7 +60,15 @@ class _FavouritesWidgetState extends State<FavouritesWidget>
             .where('uid', isEqualTo: currentUserReference)
             .orderBy('TimeStamp', descending: true),
       );
-      _model.favouritesList = _model.favourite!.toList().cast<FavouritesRecord>();
+
+      // Filtrer pour ne garder que les favoris "en vrac" (sans personId)
+      // Ces favoris viennent de la page d'accueil
+      _model.favouritesList = _model.favourite!
+          .where((fav) => !fav.hasPersonId() || fav.personId == null || fav.personId!.isEmpty)
+          .toList()
+          .cast<FavouritesRecord>();
+
+      print('✅ Loaded ${_model.favouritesList.length} "en vrac" favorites (from home page)');
     } catch (e) {
       print('❌ Error loading favorites: $e');
     }

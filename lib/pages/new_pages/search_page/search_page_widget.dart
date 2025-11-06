@@ -228,10 +228,11 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: () {
-                  setState(() {
-                    _model.selectProfile(profileIdInt);
-                  });
+                onTap: () async {
+                  await _model.selectProfile(profileIdInt);
+                  if (mounted) {
+                    setState(() {});
+                  }
                 },
                 borderRadius: BorderRadius.circular(50),
                 child: Column(
@@ -400,7 +401,9 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
   }
 
   Widget _buildProductCard(Map<String, dynamic> product) {
-    final isLiked = _model.likedProducts.contains(product['id']);
+    // Vérifier si ce produit est dans les favoris de cette personne (dans Firebase)
+    final productName = product['name'] as String? ?? product['title'] as String? ?? '';
+    final isLikedInFirebase = _model.isProductLiked(productName);
 
     return Material(
       color: Colors.transparent,
@@ -437,42 +440,32 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                       fit: BoxFit.cover,
                     ),
                   ),
-                  // Bouton coeur
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () {
-                          setState(() {
-                            _model.toggleLike(product['id'] as int);
-                          });
-                        },
-                        borderRadius: BorderRadius.circular(50),
-                        child: Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: isLiked ? Colors.red : Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            isLiked ? Icons.favorite : Icons.favorite_border,
-                            color: isLiked ? Colors.white : const Color(0xFF374151),
-                            size: 18,
-                          ),
+                  // Bouton coeur - affiche rouge si déjà liké dans Firebase
+                  if (isLikedInFirebase)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.favorite,
+                          color: Colors.white,
+                          size: 18,
                         ),
                       ),
                     ),
-                  ),
                 ],
               ),
 

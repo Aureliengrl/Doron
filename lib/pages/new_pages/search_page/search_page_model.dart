@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import '/services/firebase_data_service.dart';
+import '/backend/backend.dart';
+import '/auth/firebase_auth/auth_util.dart';
 
 class SearchPageModel {
   int? selectedProfileId;
   Set<int> likedProducts = {};
+  Set<String> likedProductTitles = {}; // Pour identifier les produits likés par titre
   bool isLoading = true;
 
   List<Map<String, dynamic>> profiles = [];
@@ -24,6 +27,9 @@ class SearchPageModel {
           // Convertir l'ID string en hash int pour la compatibilité
           selectedProfileId = firstId.hashCode;
         }
+
+        // Charger les favoris de cette personne
+        await loadPersonFavorites(profiles[0]['id'].toString());
       }
 
       isLoading = false;
@@ -31,6 +37,27 @@ class SearchPageModel {
     } catch (e) {
       print('❌ Error loading profiles: $e');
       isLoading = false;
+    }
+  }
+
+  /// Charge les favoris pour une personne spécifique
+  Future<void> loadPersonFavorites(String personId) async {
+    try {
+      final favorites = await queryFavouritesRecordOnce(
+        queryBuilder: (favouritesRecord) => favouritesRecord
+            .where('uid', isEqualTo: currentUserReference)
+            .where('personId', isEqualTo: personId),
+      );
+
+      // Extraire les titres des produits likés pour cette personne
+      likedProductTitles = favorites
+          .map((fav) => fav.product.productTitle)
+          .toSet();
+
+      print('✅ Loaded ${likedProductTitles.length} favorites for person $personId');
+    } catch (e) {
+      print('❌ Error loading person favorites: $e');
+      likedProductTitles = {};
     }
   }
 
@@ -68,11 +95,17 @@ class SearchPageModel {
     return [];
   }
 
-  void selectProfile(dynamic profileId) {
+  Future<void> selectProfile(dynamic profileId) async {
     if (profileId is int) {
       selectedProfileId = profileId;
     } else if (profileId is String) {
       selectedProfileId = profileId.hashCode;
+    }
+
+    // Charger les favoris de la personne sélectionnée
+    final profile = currentProfile;
+    if (profile != null && profile.containsKey('id')) {
+      await loadPersonFavorites(profile['id'].toString());
     }
   }
 
@@ -82,6 +115,11 @@ class SearchPageModel {
     } else {
       likedProducts.add(productId);
     }
+  }
+
+  /// Vérifie si un produit est dans les favoris de la personne sélectionnée
+  bool isProductLiked(String productTitle) {
+    return likedProductTitles.contains(productTitle);
   }
 
   void handleAddNewPerson(BuildContext context) {
