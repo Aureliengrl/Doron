@@ -25,6 +25,8 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
   void initState() {
     super.initState();
     _model = HomePinterestModel();
+    // Effacer le contexte de personne (les favoris de cette page seront "en vrac")
+    FirebaseDataService.setCurrentPersonContext(null);
     _loadProducts();
   }
 

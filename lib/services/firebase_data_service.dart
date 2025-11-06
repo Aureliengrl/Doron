@@ -194,6 +194,35 @@ class FirebaseDataService {
     }
   }
 
+  // ============= CURRENT PERSON CONTEXT =============
+
+  /// Sauvegarde l'ID de la personne actuellement visualisée (pour lier les favoris)
+  static Future<void> setCurrentPersonContext(String? personId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (personId != null) {
+        await prefs.setString('current_person_id', personId);
+        print('✅ Current person context set: $personId');
+      } else {
+        await prefs.remove('current_person_id');
+        print('✅ Current person context cleared');
+      }
+    } catch (e) {
+      print('❌ Error setting current person context: $e');
+    }
+  }
+
+  /// Récupère l'ID de la personne actuellement visualisée
+  static Future<String?> getCurrentPersonContext() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('current_person_id');
+    } catch (e) {
+      print('❌ Error getting current person context: $e');
+      return null;
+    }
+  }
+
   /// Supprime une recherche de cadeau
   static Future<void> deleteGiftProfile(String profileId) async {
     if (!isLoggedIn) return;

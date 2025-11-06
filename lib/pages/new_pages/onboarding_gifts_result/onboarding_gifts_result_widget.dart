@@ -477,8 +477,14 @@ class _OnboardingGiftsResultWidgetState
                           'gifts': _model.gifts,
                           'savedAt': DateTime.now().toIso8601String(),
                         };
-                        await FirebaseDataService.saveGiftProfile(profileWithGifts);
+                        final profileId = await FirebaseDataService.saveGiftProfile(profileWithGifts);
                         print('✅ Profil et ${_model.gifts.length} cadeaux sauvegardés');
+
+                        // Définir le contexte pour que les futurs favoris soient liés à cette personne
+                        if (profileId != null) {
+                          await FirebaseDataService.setCurrentPersonContext(profileId);
+                          print('✅ Contexte de personne défini: $profileId');
+                        }
                       }
                       // Naviguer vers la page Recherche
                       if (mounted) {

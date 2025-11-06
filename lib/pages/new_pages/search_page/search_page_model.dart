@@ -29,7 +29,11 @@ class SearchPageModel {
         }
 
         // Charger les favoris de cette personne
-        await loadPersonFavorites(profiles[0]['id'].toString());
+        final personId = profiles[0]['id'].toString();
+        await loadPersonFavorites(personId);
+
+        // Définir le contexte actuel
+        await FirebaseDataService.setCurrentPersonContext(personId);
       }
 
       isLoading = false;
@@ -105,7 +109,11 @@ class SearchPageModel {
     // Charger les favoris de la personne sélectionnée
     final profile = currentProfile;
     if (profile != null && profile.containsKey('id')) {
-      await loadPersonFavorites(profile['id'].toString());
+      final personId = profile['id'].toString();
+      await loadPersonFavorites(personId);
+
+      // Définir le contexte actuel pour que les nouveaux favoris soient liés à cette personne
+      await FirebaseDataService.setCurrentPersonContext(personId);
     }
   }
 
