@@ -148,38 +148,6 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
                         return;
                       }
 
-                      // If at step 1 (first question) and no returnTo, confirm exit
-                      if (_model.currentStep == 1 && (returnTo == null || returnTo.isEmpty) && !skipUserQuestions) {
-                        final shouldExit = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: Text(
-                              'Quitter l\'onboarding ?',
-                              style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
-                            ),
-                            content: Text(
-                              'Tu n\'as pas encore terminé. Veux-tu vraiment quitter ?',
-                              style: GoogleFonts.poppins(),
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(context).pop(false),
-                                child: Text('Continuer', style: GoogleFonts.poppins(color: violetColor)),
-                              ),
-                              TextButton(
-                                onPressed: () => Navigator.of(context).pop(true),
-                                child: Text('Quitter', style: GoogleFonts.poppins(color: Colors.red)),
-                              ),
-                            ],
-                          ),
-                        );
-
-                        if (shouldExit == true && context.mounted) {
-                          context.go('/authentification');
-                        }
-                        return;
-                      }
-
                       // Otherwise, go to previous step
                       setState(() {
                         _model.handleBack();
