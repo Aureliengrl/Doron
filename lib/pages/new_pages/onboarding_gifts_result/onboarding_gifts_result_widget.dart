@@ -69,6 +69,22 @@ class _OnboardingGiftsResultWidgetState
         setState(() {
           _model.setLoading(false);
         });
+        // Afficher l'erreur à l'utilisateur
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '❌ Impossible de générer tes cadeaux. Vérifie ta connexion.',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: Colors.red[700],
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Réessayer',
+              textColor: Colors.white,
+              onPressed: () => _loadGifts(forceRefresh: true),
+            ),
+          ),
+        );
       }
     }
   }
@@ -139,6 +155,14 @@ class _OnboardingGiftsResultWidgetState
         children: [
           Row(
             children: [
+              // Bouton retour pour modifier les réponses
+              IconButton(
+                onPressed: () {
+                  context.go('/onboarding-advanced?onlyUserQuestions=true');
+                },
+                icon: Icon(Icons.arrow_back, color: violetColor),
+                tooltip: 'Modifier mes réponses',
+              ),
               Icon(Icons.auto_awesome, color: violetColor, size: 32),
               const SizedBox(width: 12),
               Expanded(

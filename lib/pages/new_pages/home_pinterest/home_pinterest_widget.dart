@@ -61,6 +61,22 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
         setState(() {
           _model.setLoading(false);
         });
+        // Afficher l'erreur à l'utilisateur
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '❌ Impossible de charger les cadeaux. Tire pour rafraîchir.',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: Colors.red[700],
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'Réessayer',
+              textColor: Colors.white,
+              onPressed: _loadProducts,
+            ),
+          ),
+        );
       }
     }
   }
@@ -184,7 +200,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Bienvenue Aurélien !\nVoici ta sélection personnalisée',
+              'Bienvenue !\nVoici ta sélection personnalisée',
               style: GoogleFonts.poppins(
                 color: const Color(0xFF4B5563),
                 fontSize: 13,

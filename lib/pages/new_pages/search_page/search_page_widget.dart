@@ -201,7 +201,7 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: () => context.go('/onboarding-advanced?skipUserQuestions=true'),
+                  onTap: () => context.go('/onboarding-advanced?skipUserQuestions=true&returnTo=/search-page'),
                   borderRadius: BorderRadius.circular(50),
                   child: Column(
                     children: [
