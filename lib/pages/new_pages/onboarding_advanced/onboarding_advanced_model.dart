@@ -463,6 +463,17 @@ class OnboardingAdvancedModel {
         // 2. Sauvegarder dans Firebase si connecté
         await FirebaseDataService.saveOnboardingAnswers(answers);
 
+        // Afficher un feedback de succès
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Profil sauvegardé avec succès !'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+
         // 3. Marquer l'onboarding comme complété (seulement si c'est le premier onboarding)
         if (!skipUserQuestions) {
           await FirstTimeService.setOnboardingCompleted();

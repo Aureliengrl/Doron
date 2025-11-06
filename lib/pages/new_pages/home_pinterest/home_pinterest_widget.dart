@@ -321,12 +321,34 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(40),
-            child: Text(
-              'Aucun produit disponible',
-              style: GoogleFonts.poppins(
-                color: const Color(0xFF9CA3AF),
-                fontSize: 14,
-              ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.card_giftcard,
+                  size: 80,
+                  color: Colors.grey[300],
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  'Aucun cadeau pour l\'instant',
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFF6B7280),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Tire vers le bas pour rafraîchir',
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFF9CA3AF),
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
           ),
         ),
