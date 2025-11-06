@@ -8,53 +8,6 @@ class SearchPageModel {
 
   List<Map<String, dynamic>> profiles = [];
 
-  final List<Map<String, dynamic>> searchResults = [
-    {
-      'id': 1,
-      'name': 'Coffret Spa Luxe',
-      'description': 'Pour se détendre après une longue journée',
-      'price': 89,
-      'image':
-          'https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=600&q=80',
-      'profileId': 1,
-      'source': 'Sephora',
-      'url': 'https://www.sephora.fr',
-    },
-    {
-      'id': 2,
-      'name': 'Livre de Recettes',
-      'description': 'Pour des moments en famille',
-      'price': 35,
-      'image':
-          'https://images.unsplash.com/photo-1543362906-acfc16c67564?w=600&q=80',
-      'profileId': 1,
-      'source': 'Fnac',
-      'url': 'https://www.fnac.com',
-    },
-    {
-      'id': 3,
-      'name': 'Bougie Parfumée Premium',
-      'description': 'Ambiance cosy garantie',
-      'price': 42,
-      'image':
-          'https://images.unsplash.com/photo-1602874801006-e0c97c1c6122?w=600&q=80',
-      'profileId': 1,
-      'source': 'Zara',
-      'url': 'https://www.zara.com/fr/fr/home',
-    },
-    {
-      'id': 4,
-      'name': 'Carnet de Voyage',
-      'description': 'Immortaliser ses souvenirs',
-      'price': 45,
-      'image':
-          'https://images.unsplash.com/photo-1531346878377-a5be20888e57?w=600&q=80',
-      'profileId': 1,
-      'source': 'Amazon',
-      'url': 'https://www.amazon.fr',
-    },
-  ];
-
   /// Charge les profils depuis Firebase/Local Storage
   Future<void> loadProfiles() async {
     try {
@@ -102,7 +55,7 @@ class SearchPageModel {
   List<Map<String, dynamic>> getFilteredProducts() {
     if (selectedProfileId == null) return [];
 
-    // Si le profil a des cadeaux sauvegardés, les utiliser
+    // Récupérer les cadeaux sauvegardés pour le profil sélectionné
     final currentProf = currentProfile;
     if (currentProf != null && currentProf.containsKey('gifts')) {
       final gifts = currentProf['gifts'] as List?;
@@ -111,10 +64,8 @@ class SearchPageModel {
       }
     }
 
-    // Sinon, utiliser les résultats de recherche par défaut
-    return searchResults
-        .where((p) => p['profileId'] == selectedProfileId)
-        .toList();
+    // Si pas de cadeaux, retourner une liste vide (pas de données de test)
+    return [];
   }
 
   void selectProfile(dynamic profileId) {

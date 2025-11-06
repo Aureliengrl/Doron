@@ -12,6 +12,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'profile_model.dart';
 export 'profile_model.dart';
 
@@ -83,61 +84,28 @@ class _ProfileWidgetState extends State<ProfileWidget> {
             ),
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            'Paramètres',
-                            style: GoogleFonts.poppins(
-                              color: Colors.white,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
                     Text(
                       FFLocalizations.of(context).getText(
                         's2pb5jum' /* Profil */,
                       ),
                       textAlign: TextAlign.center,
                       style: GoogleFonts.poppins(
-                        fontSize: 32,
+                        fontSize: 28,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                         letterSpacing: 0.5,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       'Gérez vos informations personnelles',
                       textAlign: TextAlign.center,
                       style: GoogleFonts.poppins(
-                        fontSize: 14,
+                        fontSize: 13,
                         color: Colors.white.withOpacity(0.9),
                         fontWeight: FontWeight.w400,
                       ),
@@ -692,9 +660,16 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                         ) ??
                         false;
                     if (confirmDialogResponse) {
+                      // Supprimer le compte Firebase
                       await authManager.deleteUser(context);
 
-                      context.pushNamed(AuthentificationWidget.routeName);
+                      // Nettoyer toutes les données locales pour repartir de zéro
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.clear();
+                      print('✅ SharedPreferences cleared after account deletion');
+
+                      // Rediriger vers l'onboarding initial (comme première connexion)
+                      context.go('/onboarding-advanced');
                     } else {
                       context.pushNamed(ProfileWidget.routeName);
                     }
