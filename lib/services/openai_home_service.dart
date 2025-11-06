@@ -14,8 +14,16 @@ class OpenAIHomeService {
     Map<String, dynamic>? userProfile,
     int count = 10,
   }) async {
+    print('');
+    print('═══════════════════════════════════════════════════════════');
+    print('🏠 APPEL API CHATGPT - Feed Home ($category) - $count produits');
+    print('═══════════════════════════════════════════════════════════');
+
     try {
       final prompt = _buildHomeCategoryPrompt(category, userProfile, count);
+
+      print('📤 Envoi de la requête à l\'API OpenAI...');
+      print('🔑 Clé API: ${OpenAIService.apiKey.substring(0, 20)}...');
 
       final response = await http.post(
         Uri.parse('$_baseUrl/chat/completions'),
@@ -49,13 +57,20 @@ class OpenAIHomeService {
         }),
       );
 
+      print('📥 Réponse reçue - Status: ${response.statusCode}');
+
       if (response.statusCode == 200) {
+        print('✅ Succès ! Parsing des données...');
         final data = json.decode(response.body);
         final content = data['choices'][0]['message']['content'] as String;
 
         // Parser le JSON retourné par GPT
         final productsData = json.decode(content);
         final productsList = productsData['products'] as List;
+
+        print('🎁 ${productsList.length} produits générés par ChatGPT !');
+        print('═══════════════════════════════════════════════════════════');
+        print('');
 
         return productsList.map((product) {
           // Générer une URL de fallback basée sur la marque
@@ -97,11 +112,19 @@ class OpenAIHomeService {
           };
         }).toList();
       } else {
-        print('❌ Erreur OpenAI Home: ${response.statusCode}');
+        print('❌ ERREUR API - Status: ${response.statusCode}');
+        print('❌ Réponse: ${response.body}');
+        print('⚠️ Utilisation des produits de secours (fallback)');
+        print('═══════════════════════════════════════════════════════════');
+        print('');
         return _getFallbackHomeProducts(category);
       }
     } catch (e) {
-      print('❌ Exception OpenAI Home: $e');
+      print('❌ EXCEPTION lors de l\'appel API ChatGPT');
+      print('❌ Erreur: $e');
+      print('⚠️ Utilisation des produits de secours (fallback)');
+      print('═══════════════════════════════════════════════════════════');
+      print('');
       return _getFallbackHomeProducts(category);
     }
   }
