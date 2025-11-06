@@ -3,6 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '/services/openai_home_service.dart';
 import '/services/firebase_data_service.dart';
+import '/auth/firebase_auth/auth_util.dart';
+import '/backend/backend.dart';
+import '/backend/schema/structs/index.dart';
 import 'home_pinterest_model.dart';
 export 'home_pinterest_model.dart';
 
@@ -82,6 +85,78 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           ),
         );
       }
+    }
+  }
+
+  /// Toggle favorite avec sauvegarde Firebase
+  Future<void> _toggleFavorite(Map<String, dynamic> product) async {
+    final productId = product['id'] as int;
+    final isCurrentlyLiked = _model.likedProducts.contains(productId);
+
+    // Toggle l'état local immédiatement pour l'UI
+    setState(() {
+      _model.toggleLike(productId);
+    });
+
+    try {
+      if (isCurrentlyLiked) {
+        // Retirer des favoris Firebase
+        final favorites = await queryFavouritesRecordOnce(
+          queryBuilder: (favoritesRecord) => favoritesRecord
+              .where('uid', isEqualTo: currentUserReference)
+              .where('product.product_title', isEqualTo: product['name'] ?? ''),
+        );
+
+        for (var fav in favorites) {
+          if (!fav.hasPersonId() || fav.personId == null || fav.personId!.isEmpty) {
+            await fav.reference.delete();
+          }
+        }
+
+        print('✅ Retiré des favoris: ${product['name']}');
+      } else {
+        // Ajouter aux favoris Firebase
+        await FavouritesRecord.collection.add(
+          createFavouritesRecordData(
+            uid: currentUserReference,
+            platform: Platforms.web,
+            timeStamp: DateTime.now(),
+            personId: null, // Favoris "en vrac" sans personne
+            product: ProductsStruct(
+              productTitle: product['name'] ?? '',
+              productPrice: '${product['price'] ?? 0}€',
+              productUrl: product['url'] ?? '',
+              productPhoto: product['image'] ?? '',
+              productStarRating: '',
+              productOriginalPrice: '',
+              productNumRatings: 0,
+              platform: Platforms.web,
+            ),
+          ),
+        );
+
+        print('✅ Ajouté aux favoris: ${product['name']}');
+
+        // Afficher une confirmation
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '❤️ Ajouté aux favoris !',
+                style: GoogleFonts.poppins(),
+              ),
+              backgroundColor: const Color(0xFF10B981),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ Erreur toggle favori: $e');
+      // Revenir à l'état précédent en cas d'erreur
+      setState(() {
+        _model.toggleLike(productId);
+      });
     }
   }
 
@@ -539,11 +614,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: () {
-                          setState(() {
-                            _model.toggleLike(product['id'] as int);
-                          });
-                        },
+                        onTap: () => _toggleFavorite(product),
                         borderRadius: BorderRadius.circular(50),
                         child: Container(
                           width: 48,
@@ -656,10 +727,8 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: () {
-                          setState(() {
-                            _model.toggleLike(product['id'] as int);
-                          });
+                        onTap: () async {
+                          await _toggleFavorite(product);
                           Navigator.pop(context);
                           _showProductDetail(product);
                         },
