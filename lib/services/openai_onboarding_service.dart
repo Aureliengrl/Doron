@@ -16,6 +16,16 @@ class OpenAIOnboardingService {
     print('═══════════════════════════════════════════════════════════');
     print('🤖 APPEL API CHATGPT - Génération de $count cadeaux personnalisés');
     print('═══════════════════════════════════════════════════════════');
+    print('📋 TAGS DÉTECTÉS:');
+    print('   • Destinataire: ${userProfile['recipient'] ?? 'N/A'}');
+    print('   • Passions/Hobbies: ${(userProfile['recipientHobbies'] as List?)?.join(', ') ?? 'N/A'}');
+    print('   • Personnalité: ${(userProfile['recipientPersonality'] as List?)?.join(', ') ?? 'N/A'}');
+    print('   • Style: ${userProfile['recipientStyle'] ?? 'N/A'}');
+    print('   • Catégories préférées: ${(userProfile['preferredCategories'] as List?)?.join(', ') ?? 'N/A'}');
+    print('   • Âge: ${userProfile['recipientAge'] ?? 'N/A'}');
+    print('   • Budget: ${userProfile['budget'] ?? 'N/A'}€');
+    print('   • Seed de variation: ${userProfile['_refresh_seed'] ?? 0}');
+    print('═══════════════════════════════════════════════════════════');
 
     try {
       final prompt = _buildOnboardingPrompt(userProfile, count);
@@ -181,6 +191,15 @@ Pour les 40% restants, explore d'autres marques de la liste complète pour diver
     // Rotation des catégories selon le seed pour forcer la variation
     final primaryCategory = diversityCategories[newSeed % diversityCategories.length];
     final secondaryCategory = diversityCategories[(newSeed + 3) % diversityCategories.length];
+    final tertiaryCategory = diversityCategories[(newSeed + 5) % diversityCategories.length];
+
+    // Styles de génération pour varier l'approche à chaque fois
+    final generationStyles = [
+      'Luxe et Premium', 'Budget et Pratique', 'Original et Créatif',
+      'Tendance 2025', 'Classique et Intemporel', 'Expérientiel et Mémorable',
+      'Tech et Innovation', 'Artisanal et Local'
+    ];
+    final currentStyle = generationStyles[newSeed % generationStyles.length];
 
     // Analyser les tags pour recommander les bonnes marques
     String brandRecommendations = _getBrandRecommendations(recipientHobbies, recipientPersonality, recipientStyle, preferredCategories);
@@ -209,6 +228,7 @@ Au total, privilégie CES marques pour 50-60% de tes recommandations.
 
 Timestamp unique: $uniqueTimestamp
 Random Seed: $randomSeed
+STYLE DE GÉNÉRATION: $currentStyle
 
 TU AS DÉJÀ FAIT ${newSeed - 1} RECOMMANDATIONS pour $personName.
 Cette fois-ci est la génération #$newSeed.
@@ -216,43 +236,69 @@ Cette fois-ci est la génération #$newSeed.
 🚨 IMPÉRATIF ABSOLU 🚨
 Tu DOIS générer $count produits COMPLÈTEMENT NOUVEAUX qui n'ont JAMAIS été suggérés avant.
 
-📋 STRATÉGIE DE DIVERSITÉ FORCÉE:
-1. CATÉGORIES PRIORITAIRES pour cette génération #$newSeed:
-   - Catégorie principale: $primaryCategory
-   - Catégorie secondaire: $secondaryCategory
+📋 STRATÉGIE DE DIVERSITÉ FORCÉE POUR GÉNÉRATION #$newSeed:
+1. STYLE OBLIGATOIRE: $currentStyle
+   - Adapte TOUS tes produits à ce style
+   - Si "Luxe et Premium" → Privilégie marques haut de gamme (Louis Vuitton, Hermès, Dior)
+   - Si "Budget et Pratique" → Privilégie marques accessibles (H&M, Decathlon, IKEA)
+   - Si "Original et Créatif" → Privilégie marques créatives (Etsy, Fnac Culture, Urban Outfitters)
+   - Si "Tendance 2025" → Privilégie produits viraux et nouveautés
+   - Si "Classique et Intemporel" → Privilégie basiques de qualité (COS, A.P.C., Uniqlo)
+   - Si "Expérientiel" → Privilégie coffrets, ateliers, expériences
+   - Si "Tech et Innovation" → Privilégie gadgets et nouveautés technologiques
+   - Si "Artisanal et Local" → Privilégie produits faits main et marques françaises
 
-2. MARQUES: Explore des marques que tu N'AS PAS utilisées dans les ${newSeed - 1} générations précédentes
-   - Si génération précédente = Zara → Cette fois = Mango, Sézane, Ba&sh
-   - Si génération précédente = Apple → Cette fois = Samsung, Dyson, Bose
-   - Si génération précédente = Nike → Cette fois = Adidas, On Running, Lululemon
+2. CATÉGORIES PRIORITAIRES pour cette génération #$newSeed:
+   - Catégorie principale (40% des produits): $primaryCategory
+   - Catégorie secondaire (30% des produits): $secondaryCategory
+   - Catégorie tertiaire (20% des produits): $tertiaryCategory
+   - Diversité (10% restants): Surprise-moi avec des catégories inattendues!
 
-3. PRIX: Varie les gammes de prix (si dernière fois plutôt budget, cette fois plus premium)
+3. MARQUES: Explore des marques que tu N'AS PAS utilisées dans les ${newSeed - 1} générations précédentes
+   ⚠️ RÈGLE D'OR: JAMAIS 2 FOIS LA MÊME MARQUE entre les générations!
+   - Génération précédente = Zara, Apple, Nike
+   - Cette génération = Mango, Samsung, Adidas (ou TOUTE autre marque différente)
 
-4. STYLES: Change complètement l'approche
-   - Si précédent = moderne → maintenant = classique ou vintage
-   - Si précédent = tech → maintenant = artisanal ou lifestyle
-   - Si précédent = pratique → maintenant = luxueux ou expérientiel
+   📊 ROTATION OBLIGATOIRE PAR CATÉGORIE:
+   • Mode: Zara → Mango → H&M → Sézane → Sandro → & Other Stories → COS
+   • Tech: Apple → Samsung → Sony → Bose → JBL → Dyson → Bang & Olufsen
+   • Sport: Nike → Adidas → Lululemon → On Running → Decathlon → Salomon
+   • Beauté: Sephora → Kiehl's → Rituals → L'Occitane → Aesop → Lush
+   • Maison: Zara Home → Maisons du Monde → IKEA → Am.pm → H&M Home
+
+4. PRIX: Adapte au style "$currentStyle"
+   - Si "Luxe" → 60% des produits entre ${budget * 0.8}€ et ${budget * 1.5}€
+   - Si "Budget" → 70% des produits entre ${budget * 0.3}€ et ${budget * 0.7}€
+   - Sinon → Mix harmonieux de gammes de prix
 
 5. CRÉATIVITÉ MAXIMALE: Pense "out of the box"
    - Produits inattendus mais qui correspondent aux tags
    - Combinaisons originales
-   - Idées surprenantes
+   - Idées surprenantes et mémorables
+   - Évite les clichés (pas toujours iPhone/Stanley/Dyson Airwrap!)
 
-🎯 OBJECTIF: Que l'utilisateur dise "Wow, je n'y avais pas pensé !"
+🎯 OBJECTIF: Que l'utilisateur dise "Wow, je n'y avais pas pensé ! C'est parfait!"
 
 ⛔ INTERDICTIONS STRICTES:
-- NE répète PAS les mêmes types de produits
-- NE reste PAS dans les mêmes catégories que d'habitude
-- NE propose PAS les marques "évidentes" si tu les as déjà utilisées
+- ❌ NE répète PAS les mêmes produits (iPhone → pas iPhone, AirPods → pas AirPods)
+- ❌ NE répète PAS les mêmes marques (Zara génération 1 → PAS Zara génération 2)
+- ❌ NE reste PAS dans les mêmes catégories dominantes
+- ❌ NE propose PAS toujours les "best-sellers évidents"
 
-💡 RAPPEL: Respecte TOUJOURS les tags de $personName, mais explore DIFFÉREMMENT
+💡 RAPPEL: Respecte TOUJOURS les tags de $personName, mais explore DIFFÉREMMENT à chaque génération
 '''
         : '''
 🎉 PREMIÈRE GÉNÉRATION pour $personName 🎉
 Timestamp: $uniqueTimestamp
 Random Seed: $randomSeed
+STYLE DE GÉNÉRATION: $currentStyle
 
-Crée des recommandations parfaites basées sur les tags fournis.
+📋 APPROCHE POUR CETTE PREMIÈRE GÉNÉRATION:
+• Style à adopter: $currentStyle
+• Catégories à explorer en priorité: $primaryCategory, $secondaryCategory, $tertiaryCategory
+• Crée des recommandations PARFAITES basées sur les tags fournis
+• Varie les marques et les gammes de prix
+• Explore toute la richesse des 400+ marques disponibles
 ''';
 
     return '''
