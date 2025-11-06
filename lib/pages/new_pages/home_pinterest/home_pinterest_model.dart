@@ -4,6 +4,7 @@ class HomePinterestModel {
   Map<String, dynamic>? selectedProduct;
   bool isLoading = false;
   List<Map<String, dynamic>> products = [];
+  String firstName = '';
 
   final List<Map<String, String>> categories = [
     {'id': 'all', 'name': 'Pour toi', 'emoji': '✨'},
@@ -29,6 +30,10 @@ class HomePinterestModel {
 
   void setProducts(List<Map<String, dynamic>> newProducts) {
     products = newProducts;
+  }
+
+  void setFirstName(String name) {
+    firstName = name;
   }
 
   void dispose() {

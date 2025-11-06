@@ -9,6 +9,7 @@ class OnboardingAdvancedModel {
   int currentStep = 0;
   Map<String, dynamic> answers = {
     // Onboarding "Toi"
+    'firstName': '',
     'age': '',
     'gender': '',
     'interests': <String>[],
@@ -88,6 +89,16 @@ class OnboardingAdvancedModel {
     if (!skipUserQuestions || onlyUserQuestions) {
       baseSteps.addAll([
         // PARTIE "TOI"
+        {
+          'section': 'user',
+          'id': 'firstName',
+          'type': 'text',
+          'question': 'Comment tu t\'appelles ?',
+          'subtitle': '✨ Pour personnaliser ton expérience',
+          'field': 'firstName',
+          'placeholder': 'Ton prénom',
+          'icon': '👋',
+        },
         {
           'section': 'user',
           'id': 'age',

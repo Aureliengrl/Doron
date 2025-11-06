@@ -42,6 +42,10 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
       // Charger le profil utilisateur depuis Firebase
       final userProfile = await FirebaseDataService.loadOnboardingAnswers();
 
+      // Extraire et stocker le prénom
+      final firstName = userProfile?['firstName'] as String? ?? '';
+      _model.setFirstName(firstName);
+
       // Générer les produits via ChatGPT
       final products = await OpenAIHomeService.generateHomeProducts(
         category: _model.activeCategory,
@@ -79,6 +83,40 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
         );
       }
     }
+  }
+
+  /// Retourne un emoji + texte court pour la catégorie
+  String _getCategoryEmoji(String category) {
+    final categoryLower = category.toLowerCase();
+
+    if (categoryLower.contains('tech') || categoryLower.contains('technologie')) {
+      return '📱 Tech';
+    } else if (categoryLower.contains('mode') || categoryLower.contains('fashion') || categoryLower.contains('vêtement')) {
+      return '👗 Mode';
+    } else if (categoryLower.contains('maison') || categoryLower.contains('home') || categoryLower.contains('déco')) {
+      return '🏠 Maison';
+    } else if (categoryLower.contains('beauté') || categoryLower.contains('beauty') || categoryLower.contains('cosmétique')) {
+      return '💄 Beauté';
+    } else if (categoryLower.contains('sport') || categoryLower.contains('fitness')) {
+      return '⚽ Sport';
+    } else if (categoryLower.contains('food') || categoryLower.contains('gastronomie') || categoryLower.contains('cuisine')) {
+      return '🍷 Food';
+    } else if (categoryLower.contains('bien-être') || categoryLower.contains('wellness') || categoryLower.contains('spa')) {
+      return '🧘 Bien-être';
+    } else if (categoryLower.contains('art') || categoryLower.contains('créatif')) {
+      return '🎨 Art';
+    } else if (categoryLower.contains('gaming') || categoryLower.contains('jeux')) {
+      return '🎮 Gaming';
+    } else if (categoryLower.contains('lecture') || categoryLower.contains('livre')) {
+      return '📚 Lecture';
+    } else if (categoryLower.contains('musique')) {
+      return '🎵 Musique';
+    } else if (categoryLower.contains('voyage')) {
+      return '✈️ Voyage';
+    }
+
+    // Par défaut
+    return '✨ $category';
   }
 
   @override
@@ -200,7 +238,9 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              'Bienvenue !\nVoici ta sélection personnalisée',
+              _model.firstName.isNotEmpty
+                  ? 'Bienvenue ${_model.firstName} !\nVoici ta sélection personnalisée'
+                  : 'Bienvenue !\nVoici ta sélection personnalisée',
               style: GoogleFonts.poppins(
                 color: const Color(0xFF4B5563),
                 fontSize: 13,
@@ -215,15 +255,29 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
   }
 
   Widget _buildCategories() {
-    return SizedBox(
-      height: 50,
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        scrollDirection: Axis.horizontal,
-        itemCount: _model.categories.length,
-        itemBuilder: (context, index) {
-          final category = _model.categories[index];
-          final isActive = _model.activeCategory == category['name'];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 20, bottom: 8),
+          child: Text(
+            'Filtre par catégorie',
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF6B7280),
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 50,
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            scrollDirection: Axis.horizontal,
+            itemCount: _model.categories.length,
+            itemBuilder: (context, index) {
+              final category = _model.categories[index];
+              final isActive = _model.activeCategory == category['name'];
 
           return Padding(
             padding: const EdgeInsets.only(right: 10),
@@ -280,8 +334,10 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
               ),
             ),
           );
-        },
-      ),
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -430,7 +486,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Image avec bouton coeur
+              // Image avec bouton coeur et badge catégorie
               Stack(
                 children: [
                   ClipRRect(
@@ -445,6 +501,37 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                       fit: BoxFit.cover,
                     ),
                   ),
+                  // Badge catégorie en haut à gauche
+                  if (product['category'] != null && product['category'] != '')
+                    Positioned(
+                      top: 12,
+                      left: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: violetColor.withOpacity(0.95),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          _getCategoryEmoji(product['category'] as String),
+                          style: GoogleFonts.poppins(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
                   // Bouton coeur
                   Positioned(
                     top: 12,

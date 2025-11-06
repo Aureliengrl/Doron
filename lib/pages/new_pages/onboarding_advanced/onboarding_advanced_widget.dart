@@ -141,15 +141,48 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
                 Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: () {
-                      setState(() {
-                        // If at step 0 and returnTo exists, go back to that page
-                        if (_model.currentStep == 0 && returnTo != null && returnTo.isNotEmpty) {
-                          context.go(returnTo);
-                        } else {
-                          // Otherwise, go to previous step
-                          _model.handleBack();
+                    onTap: () async {
+                      // If at step 0 and returnTo exists, go back to that page
+                      if (_model.currentStep == 0 && returnTo != null && returnTo.isNotEmpty) {
+                        context.go(returnTo);
+                        return;
+                      }
+
+                      // If at step 1 (first question) and no returnTo, confirm exit
+                      if (_model.currentStep == 1 && (returnTo == null || returnTo.isEmpty) && !skipUserQuestions) {
+                        final shouldExit = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: Text(
+                              'Quitter l\'onboarding ?',
+                              style: GoogleFonts.poppins(fontWeight: FontWeight.bold),
+                            ),
+                            content: Text(
+                              'Tu n\'as pas encore terminé. Veux-tu vraiment quitter ?',
+                              style: GoogleFonts.poppins(),
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(false),
+                                child: Text('Continuer', style: GoogleFonts.poppins(color: violetColor)),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(true),
+                                child: Text('Quitter', style: GoogleFonts.poppins(color: Colors.red)),
+                              ),
+                            ],
+                          ),
+                        );
+
+                        if (shouldExit == true && context.mounted) {
+                          context.go('/authentification');
                         }
+                        return;
+                      }
+
+                      // Otherwise, go to previous step
+                      setState(() {
+                        _model.handleBack();
                       });
                     },
                     borderRadius: BorderRadius.circular(50),
@@ -242,6 +275,8 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
       return _buildWelcomeScreen(stepData);
     } else if (type == 'transition') {
       return _buildTransitionScreen(stepData);
+    } else if (type == 'text') {
+      return _buildTextInputScreen(stepData);
     } else if (type == 'single' || type == 'multiple') {
       return _buildQuestionScreen(stepData);
     } else if (type == 'slider') {
@@ -361,6 +396,89 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
           style: GoogleFonts.poppins(
             fontSize: 18,
             color: Colors.grey[600],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextInputScreen(Map<String, dynamic> stepData) {
+    final field = stepData['field'] as String;
+    final placeholder = stepData['placeholder'] as String? ?? '';
+    final currentValue = _model.answers[field] as String? ?? '';
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          stepData['icon'] as String,
+          style: const TextStyle(fontSize: 80),
+        ),
+        const SizedBox(height: 32),
+        Text(
+          stepData['question'] as String,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.poppins(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: violetColor,
+          ),
+        ),
+        if (stepData['subtitle'] != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            stepData['subtitle'] as String,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              fontSize: 16,
+              color: Colors.grey[600],
+            ),
+          ),
+        ],
+        const SizedBox(height: 40),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 40),
+          child: TextField(
+            onChanged: (value) {
+              setState(() {
+                _model.answers[field] = value;
+              });
+            },
+            controller: TextEditingController(text: currentValue)
+              ..selection = TextSelection.fromPosition(
+                TextPosition(offset: currentValue.length),
+              ),
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: violetColor,
+            ),
+            decoration: InputDecoration(
+              hintText: placeholder,
+              hintStyle: GoogleFonts.poppins(
+                fontSize: 20,
+                color: Colors.grey[400],
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: BorderSide(color: violetColor.withOpacity(0.3)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: BorderSide(color: violetColor.withOpacity(0.3)),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(20),
+                borderSide: BorderSide(color: violetColor, width: 2),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 20,
+              ),
+            ),
           ),
         ),
       ],
