@@ -144,6 +144,11 @@ class OpenAIHomeService {
     final userInterests = (userProfile?['interests'] as List?)?.join(', ') ?? '';
     final userStyle = userProfile?['style'] ?? '';
 
+    // Extraire le seed de variation pour forcer la diversité
+    final refreshTimestamp = userProfile?['_refresh_timestamp'] ?? 0;
+    final variationSeed = userProfile?['_variation_seed'] ?? 0;
+    final uniqueId = '$refreshTimestamp-$variationSeed';
+
     // Obtenir les marques prioritaires selon le profil démographique
     final priorityBrands = userAge.isNotEmpty && userGender.isNotEmpty
         ? BrandList.getPriorityBrandsByProfile(age: userAge, gender: userGender)
@@ -310,6 +315,14 @@ Focus: Produits POPULAIRES, TRENDING, UNIVERSELS
 Approche: Best-sellers, Must-have, Produits viraux
 Différence clé: Inspiration LARGE vs. Cadeau PERSONNALISÉ
 
+🔄 VARIATION FORCÉE - ID UNIQUE: $uniqueId
+⚠️ IMPORTANT: À chaque nouvelle requête, tu DOIS varier les produits suggérés.
+• NE répète PAS les mêmes produits qu'avant
+• Explore différentes marques à chaque fois
+• Varie les gammes de prix
+• Propose des produits originaux et surprenants
+• Utilise cet ID unique pour te souvenir de varier: $uniqueId
+
 ═══════════════════════════════════════════════════════════
 📋 MISSION
 ═══════════════════════════════════════════════════════════
@@ -330,12 +343,36 @@ $allBrands
 📋 INSTRUCTIONS STRICTES
 ═══════════════════════════════════════════════════════════
 1. **PRODUITS RÉELS UNIQUEMENT**: Produits qui EXISTENT vraiment dans ces marques
+
 2. **IMAGES UNSPLASH**: Fournis des URLs d'images Unsplash pertinentes
    Format: https://images.unsplash.com/photo-[ID]?w=600&q=80
-3. **URLs OFFICIELLES**: Liens vers les sites officiels des marques
+
+3. **URLS PRODUITS SPÉCIFIQUES - ULTRA CRITIQUE**
+   ⚠️⚠️⚠️ ATTENTION MAXIMALE SUR CE POINT ⚠️⚠️⚠️
+
+   Tu DOIS fournir des liens vers les PAGES PRODUITS EXACTES, pas les sites de marques !
+
+   ✅ BON EXEMPLE:
+   • "url": "https://www.zara.com/fr/pull-cachemire-col-rond-p01234567.html"
+   • "url": "https://www.apple.com/fr/shop/buy-iphone/iphone-15-pro"
+   • "url": "https://www.nike.com/fr/t/air-max-90-chaussure-1234567"
+
+   ❌ MAUVAIS EXEMPLE (NE FAIS JAMAIS ÇA):
+   • "url": "https://www.zara.com/fr"  ❌ Trop générique !
+   • "url": "https://www.nike.com"     ❌ Pas le lien produit !
+
+   📋 STRATÉGIE SI TU NE CONNAIS PAS L'URL EXACTE:
+   • Utilise: "https://www.google.com/search?q=[Marque]+[Nom Produit Complet]"
+   • Exemple: "https://www.google.com/search?q=Nike+Air+Max+90+White"
+
+   💡 L'utilisateur DOIT pouvoir cliquer et arriver DIRECTEMENT sur le produit
+
 4. **PRIX RÉALISTES**: Entre 20€ et 500€ selon la catégorie
+
 5. **DESCRIPTIONS ENGAGEANTES**: 2-3 phrases inspirantes
+
 6. **DIVERSITÉ**: Varie les marques et sous-catégories
+
 7. **FORMAT JSON STRICT**: Réponds UNIQUEMENT en JSON valide
 
 ═══════════════════════════════════════════════════════════
@@ -350,7 +387,7 @@ $allBrands
       "price": 89,
       "brand": "Marque exacte",
       "source": "Nom du magasin",
-      "url": "https://www.siteofficial.com",
+      "url": "https://www.siteofficial.com/product-name-p12345.html",
       "match": 88,
       "image": "https://images.unsplash.com/photo-xxxxx?w=600&q=80",
       "category": "Catégorie"
@@ -359,6 +396,7 @@ $allBrands
 }
 
 ⚠️ CRUCIAL: Réponds SEULEMENT avec le JSON, pas de texte explicatif avant ou après.
+⚠️ RAPPEL URLS: Chaque "url" doit pointer vers la PAGE PRODUIT SPÉCIFIQUE !
 ''';
   }
 

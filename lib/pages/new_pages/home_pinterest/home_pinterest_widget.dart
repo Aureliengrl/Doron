@@ -50,11 +50,18 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
       final firstName = userProfile?['firstName'] as String? ?? '';
       _model.setFirstName(firstName);
 
+      // Ajouter un seed de variation pour forcer ChatGPT à générer de nouveaux produits à chaque refresh
+      final profileWithVariation = {
+        ...?userProfile,
+        '_refresh_timestamp': DateTime.now().millisecondsSinceEpoch,
+        '_variation_seed': DateTime.now().microsecond,
+      };
+
       // Générer les produits via ChatGPT
       final products = await OpenAIHomeService.generateHomeProducts(
         category: _model.activeCategory,
-        userProfile: userProfile,
-        count: 30, // 30 produits minimum comme demandé
+        userProfile: profileWithVariation,
+        count: 50, // 50 produits minimum comme demandé
       );
 
       if (mounted) {

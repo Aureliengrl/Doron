@@ -54,7 +54,7 @@ class _OnboardingGiftsResultWidgetState
       // Générer les cadeaux via ChatGPT
       final gifts = await OpenAIOnboardingService.generateOnboardingGifts(
         userProfile: profileWithVariation,
-        count: 30, // 30 produits minimum
+        count: 50, // 50 produits minimum comme demandé
       );
 
       if (mounted) {

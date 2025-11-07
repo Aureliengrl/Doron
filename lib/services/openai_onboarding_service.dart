@@ -623,8 +623,25 @@ puis explore la liste complète pour diversifier.
    Format obligatoire: https://images.unsplash.com/photo-[ID]?w=600&q=80
    Choisis des images pertinentes et esthétiques
 
-9️⃣ **URLS OFFICIELLES DES MARQUES**
-   Liens vers les vrais sites (Apple.com, Zara.com, Sephora.fr, etc.)
+9️⃣ **URLS PRODUITS SPÉCIFIQUES - ULTRA CRITIQUE**
+   ⚠️⚠️⚠️ ATTENTION MAXIMALE SUR CE POINT ⚠️⚠️⚠️
+
+   Tu DOIS fournir des liens vers les PAGES PRODUITS EXACTES, pas les sites de marques !
+
+   ✅ BON EXEMPLE:
+   • "url": "https://www.zara.com/fr/pull-cachemire-col-rond-p01234567.html"
+   • "url": "https://www.sephora.fr/p/coffret-skincare-rituals-sakura-12345.html"
+   • "url": "https://www.apple.com/fr/shop/buy-iphone/iphone-15-pro"
+
+   ❌ MAUVAIS EXEMPLE (NE FAIS JAMAIS ÇA):
+   • "url": "https://www.zara.com/fr"  ❌ Trop générique !
+   • "url": "https://www.sephora.fr"   ❌ Pas le lien produit !
+
+   📋 STRATÉGIE SI TU NE CONNAIS PAS L'URL EXACTE:
+   • Utilise le format: "https://www.google.com/search?q=[Marque]+[Nom Produit Complet]"
+   • Exemple: "https://www.google.com/search?q=Zara+Pull+Cachemire+Premium+Col+Rond"
+
+   💡 L'utilisateur DOIT pouvoir cliquer et arriver DIRECTEMENT sur la page du produit spécifique
 
 🔟 **MATCH SCORE PRÉCIS**
    • 95-100: Cadeau PARFAIT, correspond exactement aux tags
@@ -644,13 +661,15 @@ puis explore la liste complète pour diversifier.
       "price": 89,
       "brand": "Marque exacte",
       "source": "Nom du magasin/site",
-      "url": "https://www.siteofficial.com/product",
+      "url": "https://www.siteofficial.com/product-name-p12345.html",
       "match": 95,
       "image": "https://images.unsplash.com/photo-xxxxx?w=600&q=80",
       "category": "Catégorie du produit"
     }
   ]
 }
+
+⚠️ RAPPEL URLS: Assure-toi que chaque "url" pointe vers la PAGE PRODUIT SPÉCIFIQUE, pas juste le site !
 
 ⚠️⚠️⚠️ RAPPELS FINAUX CRITIQUES ⚠️⚠️⚠️
 ✓ MÉMORISE les tags de $personName - ils sont LA CLÉ
