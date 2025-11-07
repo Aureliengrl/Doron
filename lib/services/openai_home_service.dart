@@ -366,10 +366,24 @@ $allBrands
 ═══════════════════════════════════════════════════════════
 1. **PRODUITS RÉELS UNIQUEMENT**: Produits qui EXISTENT vraiment dans ces marques
 
-2. **IMAGES UNSPLASH**: Fournis des URLs d'images Unsplash pertinentes
+2. **DIVERSITÉ MAXIMALE OBLIGATOIRE** ⚠️ ULTRA-IMPORTANT ⚠️:
+   - JAMAIS 2 produits de la MÊME sous-catégorie consécutifs
+   - JAMAIS plus de 2 produits d'une MÊME sous-catégorie dans toute la liste
+   - Exemple INTERDIT : Chaussures → Chaussures → Chaussures ❌
+   - Exemple INTERDIT : Sac → Sac → Pull → Sac → Sac ❌
+   - Exemple CORRECT : Chaussures → Tech → Beauté → Vêtement → Déco → Bijoux → Chaussures ✅
+   - Alterne OBLIGATOIREMENT entre catégories :
+     * Mode (Vêtements, Chaussures, Sacs, Bijoux, Lunettes)
+     * Tech (Électronique, Gadgets, Audio, Gaming)
+     * Beauté (Maquillage, Parfum, Soin)
+     * Maison (Déco, Cuisine, Linge)
+     * Sport (Équipement, Vêtements sport)
+     * Culture (Livres, Jeux, Loisirs)
+
+3. **IMAGES UNSPLASH**: Fournis des URLs d'images Unsplash pertinentes
    Format: https://images.unsplash.com/photo-[ID]?w=600&q=80
 
-3. **URLS PRODUITS SPÉCIFIQUES - ULTRA CRITIQUE**
+4. **URLS PRODUITS SPÉCIFIQUES - ULTRA CRITIQUE**
    ⚠️⚠️⚠️ ATTENTION MAXIMALE SUR CE POINT ⚠️⚠️⚠️
 
    Tu DOIS fournir des liens vers les PAGES PRODUITS EXACTES, pas les sites de marques !
@@ -389,11 +403,9 @@ $allBrands
 
    💡 L'utilisateur DOIT pouvoir cliquer et arriver DIRECTEMENT sur le produit
 
-4. **PRIX RÉALISTES**: Entre 20€ et 500€ selon la catégorie
+5. **PRIX RÉALISTES**: Entre 20€ et 500€ selon la catégorie
 
-5. **DESCRIPTIONS ENGAGEANTES**: 2-3 phrases inspirantes
-
-6. **DIVERSITÉ**: Varie les marques et sous-catégories
+6. **DESCRIPTIONS ENGAGEANTES**: 2-3 phrases inspirantes
 
 7. **FORMAT JSON STRICT**: Réponds UNIQUEMENT en JSON valide
 

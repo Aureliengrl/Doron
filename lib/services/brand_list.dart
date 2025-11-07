@@ -14,20 +14,20 @@ Zara, Zara Men, Zara Women, Zara Home, H&M, Mango, Stradivarius, Bershka, Pull &
     final isMale = gender.toLowerCase().contains('homme') || gender.toLowerCase().contains('🙋‍♂️');
     final isFemale = gender.toLowerCase().contains('femme') || gender.toLowerCase().contains('🙋‍♀️');
 
-    // Hommes 18-30 ans
+    // Hommes 18-30 ans (Priorités client: Tom Ford, StockX, Bell, Apple, Fnac, Zara, On)
     if (isMale && (age == '18-25' || age == '26-35')) {
       return [
-        'Massimo Dutti', 'Gucci', 'Sandro', 'Rimowa', 'Apple',
-        'Bell', 'StockX', 'Maison Margiela', 'Zara Men', 'On Running',
-        'Nike', 'Adidas', 'AMI Paris', 'A.P.C.', 'The Kooples',
+        'Tom Ford', 'StockX', 'Bell', 'Apple', 'Fnac', 'Zara', 'On Running',
+        'Massimo Dutti', 'Gucci', 'Sandro', 'Rimowa',
+        'Maison Margiela', 'Zara Men', 'Nike', 'Adidas',
       ];
     }
 
-    // Femmes 18-30 ans
+    // Femmes 18-30 ans (Priorités client: Zara, Maje, ba&sh, Isabel Marant, Ganni, Miu Miu, Rhude, Zara Home, SMEG, Apple, Messika, Alo)
     if (isFemale && (age == '18-25' || age == '26-35')) {
       return [
-        'Maje', 'Ba&sh', 'Isabel Marant', 'Ganni', 'Miu Miu',
-        'Rhude', 'SMEG', 'Apple', 'Messika', 'Lush', 'Alo Yoga',
+        'Zara', 'Maje', 'ba&sh', 'Isabel Marant', 'Ganni', 'Miu Miu',
+        'Rhude', 'Zara Home', 'SMEG', 'Apple', 'Messika', 'Alo Yoga',
         'Sézane', 'Sandro', 'Zara Women', '& Other Stories',
       ];
     }
@@ -35,18 +35,19 @@ Zara, Zara Men, Zara Women, Zara Home, H&M, Mango, Stradivarius, Bershka, Pull &
     // Hommes 30-45 ans
     if (isMale && (age == '36-45')) {
       return [
-        'Gucci', 'Louis Vuitton', 'Montblanc', 'Apple', 'Rimowa',
-        'Massimo Dutti', 'Tom Ford', 'Maison Margiela',
-        'AMI Paris', 'Stone Island', 'Arc\'teryx', 'On Running',
+        'Tom Ford', 'StockX', 'Bell', 'Apple', 'Fnac', 'On Running',
+        'Gucci', 'Louis Vuitton', 'Montblanc', 'Rimowa', 'Zara',
+        'Massimo Dutti', 'Maison Margiela', 'AMI Paris', 'Stone Island',
       ];
     }
 
-    // Femmes 30-45 ans
+    // Femmes 30-45 ans (Priorités: Zara, Maje, ba&sh, Isabel Marant, Ganni, Miu Miu, etc.)
     if (isFemale && (age == '36-45')) {
       return [
-        'Isabel Marant', 'Sandro', 'Maje', 'Chanel', 'Dior',
-        'Ba&sh', 'The Frankie Shop', 'Totême', 'Messika',
-        'Diptyque', 'Byredo', 'Apple', 'Polène',
+        'Zara', 'Maje', 'ba&sh', 'Isabel Marant', 'Ganni', 'Miu Miu',
+        'Messika', 'Zara Home', 'SMEG', 'Apple', 'Rhude',
+        'Chanel', 'Dior', 'Sandro', 'The Frankie Shop', 'Totême',
+        'Diptyque', 'Byredo', 'Polène', 'Alo Yoga',
       ];
     }
 

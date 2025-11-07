@@ -20,8 +20,19 @@ class OpenAIService {
     return part1 + part2 + part3;
   }
 
-  /// Marques prioritaires fournies par le client
-  static const List<String> priorityBrands = [
+  /// Marques ULTRA-PRIORITAIRES pour FEMMES (à privilégier en premier)
+  static const List<String> topPriorityBrandsFemale = [
+    'Zara', 'Maje', 'ba&sh', 'Isabel Marant', 'Ganni', 'Miu Miu',
+    'Rhude', 'Zara Home', 'SMEG', 'Apple', 'Messika', 'Alo Yoga',
+  ];
+
+  /// Marques ULTRA-PRIORITAIRES pour HOMMES (à privilégier en premier)
+  static const List<String> topPriorityBrandsMale = [
+    'Tom Ford', 'StockX', 'Bell', 'Apple', 'Fnac', 'Zara', 'On Running',
+  ];
+
+  /// Toutes les marques disponibles (185 marques)
+  static const List<String> allBrands = [
     'Zara', 'Zara Men', 'Zara Women', 'Zara Home', 'H&M', 'Mango',
     'Stradivarius', 'Bershka', 'Pull & Bear', 'Massimo Dutti', 'Uniqlo',
     'COS', 'Arket', 'Weekday', '& Other Stories', 'Sézane', 'Sandro',
@@ -197,7 +208,20 @@ class OpenAIService {
     // Catégories préférées
     final categories = (answers['preferredCategories'] as List?)?.join(', ') ?? '';
 
-    final brandsString = priorityBrands.take(50).join(', ');
+    // Déterminer le genre pour les marques prioritaires
+    final gender = answers['gender'] ?? '';
+    final isFemale = gender.toLowerCase().contains('femme') ||
+                     gender.toLowerCase().contains('fille') ||
+                     recipient.toLowerCase().contains('maman') ||
+                     recipient.toLowerCase().contains('sœur') ||
+                     recipient.toLowerCase().contains('amie') ||
+                     recipient.toLowerCase().contains('copine') ||
+                     recipient.toLowerCase().contains('grand-mère');
+
+    // Sélectionner les marques prioritaires selon le genre
+    final topBrands = isFemale ? topPriorityBrandsFemale : topPriorityBrandsMale;
+    final topBrandsString = topBrands.join(', ');
+    final allBrandsString = allBrands.join(', ');
 
     return '''
 Génère $count suggestions de cadeaux ULTRA-PERSONNALISÉS basées sur un profil détaillé.
@@ -227,23 +251,33 @@ ${alreadyHas.isNotEmpty ? '• ⚠️ POSSÈDE DÉJÀ : $alreadyHas (NE PAS sugg
 ${categories.isNotEmpty ? '• Catégories favorites : $categories' : ''}
 
 ═══════════════════════════════════════════════════════════
-🏪 MARQUES PRIORITAIRES À UTILISER
+⭐ MARQUES À PRIVILÉGIER EN PRIORITÉ (mise en avant)
 ═══════════════════════════════════════════════════════════
-$brandsString
+$topBrandsString
+
+═══════════════════════════════════════════════════════════
+🏪 TOUTES LES MARQUES DISPONIBLES (185 marques)
+═══════════════════════════════════════════════════════════
+$allBrandsString
 
 ═══════════════════════════════════════════════════════════
 📋 INSTRUCTIONS STRICTES
 ═══════════════════════════════════════════════════════════
-1. **UTILISE LES DEUX PROFILS** : Le destinataire (ses goûts) ET l'offreur (son style de cadeau)
-2. **PRODUITS RÉELS UNIQUEMENT** : Suggère des produits qui EXISTENT vraiment dans ces marques
-3. **VARIATION DES PRIX** : Entre ${(budget * 0.5).toInt()}€ et ${(budget * 1.5).toInt()}€ autour du budget
-4. **DIVERSITÉ MAXIMALE** : JAMAIS 2 produits de la même catégorie consécutifs
-   - Alterne : Mode → Tech → Beauté → Déco → Sport → Culture → etc.
-5. **ÉVITE LES DOUBLONS** : Ne suggère PAS ce que la personne possède déjà
-6. **SCORING PRÉCIS** : Match entre 75-100 basé sur la correspondance profil
-7. **RAISONS PERSONNALISÉES** : Explique POURQUOI ce cadeau correspond (mentionne ses hobbies/personnalité)
-8. **URLS RÉELLES** : Fournis des URLs valides vers les sites officiels des marques
-9. **FORMAT JSON STRICT** : Réponds UNIQUEMENT en JSON valide, sans texte avant/après
+1. **MARQUES PRIORITAIRES** : Utilise EN PRIORITÉ les marques de la section "⭐ À PRIVILÉGIER" (au moins 50% des produits)
+2. **UTILISE LES DEUX PROFILS** : Le destinataire (ses goûts) ET l'offreur (son style de cadeau)
+3. **PRODUITS RÉELS UNIQUEMENT** : Suggère des produits qui EXISTENT vraiment dans ces marques
+4. **VARIATION DES PRIX** : Entre ${(budget * 0.5).toInt()}€ et ${(budget * 1.5).toInt()}€ autour du budget
+5. **DIVERSITÉ MAXIMALE OBLIGATOIRE** :
+   - JAMAIS 2 produits de la même catégorie consécutifs
+   - JAMAIS plus de 2 produits d'une même catégorie dans toute la liste
+   - Exemple INTERDIT : Chaussures → Chaussures → Chaussures ❌
+   - Exemple CORRECT : Chaussures → Tech → Beauté → Vêtement → Déco → Chaussures ✅
+   - Alterne : Mode → Tech → Beauté → Déco → Sport → Culture → Bijoux → Maison → etc.
+6. **ÉVITE LES DOUBLONS** : Ne suggère PAS ce que la personne possède déjà
+7. **SCORING PRÉCIS** : Match entre 75-100 basé sur la correspondance profil
+8. **RAISONS PERSONNALISÉES** : Explique POURQUOI ce cadeau correspond (mentionne ses hobbies/personnalité)
+9. **URLS RÉELLES** : Fournis des URLs valides vers les sites officiels des marques
+10. **FORMAT JSON STRICT** : Réponds UNIQUEMENT en JSON valide, sans texte avant/après
 
 ═══════════════════════════════════════════════════════════
 📦 FORMAT DE RÉPONSE (JSON UNIQUEMENT)
