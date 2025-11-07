@@ -40,10 +40,32 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
     _model = HomePinterestModel();
     // Effacer le contexte de personne (les favoris de cette page seront "en vrac")
     FirebaseDataService.setCurrentPersonContext(null);
+    _loadFavorites(); // Charger les favoris depuis Firebase
     _loadProducts();
 
     // Écouter le scroll pour l'infinite scroll
     _scrollController.addListener(_onScroll);
+  }
+
+  /// Charge les favoris depuis Firebase
+  Future<void> _loadFavorites() async {
+    try {
+      final favorites = await FirebaseDataService.loadFavorites();
+      if (mounted) {
+        setState(() {
+          // Ajouter tous les IDs des favoris au modèle
+          for (var fav in favorites) {
+            final productId = fav['id'];
+            if (productId != null) {
+              _model.likedProducts.add(productId);
+            }
+          }
+        });
+        print('✅ ${_model.likedProducts.length} favoris chargés depuis Firebase');
+      }
+    } catch (e) {
+      print('❌ Erreur chargement favoris: $e');
+    }
   }
 
   void _onScroll() {

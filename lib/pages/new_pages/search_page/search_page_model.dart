@@ -8,6 +8,7 @@ class SearchPageModel {
   Set<int> likedProducts = {};
   Set<String> likedProductTitles = {}; // Pour identifier les produits likés par titre
   bool isLoading = true;
+  String? errorMessage;
 
   List<Map<String, dynamic>> profiles = [];
 
@@ -22,6 +23,8 @@ class SearchPageModel {
   Future<void> loadProfiles() async {
     try {
       isLoading = true;
+      errorMessage = null;
+
       profiles = await FirebaseDataService.loadGiftProfiles();
 
       // Sélectionner le premier profil par défaut s'il y en a
@@ -42,6 +45,7 @@ class SearchPageModel {
     } catch (e) {
       print('❌ Error loading profiles: $e');
       isLoading = false;
+      errorMessage = 'Erreur lors du chargement des profils: ${e.toString()}';
     }
   }
 

@@ -87,28 +87,8 @@ class QuickFiltersWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      child: Row(
-        children: [
-          _buildFilterChip(
-            label: 'Mes favoris',
-            icon: Icons.favorite,
-            isActive: showOnlyFavorites,
-            onTap: () => onToggleFilter('favorites'),
-          ),
-          const SizedBox(width: 8),
-          _buildFilterChip(
-            label: 'En promo',
-            icon: Icons.local_offer,
-            isActive: false,
-            onTap: () {
-              // Future implementation
-            },
-          ),
-        ],
-      ),
-    );
+    // Filtres désactivés (ne servent à rien)
+    return const SizedBox.shrink();
   }
 
   Widget _buildFilterChip({

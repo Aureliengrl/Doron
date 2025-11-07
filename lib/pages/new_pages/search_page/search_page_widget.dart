@@ -43,6 +43,55 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // Afficher une erreur si le chargement a échoué
+    if (_model.errorMessage != null) {
+      return Scaffold(
+        key: scaffoldKey,
+        backgroundColor: const Color(0xFFF9FAFB),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
+                const SizedBox(height: 24),
+                Text(
+                  'Erreur',
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red[700],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  _model.errorMessage!,
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    color: const Color(0xFF6B7280),
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => _loadData(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: violetColor,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  ),
+                  child: Text(
+                    'Réessayer',
+                    style: GoogleFonts.poppins(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     // Afficher un indicateur de chargement si les données sont en cours de chargement
     if (_model.isLoading) {
       return Scaffold(
