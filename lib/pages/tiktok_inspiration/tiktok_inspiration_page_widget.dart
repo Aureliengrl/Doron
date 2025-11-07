@@ -299,7 +299,7 @@ class _TikTokInspirationPageWidgetState
 
             // Bouton retour
             TextButton(
-              onPressed: () => context.pop(),
+              onPressed: () => Navigator.pop(context),
               child: Text(
                 'Retour',
                 style: GoogleFonts.poppins(
