@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '/services/openai_home_service.dart';
 import '/services/firebase_data_service.dart';
 import '/auth/firebase_auth/auth_util.dart';
@@ -210,6 +212,9 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
   Future<void> _toggleFavorite(Map<String, dynamic> product) async {
     final productId = product['id'] as int;
     final isCurrentlyLiked = _model.likedProducts.contains(productId);
+
+    // Haptic feedback
+    HapticFeedback.mediumImpact();
 
     // Toggle l'état local immédiatement pour l'UI
     if (mounted) {
@@ -509,7 +514,11 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => context.push('/inspiration'),
+          onTap: () {
+            // Haptic feedback
+            HapticFeedback.mediumImpact();
+            context.push('/inspiration');
+          },
           borderRadius: BorderRadius.circular(20),
           child: Container(
             padding: const EdgeInsets.all(20),
@@ -533,7 +542,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
             ),
             child: Row(
               children: [
-                // Icône
+                // Icône avec animation rotate
                 Container(
                   width: 56,
                   height: 56,
@@ -546,7 +555,13 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                     color: Colors.white,
                     size: 28,
                   ),
-                ),
+                )
+                    .animate(onPlay: (controller) => controller.repeat())
+                    .shimmer(
+                      duration: 2000.ms,
+                      color: Colors.white.withOpacity(0.3),
+                    )
+                    .then(delay: 2000.ms),
                 const SizedBox(width: 16),
                 // Texte
                 Expanded(
@@ -582,7 +597,12 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                                 letterSpacing: 0.5,
                               ),
                             ),
-                          ),
+                          )
+                              .animate(onPlay: (controller) => controller.repeat())
+                              .fadeIn(duration: 1000.ms)
+                              .then(delay: 500.ms)
+                              .fadeOut(duration: 1000.ms)
+                              .then(delay: 500.ms),
                         ],
                       ),
                       const SizedBox(height: 4),
@@ -597,17 +617,38 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                     ],
                   ),
                 ),
-                // Flèche
+                // Flèche avec animation
                 const Icon(
                   Icons.arrow_forward_ios,
                   color: Colors.white,
                   size: 18,
-                ),
+                )
+                    .animate(onPlay: (controller) => controller.repeat())
+                    .moveX(begin: 0, end: 4, duration: 1000.ms, curve: Curves.easeInOut)
+                    .then()
+                    .moveX(begin: 4, end: 0, duration: 1000.ms, curve: Curves.easeInOut),
               ],
             ),
-          ),
+          )
+              .animate()
+              .fadeIn(duration: 400.ms, curve: Curves.easeOut)
+              .slideY(begin: 0.3, end: 0, duration: 400.ms, curve: Curves.easeOut),
         ),
-      ),
+      )
+          .animate(onPlay: (controller) => controller.repeat())
+          .scale(
+            begin: const Offset(1.0, 1.0),
+            end: const Offset(1.02, 1.02),
+            duration: 2000.ms,
+            curve: Curves.easeInOut,
+          )
+          .then()
+          .scale(
+            begin: const Offset(1.02, 1.02),
+            end: const Offset(1.0, 1.0),
+            duration: 2000.ms,
+            curve: Curves.easeInOut,
+          ),
     );
   }
 
@@ -642,6 +683,8 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
               color: Colors.transparent,
               child: InkWell(
                 onTap: () {
+                  // Haptic feedback
+                  HapticFeedback.lightImpact();
                   setState(() {
                     _model.activeCategory = category['name'] as String;
                   });
@@ -690,7 +733,19 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                 ),
               ),
             ),
-          );
+          )
+              .animate()
+              .fadeIn(
+                delay: Duration(milliseconds: 100 * index),
+                duration: 300.ms,
+              )
+              .slideX(
+                begin: -0.2,
+                end: 0,
+                delay: Duration(milliseconds: 100 * index),
+                duration: 300.ms,
+                curve: Curves.easeOut,
+              );
             },
           ),
         ),
@@ -886,11 +941,14 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
 
   Widget _buildProductCard(Map<String, dynamic> product) {
     final isLiked = _model.likedProducts.contains(product['id']);
+    final productIndex = _model.products.indexOf(product);
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
+          // Haptic feedback
+          HapticFeedback.lightImpact();
           setState(() {
             _model.selectedProduct = product;
           });
@@ -958,7 +1016,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                         ),
                       ),
                     ),
-                  // Bouton coeur
+                  // Bouton coeur avec animation
                   Positioned(
                     top: 12,
                     right: 12,
@@ -967,7 +1025,8 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                       child: InkWell(
                         onTap: () => _toggleFavorite(product),
                         borderRadius: BorderRadius.circular(50),
-                        child: Container(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
@@ -975,8 +1034,10 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 12,
+                                color: isLiked
+                                    ? Colors.red.withOpacity(0.4)
+                                    : Colors.black.withOpacity(0.2),
+                                blurRadius: isLiked ? 16 : 12,
                                 offset: const Offset(0, 4),
                               ),
                             ],
@@ -986,7 +1047,16 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                             color: isLiked ? Colors.white : const Color(0xFF374151),
                             size: 20,
                           ),
-                        ),
+                        )
+                            .animate(
+                              key: ValueKey('heart_$isLiked'),
+                            )
+                            .scale(
+                              begin: const Offset(0.8, 0.8),
+                              end: const Offset(1.0, 1.0),
+                              duration: 200.ms,
+                              curve: Curves.elasticOut,
+                            ),
                       ),
                     ),
                   ),
@@ -996,7 +1066,19 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           ),
         ),
       ),
-    );
+    )
+        .animate()
+        .fadeIn(
+          delay: Duration(milliseconds: 50 * productIndex),
+          duration: 400.ms,
+        )
+        .slideY(
+          begin: 0.2,
+          end: 0,
+          delay: Duration(milliseconds: 50 * productIndex),
+          duration: 400.ms,
+          curve: Curves.easeOut,
+        );
   }
 
   void _showProductDetail(Map<String, dynamic> product) {

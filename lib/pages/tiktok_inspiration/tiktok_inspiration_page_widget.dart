@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/backend/backend.dart';
 import '/backend/schema/structs/index.dart';
@@ -25,13 +27,15 @@ class TikTokInspirationPageWidget extends StatefulWidget {
 }
 
 class _TikTokInspirationPageWidgetState
-    extends State<TikTokInspirationPageWidget> {
+    extends State<TikTokInspirationPageWidget> with TickerProviderStateMixin {
   late TikTokInspirationPageModel _model;
   late PageController _verticalPageController;
   late PageController _horizontalPageController;
+  late AnimationController _likeAnimationController;
 
   final Color violetColor = const Color(0xFF8A2BE2);
   Set<int> _likedProducts = {};
+  bool _showLikeAnimation = false;
 
   @override
   void initState() {
@@ -39,6 +43,10 @@ class _TikTokInspirationPageWidgetState
     _model = TikTokInspirationPageModel();
     _verticalPageController = PageController();
     _horizontalPageController = PageController();
+    _likeAnimationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
 
     // Effacer le contexte de personne
     FirebaseDataService.setCurrentPersonContext(null);
@@ -50,6 +58,7 @@ class _TikTokInspirationPageWidgetState
   void dispose() {
     _verticalPageController.dispose();
     _horizontalPageController.dispose();
+    _likeAnimationController.dispose();
     _model.dispose();
     super.dispose();
   }
@@ -364,26 +373,45 @@ class _TikTokInspirationPageWidgetState
     final isLiked = _likedProducts.contains(productId);
     final photos = [product['image'] as String? ?? ''];
 
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        // PageView horizontal pour swiper entre photos
-        PageView.builder(
-          controller: _horizontalPageController,
-          scrollDirection: Axis.horizontal,
-          itemCount: photos.length,
-          onPageChanged: (index) {
-            _model.setCurrentPhotoIndex(index);
-          },
-          itemBuilder: (context, photoIndex) {
-            return ProductImage(
-              imageUrl: photos[photoIndex],
-              height: double.infinity,
-              borderRadius: BorderRadius.zero,
-              fit: BoxFit.cover,
-            );
-          },
-        ),
+    return GestureDetector(
+      onDoubleTap: () async {
+        // Double tap to like (comme TikTok)
+        HapticFeedback.mediumImpact();
+
+        if (!isLiked) {
+          setState(() {
+            _showLikeAnimation = true;
+          });
+
+          _likeAnimationController.forward(from: 0).then((_) {
+            setState(() {
+              _showLikeAnimation = false;
+            });
+          });
+
+          await _toggleFavorite(product);
+        }
+      },
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // PageView horizontal pour swiper entre photos
+          PageView.builder(
+            controller: _horizontalPageController,
+            scrollDirection: Axis.horizontal,
+            itemCount: photos.length,
+            onPageChanged: (index) {
+              _model.setCurrentPhotoIndex(index);
+            },
+            itemBuilder: (context, photoIndex) {
+              return ProductImage(
+                imageUrl: photos[photoIndex],
+                height: double.infinity,
+                borderRadius: BorderRadius.zero,
+                fit: BoxFit.cover,
+              );
+            },
+          ),
 
         // Gradient overlay pour rendre le texte lisible
         Positioned.fill(
@@ -557,6 +585,40 @@ class _TikTokInspirationPageWidgetState
           ),
         ),
 
+        // Progress indicator sur le côté droit
+        Positioned(
+          right: 12,
+          top: 0,
+          bottom: 0,
+          child: Center(
+            child: Container(
+              width: 4,
+              height: 200,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(2),
+              ),
+              child: FractionallySizedBox(
+                alignment: Alignment.topCenter,
+                heightFactor: (_model.currentProductIndex + 1) / _model.products.length,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        const Color(0xFFEC4899),
+                        const Color(0xFF8A2BE2),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+
         // Bouton coeur à droite
         Positioned(
           right: 20,
@@ -564,9 +626,13 @@ class _TikTokInspirationPageWidgetState
           child: Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: () => _toggleFavorite(product),
+              onTap: () {
+                HapticFeedback.mediumImpact();
+                _toggleFavorite(product);
+              },
               borderRadius: BorderRadius.circular(50),
-              child: Container(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
@@ -580,8 +646,10 @@ class _TikTokInspirationPageWidgetState
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.3),
-                      blurRadius: 12,
+                      color: isLiked
+                          ? Colors.red.withOpacity(0.5)
+                          : Colors.black.withOpacity(0.3),
+                      blurRadius: isLiked ? 20 : 12,
                       offset: const Offset(0, 4),
                     ),
                   ],
@@ -591,11 +659,40 @@ class _TikTokInspirationPageWidgetState
                   color: Colors.white,
                   size: 28,
                 ),
-              ),
+              )
+                  .animate(
+                    key: ValueKey('tiktok_heart_$isLiked'),
+                  )
+                  .scale(
+                    begin: const Offset(0.8, 0.8),
+                    end: const Offset(1.0, 1.0),
+                    duration: 200.ms,
+                    curve: Curves.elasticOut,
+                  ),
             ),
           ),
         ),
-      ],
+
+        // Animation coeur au centre (double tap)
+        if (_showLikeAnimation)
+          Center(
+            child: Icon(
+              Icons.favorite,
+              size: 120,
+              color: Colors.white,
+            )
+                .animate(controller: _likeAnimationController)
+                .scale(
+                  begin: const Offset(0.0, 0.0),
+                  end: const Offset(1.2, 1.2),
+                  duration: 400.ms,
+                  curve: Curves.elasticOut,
+                )
+                .then()
+                .fadeOut(duration: 400.ms),
+          ),
+        ],
+      ),
     );
   }
 }
