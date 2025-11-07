@@ -408,7 +408,6 @@ class _TikTokInspirationPageWidgetState
                 imageUrl: photos[photoIndex],
                 height: double.infinity,
                 borderRadius: BorderRadius.zero,
-                fit: BoxFit.cover,
               );
             },
           ),
