@@ -172,10 +172,10 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8.0),
                     child: Image.asset(
-                      'assets/images/IMG_1926.jpeg',
-                      width: 308.7,
-                      height: 161.77,
-                      fit: BoxFit.cover,
+                      'assets/images/doron_logo.png',
+                      width: 200,
+                      height: 200,
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
@@ -317,7 +317,7 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                               }
 
                                               context.goNamedAuth(
-                                                  HomeAlgoaceWidget.routeName,
+                                                  OnboardingGiftsResultWidget.routeName,
                                                   context.mounted);
                                             }
                                           ][i]();
@@ -1187,7 +1187,7 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                   () {});
 
                                                               context.goNamedAuth(
-                                                                  HomeAlgoaceWidget
+                                                                  OnboardingGiftsResultWidget
                                                                       .routeName,
                                                                   context
                                                                       .mounted);
@@ -1265,9 +1265,9 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                 0.0, 0.0),
                                                         child: FFButtonWidget(
                                                           onPressed: () async {
-                                                            context.pushNamed(
-                                                                HomeAlgoaceWidget
-                                                                    .routeName);
+                                                            context.go(
+                                                                OnboardingGiftsResultWidget
+                                                                    .routePath);
                                                           },
                                                           text: FFLocalizations
                                                                   .of(context)
@@ -1450,7 +1450,7 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                               return;
                                                                             }
 
-                                                                            context.goNamedAuth(HomeAlgoaceWidget.routeName,
+                                                                            context.goNamedAuth(OnboardingGiftsResultWidget.routeName,
                                                                                 context.mounted);
                                                                           },
                                                                           text:
@@ -1522,7 +1522,7 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                                   return;
                                                                                 }
 
-                                                                                context.goNamedAuth(HomeAlgoaceWidget.routeName, context.mounted);
+                                                                                context.goNamedAuth(OnboardingGiftsResultWidget.routeName, context.mounted);
                                                                               },
                                                                               text: FFLocalizations.of(context).getText(
                                                                                 'xy6o5xqi' /* Continue with Apple */,
@@ -2240,7 +2240,7 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                   }
 
                                                                   context.goNamedAuth(
-                                                                      HomeAlgoaceWidget
+                                                                      OnboardingGiftsResultWidget
                                                                           .routeName,
                                                                       context
                                                                           .mounted);
@@ -2336,7 +2336,7 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                         }
 
                                                                         context.goNamedAuth(
-                                                                            HomeAlgoaceWidget.routeName,
+                                                                            OnboardingGiftsResultWidget.routeName,
                                                                             context.mounted);
                                                                       },
                                                                       text: FFLocalizations.of(

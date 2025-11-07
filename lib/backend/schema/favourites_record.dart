@@ -37,6 +37,11 @@ class FavouritesRecord extends FirestoreRecord {
   DateTime? get timeStamp => _timeStamp;
   bool hasTimeStamp() => _timeStamp != null;
 
+  // "personId" field - ID de la personne (pour grouper les favoris par personne)
+  String? _personId;
+  String? get personId => _personId;
+  bool hasPersonId() => _personId != null;
+
   void _initializeFields() {
     _uid = snapshotData['uid'] as DocumentReference?;
     _platform = snapshotData['platform'] is Platforms
@@ -46,6 +51,7 @@ class FavouritesRecord extends FirestoreRecord {
         ? snapshotData['product']
         : ProductsStruct.maybeFromMap(snapshotData['product']);
     _timeStamp = snapshotData['TimeStamp'] as DateTime?;
+    _personId = snapshotData['personId'] as String?;
   }
 
   static CollectionReference get collection =>
@@ -87,6 +93,7 @@ Map<String, dynamic> createFavouritesRecordData({
   Platforms? platform,
   ProductsStruct? product,
   DateTime? timeStamp,
+  String? personId,
 }) {
   final firestoreData = mapToFirestore(
     <String, dynamic>{
@@ -94,6 +101,7 @@ Map<String, dynamic> createFavouritesRecordData({
       'platform': platform,
       'product': ProductsStruct().toMap(),
       'TimeStamp': timeStamp,
+      'personId': personId,
     }.withoutNulls,
   );
 
@@ -111,12 +119,13 @@ class FavouritesRecordDocumentEquality implements Equality<FavouritesRecord> {
     return e1?.uid == e2?.uid &&
         e1?.platform == e2?.platform &&
         e1?.product == e2?.product &&
-        e1?.timeStamp == e2?.timeStamp;
+        e1?.timeStamp == e2?.timeStamp &&
+        e1?.personId == e2?.personId;
   }
 
   @override
   int hash(FavouritesRecord? e) => const ListEquality()
-      .hash([e?.uid, e?.platform, e?.product, e?.timeStamp]);
+      .hash([e?.uid, e?.platform, e?.product, e?.timeStamp, e?.personId]);
 
   @override
   bool isValidKey(Object? o) => o is FavouritesRecord;
