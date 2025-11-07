@@ -11,6 +11,7 @@ import '/backend/schema/enums/enums.dart';
 import '/components/cached_image.dart';
 import '/components/skeleton_loader.dart';
 import 'home_pinterest_model.dart';
+import 'home_pinterest_widgets_extra.dart';
 export 'home_pinterest_model.dart';
 
 class HomePinterestWidget extends StatefulWidget {
@@ -346,6 +347,38 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           slivers: [
             // Header violet arrondi
             SliverToBoxAdapter(child: _buildHeader()),
+
+            // Barre de recherche
+            SliverToBoxAdapter(
+              child: SearchBarWidget(
+                controller: _searchController,
+                onChanged: (value) {
+                  setState(() {
+                    _model.setSearchQuery(value);
+                  });
+                },
+                onClear: () {
+                  _searchController.clear();
+                  setState(() {
+                    _model.setSearchQuery('');
+                  });
+                },
+                violetColor: violetColor,
+              ),
+            ),
+
+            // Quick filters
+            SliverToBoxAdapter(
+              child: QuickFiltersWidget(
+                showOnlyFavorites: _model.showOnlyFavorites,
+                onToggleFilter: (filter) {
+                  setState(() {
+                    _model.toggleQuickFilter(filter);
+                  });
+                },
+                violetColor: violetColor,
+              ),
+            ),
 
             // Message de bienvenue
             SliverToBoxAdapter(child: _buildWelcomeMessage()),
