@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '/services/openai_home_service.dart';
 import '/services/firebase_data_service.dart';
 import '/auth/firebase_auth/auth_util.dart';
@@ -50,11 +51,17 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
       final firstName = userProfile?['firstName'] as String? ?? '';
       _model.setFirstName(firstName);
 
+      // Charger la liste des produits déjà vus depuis le cache
+      final prefs = await SharedPreferences.getInstance();
+      final seenProductsJson = prefs.getStringList('seen_home_products_${_model.activeCategory}') ?? [];
+      print('📋 ${seenProductsJson.length} produits déjà vus dans la catégorie ${_model.activeCategory}');
+
       // Ajouter un seed de variation pour forcer ChatGPT à générer de nouveaux produits à chaque refresh
       final profileWithVariation = {
         ...?userProfile,
         '_refresh_timestamp': DateTime.now().millisecondsSinceEpoch,
         '_variation_seed': DateTime.now().microsecond,
+        '_seen_products': seenProductsJson, // Passer les produits déjà vus
       };
 
       // Générer les produits via ChatGPT
@@ -63,6 +70,21 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
         userProfile: profileWithVariation,
         count: 50, // 50 produits minimum comme demandé
       );
+
+      // Sauvegarder les nouveaux produits dans le cache
+      final newSeenProducts = [...seenProductsJson];
+      for (var product in products) {
+        final productName = '${product['brand']}_${product['name']}';
+        if (!newSeenProducts.contains(productName)) {
+          newSeenProducts.add(productName);
+        }
+      }
+      // Limiter à 200 produits max pour ne pas surcharger
+      if (newSeenProducts.length > 200) {
+        newSeenProducts.removeRange(0, newSeenProducts.length - 200);
+      }
+      await prefs.setStringList('seen_home_products_${_model.activeCategory}', newSeenProducts);
+      print('💾 ${newSeenProducts.length} produits dans le cache (${products.length} nouveaux ajoutés)');
 
       if (mounted) {
         setState(() {
@@ -226,6 +248,9 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
 
             // Catégories
             SliverToBoxAdapter(child: _buildCategories()),
+
+            // Filtres par prix
+            SliverToBoxAdapter(child: _buildPriceFilters()),
 
             // Grille Pinterest 2 colonnes
             _buildPinterestGrid(),
@@ -424,6 +449,84 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
     );
   }
 
+  Widget _buildPriceFilters() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        Padding(
+          padding: const EdgeInsets.only(left: 20, bottom: 8),
+          child: Text(
+            'Filtre par prix',
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF6B7280),
+            ),
+          ),
+        ),
+        SizedBox(
+          height: 50,
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            scrollDirection: Axis.horizontal,
+            itemCount: _model.priceFilters.length,
+            itemBuilder: (context, index) {
+              final filter = _model.priceFilters[index];
+              final isActive = _model.activePriceFilter == filter['id'];
+
+              return Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      setState(() {
+                        _model.activePriceFilter = filter['id'] as String;
+                      });
+                    },
+                    borderRadius: BorderRadius.circular(50),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? const Color(0xFFEC4899) // Rose pour différencier
+                            : const Color(0xFFEC4899).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(50),
+                        boxShadow: isActive
+                            ? [
+                                BoxShadow(
+                                  color: const Color(0xFFEC4899).withOpacity(0.2),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ]
+                            : [],
+                      ),
+                      child: Text(
+                        filter['name'] as String,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: isActive ? Colors.white : const Color(0xFFEC4899),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+
   Widget _buildPinterestGrid() {
     // Afficher un loader pendant le chargement
     if (_model.isLoading) {
@@ -454,8 +557,11 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
       );
     }
 
-    // Afficher un message si aucun produit
-    if (_model.products.isEmpty) {
+    // Séparer en 2 colonnes (avec filtrage par prix)
+    final filteredProducts = _model.getFilteredProducts();
+
+    // Afficher un message si aucun produit (ou aucun après filtrage)
+    if (_model.products.isEmpty || filteredProducts.isEmpty) {
       return SliverToBoxAdapter(
         child: Center(
           child: Padding(
@@ -470,7 +576,9 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                 ),
                 const SizedBox(height: 20),
                 Text(
-                  'Aucun cadeau pour l\'instant',
+                  filteredProducts.isEmpty && _model.products.isNotEmpty
+                      ? 'Aucun produit dans cette gamme de prix'
+                      : 'Aucun cadeau pour l\'instant',
                   style: GoogleFonts.poppins(
                     color: const Color(0xFF6B7280),
                     fontSize: 18,
@@ -480,7 +588,9 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Tire vers le bas pour rafraîchir',
+                  filteredProducts.isEmpty && _model.products.isNotEmpty
+                      ? 'Essaie un autre filtre de prix'
+                      : 'Tire vers le bas pour rafraîchir',
                   style: GoogleFonts.poppins(
                     color: const Color(0xFF9CA3AF),
                     fontSize: 14,
@@ -493,12 +603,10 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
         ),
       );
     }
-
-    // Séparer en 2 colonnes
     final column1 =
-        _model.products.where((p) => _model.products.indexOf(p) % 2 == 0).toList();
+        filteredProducts.where((p) => filteredProducts.indexOf(p) % 2 == 0).toList();
     final column2 =
-        _model.products.where((p) => _model.products.indexOf(p) % 2 != 0).toList();
+        filteredProducts.where((p) => filteredProducts.indexOf(p) % 2 != 0).toList();
 
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),

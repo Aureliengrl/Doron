@@ -37,10 +37,10 @@ class OpenAIHomeService {
             {
               'role': 'system',
               'content':
-                  'Tu es un expert en curation de produits et tendances pour un feed d\'inspiration général. '
-                  'Tu recommandes des produits POPULAIRES, TRENDING et UNIVERSELS de marques premium et accessibles. '
-                  'CONTEXTE IMPORTANT: Ceci est un feed GÉNÉRAL d\'inspiration, PAS des cadeaux personnalisés pour une personne spécifique. '
-                  'Focus sur les best-sellers, produits viraux, must-have du moment. '
+                  'Tu es un expert en curation de produits personnalisés pour un feed d\'inspiration. '
+                  'Tu recommandes des produits ADAPTÉS au profil de l\'utilisateur (ses goûts, son âge, son style, ses intérêts). '
+                  'CONTEXTE IMPORTANT: Ceci est un feed PERSONNALISÉ pour l\'utilisateur, basé sur SON profil. '
+                  'Tu adaptes tes recommandations à SES préférences tout en proposant des produits tendance et populaires. '
                   'Explore la diversité des 400+ marques disponibles. '
                   'Réponds UNIQUEMENT en JSON valide sans texte avant ou après.',
             },
@@ -149,6 +149,22 @@ class OpenAIHomeService {
     final variationSeed = userProfile?['_variation_seed'] ?? 0;
     final uniqueId = '$refreshTimestamp-$variationSeed';
 
+    // Extraire la liste des produits déjà vus
+    final seenProducts = (userProfile?['_seen_products'] as List?)?.cast<String>() ?? [];
+    final seenProductsText = seenProducts.isNotEmpty
+        ? '''
+
+🚫 PRODUITS DÉJÀ VUS (${seenProducts.length}) - NE PAS RÉPÉTER
+═══════════════════════════════════════════════════════════
+⚠️ L'utilisateur a DÉJÀ vu ces produits. Tu DOIS proposer des produits DIFFÉRENTS.
+
+Liste des produits à éviter:
+${seenProducts.take(50).join('\n')}${seenProducts.length > 50 ? '\n... et ${seenProducts.length - 50} autres' : ''}
+
+💡 STRATÉGIE: Explore d'autres marques, d'autres catégories de produits dans le même domaine.
+'''
+        : '';
+
     // Obtenir les marques prioritaires selon le profil démographique
     final priorityBrands = userAge.isNotEmpty && userGender.isNotEmpty
         ? BrandList.getPriorityBrandsByProfile(age: userAge, gender: userGender)
@@ -169,35 +185,40 @@ Privilégie-les pour au moins 40% de tes recommandations dans la catégorie "Pou
     switch (category) {
       case 'Pour toi':
         categoryInstructions = '''
-🎯 CATÉGORIE: POUR TOI (Mix 70% Trending + 30% Personnalisé)
+🎯 CATÉGORIE: POUR TOI (Mix 40% Trending + 60% Personnalisé)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Profil utilisateur:
-• Âge: $userAge
+⚠️ PERSONNALISATION MAXIMALE - Adapte-toi au profil utilisateur ⚠️
+
+👤 PROFIL UTILISATEUR:
+• Âge: $userAge ans
 • Genre: $userGender
 • Centres d'intérêt: $userInterests
 • Style: $userStyle
 
-**Mission IMPORTANTE**: Génère un mix intelligent de produits:
+**Mission ULTRA-IMPORTANTE**: Génère des produits ADAPTÉS à CE profil spécifique:
 
 📊 RÉPARTITION OBLIGATOIRE:
-• 70% TRENDING (Best-sellers, produits populaires)
-  → iPhone 15 Pro, AirPods Pro, Apple Watch, Stanley Cup, Lululemon leggings
-  → Derniers produits viraux TikTok/Instagram
-  → Top produits des marques premium (Apple, Nike, Zara, Sephora)
-  → Must-have du moment, nouveautés 2025
-  → Match score: 80-92
-
-• 30% PERSONNALISÉ (Basé sur le profil utilisateur)
-  → Utilise SES centres d'intérêt: $userInterests
-  → Adapte au style: $userStyle
-  → Produits qui correspondent à SA personnalité
+• 60% PERSONNALISÉ (Basé sur le profil utilisateur)
+  → Si intérêts "tech" → Apple, Samsung, Dyson, Bose, gadgets innovants
+  → Si intérêts "mode" → Zara, H&M, Sandro, Sézane, accessoires tendance
+  → Si intérêts "sport" → Nike, Adidas, Lululemon, Decathlon, équipement
+  → Si intérêts "bien-être" → Sephora, Rituals, L'Occitane, produits spa
+  → Si intérêts "cuisine" → KitchenAid, Le Creuset, ustensiles premium
+  → Adapte le style: $userStyle
   → Match score: 90-100
 
+• 40% TRENDING (Best-sellers adaptés au profil)
+  → Produits viraux qui correspondent à son âge et ses goûts
+  → Nouveautés 2025 dans ses catégories d'intérêt
+  → Must-have du moment adaptés à son style
+  → Match score: 85-92
+
 🎯 STRATÉGIE:
-- Commence avec les best-sellers universels (iPhone, AirPods, Stanley, etc.)
-- Puis insère des produits personnalisés selon ses intérêts
-- Alterne intelligemment entre trending et personnalisé
-- Diversifie les catégories: Mode, Tech, Beauté, Déco, Sport, Culture
+- PRIORITÉ: Utilise ses intérêts ($userInterests) pour choisir les produits
+- STYLE: Respecte son style ($userStyle) dans tous les choix
+- ÂGE: Adapte au profil démographique ($userAge ans, $userGender)
+- DIVERSITÉ: Varie mais reste dans ses centres d'intérêt
+- MARQUES: Utilise les marques prioritaires pour son profil
 ''';
         break;
 
@@ -307,13 +328,13 @@ Profil utilisateur:
     return '''
 🎯 CONTEXTE CRITIQUE - LIS ATTENTIVEMENT 🎯
 ═══════════════════════════════════════════════════════════
-⚠️ CECI EST UN FEED D'INSPIRATION GÉNÉRAL ⚠️
-Tu génères des produits pour un FEED PUBLIC d'inspiration (type Pinterest).
-Ce N'EST PAS pour une personne spécifique avec des tags personnalisés.
+⚠️ CECI EST UN FEED D'INSPIRATION PERSONNALISÉ ⚠️
+Tu génères des produits pour le FEED PERSONNEL de l'utilisateur (type Pinterest).
+Ce N'EST PAS des cadeaux pour quelqu'un d'autre, c'est pour l'UTILISATEUR lui-même.
 
-Focus: Produits POPULAIRES, TRENDING, UNIVERSELS
-Approche: Best-sellers, Must-have, Produits viraux
-Différence clé: Inspiration LARGE vs. Cadeau PERSONNALISÉ
+Focus: Produits adaptés aux GOÛTS de l'utilisateur (âge: $userAge, genre: $userGender)
+Approche: Mix de trending + personnalisé selon ses intérêts ($userInterests) et son style ($userStyle)
+Différence clé: Feed POUR L'UTILISATEUR vs. Cadeaux POUR QUELQU'UN D'AUTRE
 
 🔄 VARIATION FORCÉE - ID UNIQUE: $uniqueId
 ⚠️ IMPORTANT: À chaque nouvelle requête, tu DOIS varier les produits suggérés.
@@ -322,7 +343,7 @@ Différence clé: Inspiration LARGE vs. Cadeau PERSONNALISÉ
 • Varie les gammes de prix
 • Propose des produits originaux et surprenants
 • Utilise cet ID unique pour te souvenir de varier: $uniqueId
-
+$seenProductsText
 ═══════════════════════════════════════════════════════════
 📋 MISSION
 ═══════════════════════════════════════════════════════════
