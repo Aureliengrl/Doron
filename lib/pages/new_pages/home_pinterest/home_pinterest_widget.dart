@@ -120,7 +120,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
         await FavouritesRecord.collection.add(
           createFavouritesRecordData(
             uid: currentUserReference,
-            platform: Platforms.web,
+            platform: Platforms.amazon,
             timeStamp: DateTime.now(),
             personId: null, // Favoris "en vrac" sans personne
             product: ProductsStruct(
@@ -131,7 +131,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
               productStarRating: '',
               productOriginalPrice: '',
               productNumRatings: 0,
-              platform: Platforms.web,
+              platform: Platforms.amazon,
             ),
           ),
         );
