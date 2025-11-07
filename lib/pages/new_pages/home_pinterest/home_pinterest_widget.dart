@@ -9,6 +9,7 @@ import '/backend/backend.dart';
 import '/backend/schema/structs/index.dart';
 import '/backend/schema/enums/enums.dart';
 import '/components/cached_image.dart';
+import '/components/skeleton_loader.dart';
 import 'home_pinterest_model.dart';
 export 'home_pinterest_model.dart';
 
@@ -27,6 +28,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
   final scaffoldKey = GlobalKey<ScaffoldState>();
   final Color violetColor = const Color(0xFF8A2BE2);
   final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
@@ -325,6 +327,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
 
   @override
   void dispose() {
+    _searchController.dispose();
     _scrollController.dispose();
     _model.dispose();
     super.dispose();
@@ -629,30 +632,20 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
   }
 
   Widget _buildPinterestGrid() {
-    // Afficher un loader pendant le chargement
+    // Afficher des skeletons pendant le chargement initial
     if (_model.isLoading) {
-      return SliverToBoxAdapter(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(40),
-            child: Column(
-              children: [
-                CircularProgressIndicator(
-                  color: violetColor,
-                  strokeWidth: 3,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  '✨ ChatGPT génère des cadeaux pour toi...',
-                  style: GoogleFonts.poppins(
-                    color: const Color(0xFF6B7280),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
+      return SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        sliver: SliverGrid(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.65,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+          ),
+          delegate: SliverChildBuilderDelegate(
+            (context, index) => const ProductCardSkeleton(),
+            childCount: 6, // 6 skeletons pendant le chargement
           ),
         ),
       );
