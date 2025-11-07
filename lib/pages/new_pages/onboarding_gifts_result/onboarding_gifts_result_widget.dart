@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '/services/openai_onboarding_service.dart';
 import '/services/firebase_data_service.dart';
 import 'onboarding_gifts_result_model.dart';
@@ -510,9 +512,25 @@ class _OnboardingGiftsResultWidgetState
                           print('✅ Contexte de personne défini: $profileId');
                         }
                       }
-                      // Naviguer vers authentification (premier onboarding) ou home (si déjà auth)
+
+                      // Marquer l'onboarding comme complété
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('onboarding_completed', true);
+                      await prefs.setString('not_first_time', 'true');
+                      print('✅ Onboarding marqué comme complété');
+
+                      // Naviguer vers la page appropriée
                       if (mounted) {
-                        context.go('/authentification');
+                        // Vérifier si l'utilisateur est déjà authentifié
+                        if (FirebaseAuth.instance.currentUser != null) {
+                          // Si déjà connecté, aller directement à l'accueil
+                          print('✅ Utilisateur déjà connecté, navigation vers home');
+                          context.go('/home-pinterest');
+                        } else {
+                          // Sinon, aller à l'authentification
+                          print('🔐 Pas encore connecté, navigation vers auth');
+                          context.go('/authentification');
+                        }
                       }
                     },
               style: ElevatedButton.styleFrom(

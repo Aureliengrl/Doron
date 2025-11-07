@@ -465,13 +465,7 @@ class OnboardingAdvancedModel {
       print('✅ Onboarding terminé: $answers');
 
       try {
-        // 1. Sauvegarder les réponses LOCALEMENT (pour fonctionner sans auth)
-        final prefs = await SharedPreferences.getInstance();
-        final answersJson = answers.map((key, value) => MapEntry(key, value.toString()));
-        await prefs.setString('onboarding_answers_json', answersJson.toString());
-        print('✅ Réponses sauvegardées localement');
-
-        // 2. Sauvegarder dans Firebase si connecté
+        // 1. Sauvegarder les réponses (localement et dans Firebase si connecté)
         await FirebaseDataService.saveOnboardingAnswers(answers);
 
         // Afficher un feedback de succès
@@ -485,26 +479,21 @@ class OnboardingAdvancedModel {
           );
         }
 
-        // 3. Marquer l'onboarding comme complété (seulement si c'est le premier onboarding)
+        // 2. Marquer l'onboarding comme complété (seulement si c'est le premier onboarding)
         if (!skipUserQuestions) {
           await FirstTimeService.setOnboardingCompleted();
         }
 
-        // 4. Navigation
+        // 3. Navigation
         if (context.mounted) {
           // Si returnTo est spécifié, naviguer vers cette page
           if (returnTo != null && returnTo.isNotEmpty) {
             print('🚀 Navigation vers $returnTo');
             context.go(returnTo);
-          } else if (skipUserQuestions) {
-            // Si on a skip les questions utilisateur (= ajout nouvelle personne)
-            // On va directement vers la page de cadeaux
-            print('🚀 Navigation vers page de cadeaux (nouvelle personne)');
-            context.go('/onboarding-gifts-result');
           } else {
-            // Sinon, on va vers l'authentification (premier onboarding)
-            print('🚀 Navigation vers authentification');
-            context.go('/authentification');
+            // Aller vers la page de résultats des cadeaux
+            print('🚀 Navigation vers page de cadeaux');
+            context.go('/onboarding-gifts-result');
           }
         }
       } catch (e) {
@@ -513,10 +502,8 @@ class OnboardingAdvancedModel {
         if (context.mounted) {
           if (returnTo != null && returnTo.isNotEmpty) {
             context.go(returnTo);
-          } else if (skipUserQuestions) {
-            context.go('/onboarding-gifts-result');
           } else {
-            context.go('/authentification');
+            context.go('/onboarding-gifts-result');
           }
         }
       }
