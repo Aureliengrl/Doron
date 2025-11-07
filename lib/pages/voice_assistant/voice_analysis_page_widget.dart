@@ -19,6 +19,7 @@ class VoiceAnalysisPageWidget extends StatefulWidget {
 
 class _VoiceAnalysisPageWidgetState extends State<VoiceAnalysisPageWidget> {
   late VoiceAnalysisPageModel _model;
+  bool _hasNavigated = false;
 
   @override
   void initState() {
@@ -31,7 +32,13 @@ class _VoiceAnalysisPageWidgetState extends State<VoiceAnalysisPageWidget> {
   }
 
   void _onModelChanged() {
-    if (!_model.isAnalyzing && !_model.hasError && _model.analysisResult != null) {
+    if (!_hasNavigated &&
+        !_model.isAnalyzing &&
+        !_model.hasError &&
+        _model.analysisResult != null) {
+      // Marquer comme ayant navigué pour éviter les navigations multiples
+      _hasNavigated = true;
+
       // Navigation automatique vers les résultats
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) {

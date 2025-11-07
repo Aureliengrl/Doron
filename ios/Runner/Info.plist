@@ -82,6 +82,10 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Cette application a besoin d'accéder au microphone pour l'assistant vocal qui permet de décrire vocalement la personne pour qui vous cherchez un cadeau.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Cette application a besoin d'accéder à la reconnaissance vocale pour comprendre votre description et générer des suggestions de cadeaux personnalisées.</string>
 
 </dict>
 </plist>
