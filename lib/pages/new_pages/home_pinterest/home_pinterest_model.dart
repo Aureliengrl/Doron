@@ -4,8 +4,14 @@ class HomePinterestModel {
   Set<int> likedProducts = {};
   Map<String, dynamic>? selectedProduct;
   bool isLoading = false;
+  bool isLoadingMore = false;
   List<Map<String, dynamic>> products = [];
   String firstName = '';
+
+  // Pagination
+  static const int productsPerPage = 12;
+  int currentPage = 0;
+  bool hasMore = true;
 
   final List<Map<String, String>> categories = [
     {'id': 'all', 'name': 'Pour toi', 'emoji': '✨'},
@@ -45,6 +51,24 @@ class HomePinterestModel {
     firstName = name;
   }
 
+  void setLoadingMore(bool loading) {
+    isLoadingMore = loading;
+  }
+
+  void addProducts(List<Map<String, dynamic>> newProducts) {
+    products.addAll(newProducts);
+  }
+
+  void resetPagination() {
+    currentPage = 0;
+    hasMore = true;
+    products.clear();
+  }
+
+  void incrementPage() {
+    currentPage++;
+  }
+
   /// Retourne les produits filtrés selon le prix sélectionné
   List<Map<String, dynamic>> getFilteredProducts() {
     if (activePriceFilter == 'all') {
@@ -67,6 +91,9 @@ class HomePinterestModel {
   }
 
   void dispose() {
-    // Cleanup if needed
+    // Cleanup - clear products and liked list to free memory
+    products.clear();
+    likedProducts.clear();
+    selectedProduct = null;
   }
 }

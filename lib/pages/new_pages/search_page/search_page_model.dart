@@ -11,6 +11,13 @@ class SearchPageModel {
 
   List<Map<String, dynamic>> profiles = [];
 
+  /// Normalise un ID (String ou int) en int pour cohérence
+  int _normalizeId(dynamic id) {
+    if (id is int) return id;
+    if (id is String) return id.hashCode;
+    return 0;
+  }
+
   /// Charge les profils depuis Firebase/Local Storage
   Future<void> loadProfiles() async {
     try {
@@ -19,14 +26,8 @@ class SearchPageModel {
 
       // Sélectionner le premier profil par défaut s'il y en a
       if (profiles.isNotEmpty && selectedProfileId == null) {
-        // Utiliser l'ID du premier profil (qui peut être un String ou un int)
-        final firstId = profiles[0]['id'];
-        if (firstId is int) {
-          selectedProfileId = firstId;
-        } else if (firstId is String) {
-          // Convertir l'ID string en hash int pour la compatibilité
-          selectedProfileId = firstId.hashCode;
-        }
+        // Utiliser l'ID du premier profil (normalisé en int)
+        selectedProfileId = _normalizeId(profiles[0]['id']);
 
         // Charger les favoris de cette personne
         final personId = profiles[0]['id'].toString();
@@ -70,15 +71,10 @@ class SearchPageModel {
 
     try {
       return profiles.firstWhere((p) {
-        final pId = p['id'];
-        if (pId is int) {
-          return pId == selectedProfileId;
-        } else if (pId is String) {
-          return pId.hashCode == selectedProfileId;
-        }
-        return false;
+        return _normalizeId(p['id']) == selectedProfileId;
       });
     } catch (e) {
+      print('⚠️ Profile not found for ID $selectedProfileId');
       return null;
     }
   }
@@ -100,11 +96,7 @@ class SearchPageModel {
   }
 
   Future<void> selectProfile(dynamic profileId) async {
-    if (profileId is int) {
-      selectedProfileId = profileId;
-    } else if (profileId is String) {
-      selectedProfileId = profileId.hashCode;
-    }
+    selectedProfileId = _normalizeId(profileId);
 
     // Charger les favoris de la personne sélectionnée
     final profile = currentProfile;
@@ -137,6 +129,10 @@ class SearchPageModel {
   }
 
   void dispose() {
-    // Cleanup if needed
+    // Cleanup - clear all data to free memory
+    profiles.clear();
+    likedProducts.clear();
+    likedProductTitles.clear();
+    selectedProfileId = null;
   }
 }

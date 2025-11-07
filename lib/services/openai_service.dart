@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '/environment_values.dart';
+import 'http_service.dart';
 
 /// Service pour intégrer OpenAI et générer des suggestions de cadeaux
 class OpenAIService {
@@ -91,8 +92,8 @@ class OpenAIService {
     try {
       final prompt = _buildPrompt(onboardingAnswers, count);
 
-      final response = await http.post(
-        Uri.parse('$_baseUrl/chat/completions'),
+      final response = await HttpService.postWithRetry(
+        url: Uri.parse('$_baseUrl/chat/completions'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $apiKey',

@@ -8,6 +8,7 @@ import '/auth/firebase_auth/auth_util.dart';
 import '/backend/backend.dart';
 import '/backend/schema/structs/index.dart';
 import '/backend/schema/enums/enums.dart';
+import '/components/cached_image.dart';
 import 'home_pinterest_model.dart';
 export 'home_pinterest_model.dart';
 
@@ -25,6 +26,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
   late HomePinterestModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
   final Color violetColor = const Color(0xFF8A2BE2);
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -33,10 +35,26 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
     // Effacer le contexte de personne (les favoris de cette page seront "en vrac")
     FirebaseDataService.setCurrentPersonContext(null);
     _loadProducts();
+
+    // Écouter le scroll pour l'infinite scroll
+    _scrollController.addListener(_onScroll);
   }
 
-  /// Charge les produits depuis ChatGPT selon la catégorie active
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent * 0.8) {
+      // L'utilisateur est à 80% du scroll, charger plus de produits
+      if (!_model.isLoadingMore && _model.hasMore) {
+        _loadMoreProducts();
+      }
+    }
+  }
+
+  /// Charge les produits initiaux (12 premiers)
   Future<void> _loadProducts() async {
+    // Réinitialiser la pagination
+    _model.resetPagination();
+
     if (mounted) {
       setState(() {
         _model.setLoading(true);
@@ -62,13 +80,14 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
         '_refresh_timestamp': DateTime.now().millisecondsSinceEpoch,
         '_variation_seed': DateTime.now().microsecond,
         '_seen_products': seenProductsJson, // Passer les produits déjà vus
+        '_page': 0,
       };
 
-      // Générer les produits via ChatGPT
+      // Générer les produits via ChatGPT (12 premiers)
       final products = await OpenAIHomeService.generateHomeProducts(
         category: _model.activeCategory,
         userProfile: profileWithVariation,
-        count: 50, // 50 produits minimum comme demandé
+        count: HomePinterestModel.productsPerPage,
       );
 
       // Sauvegarder les nouveaux produits dans le cache
@@ -89,6 +108,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
       if (mounted) {
         setState(() {
           _model.setProducts(products);
+          _model.hasMore = products.length >= HomePinterestModel.productsPerPage;
           _model.setLoading(false);
         });
       }
@@ -118,15 +138,81 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
     }
   }
 
+  /// Charge plus de produits (infinite scroll)
+  Future<void> _loadMoreProducts() async {
+    if (_model.isLoadingMore || !_model.hasMore) return;
+
+    if (mounted) {
+      setState(() {
+        _model.setLoadingMore(true);
+      });
+    }
+
+    try {
+      _model.incrementPage();
+
+      final userProfile = await FirebaseDataService.loadOnboardingAnswers();
+      final prefs = await SharedPreferences.getInstance();
+      final seenProductsJson = prefs.getStringList('seen_home_products_${_model.activeCategory}') ?? [];
+
+      final profileWithVariation = {
+        ...?userProfile,
+        '_refresh_timestamp': DateTime.now().millisecondsSinceEpoch,
+        '_variation_seed': DateTime.now().microsecond,
+        '_seen_products': seenProductsJson,
+        '_page': _model.currentPage,
+      };
+
+      // Charger 12 produits supplémentaires
+      final products = await OpenAIHomeService.generateHomeProducts(
+        category: _model.activeCategory,
+        userProfile: profileWithVariation,
+        count: HomePinterestModel.productsPerPage,
+      );
+
+      // Mettre à jour le cache
+      final newSeenProducts = [...seenProductsJson];
+      for (var product in products) {
+        final productName = '${product['brand']}_${product['name']}';
+        if (!newSeenProducts.contains(productName)) {
+          newSeenProducts.add(productName);
+        }
+      }
+      if (newSeenProducts.length > 200) {
+        newSeenProducts.removeRange(0, newSeenProducts.length - 200);
+      }
+      await prefs.setStringList('seen_home_products_${_model.activeCategory}', newSeenProducts);
+
+      if (mounted) {
+        setState(() {
+          _model.addProducts(products);
+          _model.hasMore = products.length >= HomePinterestModel.productsPerPage;
+          _model.setLoadingMore(false);
+        });
+      }
+
+      print('✅ Chargé ${products.length} produits supplémentaires (page ${_model.currentPage})');
+    } catch (e) {
+      print('❌ Erreur chargement plus de produits: $e');
+      if (mounted) {
+        setState(() {
+          _model.setLoadingMore(false);
+        });
+      }
+    }
+  }
+
   /// Toggle favorite avec sauvegarde Firebase
   Future<void> _toggleFavorite(Map<String, dynamic> product) async {
     final productId = product['id'] as int;
     final isCurrentlyLiked = _model.likedProducts.contains(productId);
 
     // Toggle l'état local immédiatement pour l'UI
-    setState(() {
-      _model.toggleLike(productId);
-    });
+    if (mounted) {
+      setState(() {
+        _model.toggleLike(productId);
+      });
+    }
 
     try {
       if (isCurrentlyLiked) {
@@ -184,9 +270,22 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
     } catch (e) {
       print('❌ Erreur toggle favori: $e');
       // Revenir à l'état précédent en cas d'erreur
-      setState(() {
-        _model.toggleLike(productId);
-      });
+      if (mounted) {
+        setState(() {
+          _model.toggleLike(productId);
+        });
+        // Afficher un message d'erreur à l'utilisateur
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '❌ Impossible de modifier les favoris. Vérifiez votre connexion.',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: Colors.red[700],
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -226,6 +325,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _model.dispose();
     super.dispose();
   }
@@ -239,6 +339,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
         color: violetColor,
         onRefresh: _loadProducts,
         child: CustomScrollView(
+          controller: _scrollController,
           slivers: [
             // Header violet arrondi
             SliverToBoxAdapter(child: _buildHeader()),
@@ -256,7 +357,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
             _buildPinterestGrid(),
 
             // Loader pour infinite scroll
-            if (_model.isLoading && _model.products.isNotEmpty)
+            if (_model.isLoadingMore)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(20),
@@ -680,16 +781,12 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
               // Image avec bouton coeur et badge catégorie
               Stack(
                 children: [
-                  ClipRRect(
+                  ProductImage(
+                    imageUrl: product['image'] as String? ?? '',
+                    height: 280,
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(24),
                       topRight: Radius.circular(24),
-                    ),
-                    child: Image.network(
-                      product['image'] as String,
-                      height: 280,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
                     ),
                   ),
                   // Badge catégorie en haut à gauche
@@ -792,16 +889,12 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
               // Image avec boutons
               Stack(
                 children: [
-                  ClipRRect(
+                  ProductImage(
+                    imageUrl: product['image'] as String? ?? '',
+                    height: 280,
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(24),
                       topRight: Radius.circular(24),
-                    ),
-                    child: Image.network(
-                      product['image'] as String,
-                      height: 280,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
                     ),
                   ),
                   // Bouton fermer

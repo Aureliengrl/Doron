@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '/components/cached_image.dart';
 import 'search_page_model.dart';
 export 'search_page_model.dart';
 
@@ -546,16 +547,12 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
               // Image avec bouton coeur
               Stack(
                 children: [
-                  ClipRRect(
+                  ProductImage(
+                    imageUrl: product['image'] as String? ?? '',
+                    height: 180,
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(20),
                       topRight: Radius.circular(20),
-                    ),
-                    child: Image.network(
-                      product['image'] as String,
-                      height: 180,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
                     ),
                   ),
                   // Bouton coeur - affiche rouge si déjà liké dans Firebase
@@ -679,16 +676,12 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
             children: [
               Stack(
                 children: [
-                  ClipRRect(
+                  ProductImage(
+                    imageUrl: product['image'] as String? ?? '',
+                    height: 280,
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(24),
                       topRight: Radius.circular(24),
-                    ),
-                    child: Image.network(
-                      product['image'] as String,
-                      height: 280,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
                     ),
                   ),
                   Positioned(

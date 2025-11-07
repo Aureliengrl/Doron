@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'openai_service.dart';
 import 'brand_list.dart';
+import 'http_service.dart';
 
 /// Service dédié à la génération de produits pour la page d'accueil
 class OpenAIHomeService {
@@ -25,8 +26,8 @@ class OpenAIHomeService {
       print('📤 Envoi de la requête à l\'API OpenAI...');
       print('🔑 Clé API: ${OpenAIService.apiKey.substring(0, 20)}...');
 
-      final response = await http.post(
-        Uri.parse('$_baseUrl/chat/completions'),
+      final response = await HttpService.postWithRetry(
+        url: Uri.parse('$_baseUrl/chat/completions'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ${OpenAIService.apiKey}',

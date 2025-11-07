@@ -8,6 +8,7 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import '/pages/pages/components/loader/loader_widget.dart';
 import '/pages/pages/components/product/product_widget.dart';
 import '/pages/pages/empty_data/empty_data_widget.dart';
+import '/components/cached_image.dart';
 import 'dart:math';
 import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -362,29 +363,14 @@ class _FavouritesWidgetState extends State<FavouritesWidget>
               // Image avec bouton supprimer
               Stack(
                 children: [
-                  ClipRRect(
+                  ProductImage(
+                    imageUrl: product.productPhoto.isNotEmpty
+                        ? product.productPhoto
+                        : 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&q=80',
+                    height: 180,
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(20),
                       topRight: Radius.circular(20),
-                    ),
-                    child: Image.network(
-                      product.productPhoto.isNotEmpty
-                          ? product.productPhoto
-                          : 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&q=80',
-                      height: 180,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 180,
-                          color: Colors.grey[200],
-                          child: Icon(
-                            Icons.card_giftcard,
-                            size: 50,
-                            color: Colors.grey[400],
-                          ),
-                        );
-                      },
                     ),
                   ),
                   // Bouton supprimer
@@ -587,14 +573,12 @@ class _FavouritesWidgetState extends State<FavouritesWidget>
                     ),
                   ],
                 ),
-                child: ClipRRect(
+                child: CachedImage(
+                  imageUrl: product.productPhoto.isNotEmpty
+                      ? product.productPhoto
+                      : 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&q=80',
+                  fit: BoxFit.cover,
                   borderRadius: BorderRadius.circular(20),
-                  child: Image.network(
-                    product.productPhoto.isNotEmpty
-                        ? product.productPhoto
-                        : 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&q=80',
-                    fit: BoxFit.cover,
-                  ),
                 ),
               ),
             ),
