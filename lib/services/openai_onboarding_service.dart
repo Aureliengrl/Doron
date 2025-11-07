@@ -74,6 +74,9 @@ class OpenAIOnboardingService {
         final data = json.decode(response.body);
         final content = data['choices'][0]['message']['content'] as String;
 
+        print('📦 Contenu brut de ChatGPT:');
+        print(content.substring(0, content.length > 500 ? 500 : content.length));
+
         // Parser le JSON retourné par GPT
         final productsData = json.decode(content);
         final productsList = productsData['products'] as List;
@@ -100,19 +103,17 @@ class OpenAIOnboardingService {
         }).toList();
       } else {
         print('❌ ERREUR API - Status: ${response.statusCode}');
-        print('❌ Réponse: ${response.body}');
-        print('⚠️ Utilisation des produits de secours (fallback)');
+        print('❌ Réponse complète: ${response.body}');
         print('═══════════════════════════════════════════════════════════');
         print('');
-        return _getFallbackGifts();
+        throw Exception('API OpenAI a retourné le status ${response.statusCode}: ${response.body}');
       }
     } catch (e) {
       print('❌ EXCEPTION lors de l\'appel API ChatGPT');
       print('❌ Erreur: $e');
-      print('⚠️ Utilisation des produits de secours (fallback)');
       print('═══════════════════════════════════════════════════════════');
       print('');
-      return _getFallbackGifts();
+      rethrow; // Relancer l'erreur au lieu de retourner fallback
     }
   }
 
