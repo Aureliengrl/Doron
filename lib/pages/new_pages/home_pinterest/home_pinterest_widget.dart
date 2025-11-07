@@ -6,6 +6,7 @@ import '/services/firebase_data_service.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/backend/backend.dart';
 import '/backend/schema/structs/index.dart';
+import '/backend/schema/enums/enums.dart';
 import 'home_pinterest_model.dart';
 export 'home_pinterest_model.dart';
 
