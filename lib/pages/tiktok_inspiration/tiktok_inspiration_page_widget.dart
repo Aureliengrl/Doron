@@ -153,7 +153,7 @@ class _TikTokInspirationPageWidgetState
 
             // État d'erreur
             if (model.hasError) {
-              return _buildErrorState(model.errorMessage);
+              return _buildErrorState(model);
             }
 
             // Aucun produit
@@ -192,33 +192,97 @@ class _TikTokInspirationPageWidgetState
     );
   }
 
-  Widget _buildErrorState(String errorMessage) {
+  Widget _buildErrorState(TikTokInspirationPageModel model) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(40),
+        padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 80,
-              color: Colors.red[400],
+            // Icône d'erreur
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: Colors.red[900]?.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.error_outline,
+                size: 60,
+                color: Colors.red[300],
+              ),
             ),
             const SizedBox(height: 24),
+
+            // Titre de l'erreur
             Text(
-              errorMessage,
+              model.errorMessage,
               style: GoogleFonts.poppins(
                 color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
               ),
               textAlign: TextAlign.center,
             ),
+            const SizedBox(height: 16),
+
+            // Détails de l'erreur
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: Colors.red[300]!.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 18, color: Colors.red[200]),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Détails:',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red[200],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    model.errorDetails,
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.white.withOpacity(0.9),
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(height: 24),
-            ElevatedButton(
+
+            // Bouton réessayer
+            ElevatedButton.icon(
               onPressed: () {
                 _model.loadProducts();
               },
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              label: Text(
+                'Réessayer',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: violetColor,
                 padding: const EdgeInsets.symmetric(
@@ -228,13 +292,20 @@ class _TikTokInspirationPageWidgetState
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
+                elevation: 4,
               ),
+            ),
+            const SizedBox(height: 12),
+
+            // Bouton retour
+            TextButton(
+              onPressed: () => context.pop(),
               child: Text(
-                'Réessayer',
+                'Retour',
                 style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
+                  fontSize: 14,
+                  color: Colors.white.withOpacity(0.7),
+                  decoration: TextDecoration.underline,
                 ),
               ),
             ),

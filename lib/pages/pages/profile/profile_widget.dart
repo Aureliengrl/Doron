@@ -13,6 +13,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '/services/openai_service.dart';
+import '/services/openai_onboarding_service.dart';
 import 'profile_model.dart';
 export 'profile_model.dart';
 
@@ -31,6 +33,12 @@ class _ProfileWidgetState extends State<ProfileWidget> {
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
+  // API Diagnostics state
+  bool _showApiDiagnostics = false;
+  bool _testingApi = false;
+  String? _apiTestResult;
+  bool? _apiTestSuccess;
+
   @override
   void initState() {
     super.initState();
@@ -44,6 +52,58 @@ class _ProfileWidgetState extends State<ProfileWidget> {
     _model.dispose();
 
     super.dispose();
+  }
+
+  /// Test the OpenAI API connection
+  Future<void> _testApiConnection() async {
+    setState(() {
+      _testingApi = true;
+      _apiTestResult = null;
+      _apiTestSuccess = null;
+    });
+
+    try {
+      // Test with a minimal request
+      final testProfile = {
+        'recipient': 'Test',
+        'passions': 'Test',
+        'personality': 'Test',
+        '_test': true,
+      };
+
+      // Try to generate just 1 product as a test
+      final products = await OpenAIOnboardingService.generateOnboardingGifts(
+        userProfile: testProfile,
+        count: 1,
+      );
+
+      setState(() {
+        _testingApi = false;
+        _apiTestSuccess = true;
+        _apiTestResult = '✅ API fonctionne correctement!\n${products.length} produit(s) généré(s)';
+      });
+    } catch (e) {
+      String errorMessage = e.toString();
+      String friendlyMessage = '';
+
+      if (errorMessage.contains('401')) {
+        friendlyMessage = '🔑 Clé API invalide ou expirée';
+      } else if (errorMessage.contains('429')) {
+        friendlyMessage = '⚠️ Quota API dépassé';
+      } else if (errorMessage.contains('500') || errorMessage.contains('502')) {
+        friendlyMessage = '🔧 Serveur OpenAI indisponible';
+      } else if (errorMessage.contains('SocketException')) {
+        friendlyMessage = '📡 Pas de connexion internet';
+      } else {
+        friendlyMessage = '❌ Erreur inconnue';
+      }
+
+      setState(() {
+        _testingApi = false;
+        _apiTestSuccess = false;
+        _apiTestResult = '$friendlyMessage\n\nDétails: ${errorMessage.length > 100 ? errorMessage.substring(0, 100) + '...' : errorMessage}';
+      });
+    }
   }
 
   @override
@@ -725,9 +785,164 @@ class _ProfileWidgetState extends State<ProfileWidget> {
               ),
             ],
           ),
+          // API Diagnostics Section
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              children: [
+                // Header button to toggle diagnostics
+                InkWell(
+                  onTap: () {
+                    setState(() {
+                      _showApiDiagnostics = !_showApiDiagnostics;
+                    });
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.developer_mode,
+                          size: 18,
+                          color: Colors.grey[600],
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Diagnostics API',
+                          style: GoogleFonts.poppins(
+                            fontSize: 12,
+                            color: Colors.grey[700],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const Spacer(),
+                        Icon(
+                          _showApiDiagnostics
+                              ? Icons.keyboard_arrow_up
+                              : Icons.keyboard_arrow_down,
+                          size: 20,
+                          color: Colors.grey[600],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                // Expandable content
+                if (_showApiDiagnostics) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey[300]!),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // API Key info
+                        Row(
+                          children: [
+                            Icon(Icons.key, size: 16, color: Colors.grey[600]),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Clé API:',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.grey[800],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          OpenAIService.apiKey.substring(0, 20) + '...' + OpenAIService.apiKey.substring(OpenAIService.apiKey.length - 10),
+                          style: GoogleFonts.robotoMono(
+                            fontSize: 11,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Test button
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: _testingApi ? null : _testApiConnection,
+                            icon: _testingApi
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Icon(Icons.wifi_tethering, size: 18),
+                            label: Text(
+                              _testingApi ? 'Test en cours...' : 'Tester la connexion API',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF8A2BE2),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // Test result
+                        if (_apiTestResult != null) ...[
+                          const SizedBox(height: 12),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: _apiTestSuccess == true
+                                  ? Colors.green[50]
+                                  : Colors.red[50],
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: _apiTestSuccess == true
+                                    ? Colors.green[300]!
+                                    : Colors.red[300]!,
+                              ),
+                            ),
+                            child: Text(
+                              _apiTestResult!,
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                color: _apiTestSuccess == true
+                                    ? Colors.green[900]
+                                    : Colors.red[900],
+                                height: 1.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
           // Credits en tout petit
           Padding(
-            padding: const EdgeInsets.only(top: 32, bottom: 8),
+            padding: const EdgeInsets.only(top: 8, bottom: 8),
             child: Center(
               child: Text(
                 'CREDITS: ICM and to the person who never let me down. Sasha',

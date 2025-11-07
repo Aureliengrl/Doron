@@ -8,6 +8,8 @@ class HomePinterestModel {
   List<Map<String, dynamic>> products = [];
   String firstName = '';
   String searchQuery = '';
+  String? errorMessage;
+  String? errorDetails;
 
   // Quick filters
   bool showOnlyFavorites = false;
@@ -91,6 +93,16 @@ class HomePinterestModel {
         showFreeShipping = !showFreeShipping;
         break;
     }
+  }
+
+  void setError(String? message, String? details) {
+    errorMessage = message;
+    errorDetails = details;
+  }
+
+  void clearError() {
+    errorMessage = null;
+    errorDetails = null;
   }
 
   /// Retourne les produits filtrés selon le prix, la recherche et les quick filters

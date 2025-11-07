@@ -38,6 +38,7 @@ class _OnboardingGiftsResultWidgetState
     if (mounted) {
       setState(() {
         _model.setLoading(true);
+        _model.clearError();
       });
     }
 
@@ -63,30 +64,39 @@ class _OnboardingGiftsResultWidgetState
         setState(() {
           _model.setGifts(gifts);
           _model.setLoading(false);
+          _model.clearError();
         });
       }
     } catch (e) {
       print('❌ Erreur chargement cadeaux: $e');
+
+      // Parser l'erreur pour extraire des détails utiles
+      String errorMessage = 'Erreur de génération des cadeaux';
+      String errorDetails = e.toString();
+
+      // Analyser le type d'erreur
+      if (errorDetails.contains('401')) {
+        errorMessage = '🔑 Clé API invalide ou expirée';
+        errorDetails = 'La clé OpenAI n\'est plus valide. Contacte le développeur pour la renouveler.';
+      } else if (errorDetails.contains('429')) {
+        errorMessage = '⚠️ Quota API dépassé';
+        errorDetails = 'Le quota OpenAI a été atteint. Réessaye plus tard ou contacte le développeur.';
+      } else if (errorDetails.contains('500') || errorDetails.contains('502') || errorDetails.contains('503')) {
+        errorMessage = '🔧 Serveur OpenAI indisponible';
+        errorDetails = 'Le serveur OpenAI a un problème temporaire. Réessaye dans quelques minutes.';
+      } else if (errorDetails.contains('SocketException') || errorDetails.contains('Network')) {
+        errorMessage = '📡 Pas de connexion internet';
+        errorDetails = 'Vérifie ta connexion internet et réessaye.';
+      } else if (errorDetails.contains('FormatException') || errorDetails.contains('json')) {
+        errorMessage = '⚠️ Réponse API invalide';
+        errorDetails = 'ChatGPT a retourné un format incorrect. Réessaye ou contacte le développeur.';
+      }
+
       if (mounted) {
         setState(() {
           _model.setLoading(false);
+          _model.setError(errorMessage, errorDetails);
         });
-        // Afficher l'erreur à l'utilisateur
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '❌ Impossible de générer tes cadeaux. Vérifie ta connexion.',
-              style: GoogleFonts.poppins(),
-            ),
-            backgroundColor: Colors.red[700],
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(
-              label: 'Réessayer',
-              textColor: Colors.white,
-              onPressed: () => _loadGifts(forceRefresh: true),
-            ),
-          ),
-        );
       }
     }
   }
@@ -136,9 +146,11 @@ class _OnboardingGiftsResultWidgetState
               Expanded(
                 child: _model.isLoading
                     ? _buildLoader()
-                    : _model.gifts.isEmpty
-                        ? _buildEmptyState()
-                        : _buildGiftsList(),
+                    : _model.errorMessage != null
+                        ? _buildErrorState()
+                        : _model.gifts.isEmpty
+                            ? _buildEmptyState()
+                            : _buildGiftsList(),
               ),
 
               // Boutons d'action
@@ -252,6 +264,142 @@ class _OnboardingGiftsResultWidgetState
               style: GoogleFonts.poppins(
                 fontSize: 14,
                 color: Colors.grey[500],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Icône d'erreur
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: Colors.red[50],
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.error_outline,
+                size: 60,
+                color: Colors.red[400],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Titre de l'erreur
+            Text(
+              _model.errorMessage ?? 'Une erreur est survenue',
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.red[700],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+
+            // Détails de l'erreur
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.red[50],
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.red[200]!, width: 1),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, size: 18, color: Colors.red[700]),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Détails:',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.red[700],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _model.errorDetails ?? 'Erreur inconnue',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.red[900],
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Bouton réessayer
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => _loadGifts(forceRefresh: true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red[600],
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  elevation: 2,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.refresh, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Réessayer',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Bouton continuer quand même
+            TextButton(
+              onPressed: () async {
+                // Marquer l'onboarding comme complété même sans cadeaux
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('onboarding_completed', true);
+
+                if (mounted) {
+                  if (FirebaseAuth.instance.currentUser != null) {
+                    context.go('/home-pinterest');
+                  } else {
+                    context.go('/authentification');
+                  }
+                }
+              },
+              child: Text(
+                'Continuer sans cadeaux',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                  decoration: TextDecoration.underline,
+                ),
               ),
             ),
           ],

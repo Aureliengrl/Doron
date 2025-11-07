@@ -9,6 +9,7 @@ class TikTokInspirationPageModel extends ChangeNotifier {
   bool _isLoading = false;
   bool _hasError = false;
   String _errorMessage = '';
+  String _errorDetails = '';
 
   int _currentProductIndex = 0;
   int _currentPhotoIndex = 0;
@@ -18,6 +19,7 @@ class TikTokInspirationPageModel extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get hasError => _hasError;
   String get errorMessage => _errorMessage;
+  String get errorDetails => _errorDetails;
   int get currentProductIndex => _currentProductIndex;
   int get currentPhotoIndex => _currentPhotoIndex;
 
@@ -72,8 +74,29 @@ class TikTokInspirationPageModel extends ChangeNotifier {
       print('✅ TikTok Inspiration: ${products.length} produits chargés');
     } catch (e) {
       print('❌ Erreur chargement TikTok Inspiration: $e');
+
+      // Parser l'erreur pour extraire des détails utiles
+      String errorDetails = e.toString();
+
+      // Analyser le type d'erreur
+      if (errorDetails.contains('401')) {
+        _errorMessage = '🔑 Clé API invalide';
+        _errorDetails = 'La clé OpenAI n\'est plus valide. Les produits ne peuvent pas être générés.';
+      } else if (errorDetails.contains('429')) {
+        _errorMessage = '⚠️ Quota API dépassé';
+        _errorDetails = 'Le quota OpenAI a été atteint. Réessaye plus tard.';
+      } else if (errorDetails.contains('500') || errorDetails.contains('502') || errorDetails.contains('503')) {
+        _errorMessage = '🔧 Serveur indisponible';
+        _errorDetails = 'Le serveur OpenAI a un problème temporaire. Réessaye dans quelques minutes.';
+      } else if (errorDetails.contains('SocketException') || errorDetails.contains('Network')) {
+        _errorMessage = '📡 Pas de connexion';
+        _errorDetails = 'Vérifie ta connexion internet et réessaye.';
+      } else {
+        _errorMessage = 'Erreur de chargement';
+        _errorDetails = 'Une erreur est survenue lors du chargement des produits.';
+      }
+
       _hasError = true;
-      _errorMessage = 'Impossible de charger les produits';
       _isLoading = false;
       notifyListeners();
     }

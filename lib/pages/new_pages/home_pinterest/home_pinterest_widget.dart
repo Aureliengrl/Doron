@@ -116,30 +116,36 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           _model.setProducts(products);
           _model.hasMore = products.length >= HomePinterestModel.productsPerPage;
           _model.setLoading(false);
+          _model.clearError(); // Clear any previous errors on success
         });
       }
     } catch (e) {
       print('❌ Erreur chargement produits: $e');
+
+      // Parser l'erreur pour extraire des détails utiles
+      String errorMessage = 'Erreur de chargement';
+      String errorDetails = e.toString();
+
+      // Analyser le type d'erreur
+      if (errorDetails.contains('401')) {
+        errorMessage = '🔑 Clé API invalide';
+        errorDetails = 'La clé OpenAI n\'est plus valide. Les cadeaux ne peuvent pas être générés.';
+      } else if (errorDetails.contains('429')) {
+        errorMessage = '⚠️ Quota API dépassé';
+        errorDetails = 'Le quota OpenAI a été atteint. Réessaye plus tard.';
+      } else if (errorDetails.contains('500') || errorDetails.contains('502') || errorDetails.contains('503')) {
+        errorMessage = '🔧 Serveur indisponible';
+        errorDetails = 'Le serveur OpenAI a un problème temporaire. Réessaye dans quelques minutes.';
+      } else if (errorDetails.contains('SocketException') || errorDetails.contains('Network')) {
+        errorMessage = '📡 Pas de connexion';
+        errorDetails = 'Vérifie ta connexion internet et tire pour rafraîchir.';
+      }
+
       if (mounted) {
         setState(() {
           _model.setLoading(false);
+          _model.setError(errorMessage, errorDetails);
         });
-        // Afficher l'erreur à l'utilisateur
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '❌ Impossible de charger les cadeaux. Tire pour rafraîchir.',
-              style: GoogleFonts.poppins(),
-            ),
-            backgroundColor: Colors.red[700],
-            duration: const Duration(seconds: 4),
-            action: SnackBarAction(
-              label: 'Réessayer',
-              textColor: Colors.white,
-              onPressed: _loadProducts,
-            ),
-          ),
-        );
       }
     }
   }
@@ -853,6 +859,93 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
 
     // Séparer en 2 colonnes (avec filtrage par prix)
     final filteredProducts = _model.getFilteredProducts();
+
+    // Afficher l'erreur si présente
+    if (_model.errorMessage != null) {
+      return SliverToBoxAdapter(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Icône d'erreur
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: Colors.red[50],
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.error_outline,
+                    size: 50,
+                    color: Colors.red[400],
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Titre de l'erreur
+                Text(
+                  _model.errorMessage!,
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red[700],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+
+                // Détails de l'erreur
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.red[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.red[200]!, width: 1),
+                  ),
+                  child: Text(
+                    _model.errorDetails ?? 'Erreur inconnue',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      color: Colors.red[900],
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                // Bouton réessayer
+                ElevatedButton.icon(
+                  onPressed: () {
+                    _model.clearError();
+                    _loadProducts();
+                  },
+                  icon: const Icon(Icons.refresh, color: Colors.white),
+                  label: Text(
+                    'Réessayer',
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red[600],
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     // Afficher un message si aucun produit (ou aucun après filtrage)
     if (_model.products.isEmpty || filteredProducts.isEmpty) {

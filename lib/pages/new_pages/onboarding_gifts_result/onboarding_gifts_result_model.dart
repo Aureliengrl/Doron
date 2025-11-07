@@ -5,6 +5,8 @@ class OnboardingGiftsResultModel {
   List<Map<String, dynamic>> gifts = [];
   bool isLoading = false;
   Map<String, dynamic>? userProfile;
+  String? errorMessage;
+  String? errorDetails;
 
   void setGifts(List<Map<String, dynamic>> newGifts) {
     gifts = newGifts;
@@ -16,6 +18,16 @@ class OnboardingGiftsResultModel {
 
   void setUserProfile(Map<String, dynamic>? profile) {
     userProfile = profile;
+  }
+
+  void setError(String? message, String? details) {
+    errorMessage = message;
+    errorDetails = details;
+  }
+
+  void clearError() {
+    errorMessage = null;
+    errorDetails = null;
   }
 
   void dispose() {
