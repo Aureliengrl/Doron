@@ -20,6 +20,9 @@ import '/flutter_flow/flutter_flow_util.dart';
 import 'serialization_util.dart';
 
 import '/index.dart';
+import '/pages/voice_assistant/voice_listening_page_widget.dart';
+import '/pages/voice_assistant/voice_analysis_page_widget.dart';
+import '/pages/voice_assistant/voice_results_page_widget.dart';
 
 export 'package:go_router/go_router.dart';
 export 'serialization_util.dart';
@@ -272,6 +275,52 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: SplashScreenWidget.routeName,
           path: SplashScreenWidget.routePath,
           builder: (context, params) => SplashScreenWidget(),
+        ),
+        // Voice Assistant routes
+        FFRoute(
+          name: 'voiceListening',
+          path: '/voiceListening',
+          builder: (context, params) {
+            // Import dynamique pour éviter les dépendances circulaires
+            return Builder(
+              builder: (context) {
+                // Import de la page ici
+                final voicePage = VoiceListeningPageWidget();
+                return voicePage;
+              },
+            );
+          },
+        ),
+        FFRoute(
+          name: 'voiceAnalysis',
+          path: '/voiceAnalysis',
+          builder: (context, params) {
+            final transcript = params.state.extra as Map<String, dynamic>?;
+            return Builder(
+              builder: (context) {
+                final voicePage = VoiceAnalysisPageWidget(
+                  transcript: transcript?['transcript'] ?? '',
+                );
+                return voicePage;
+              },
+            );
+          },
+        ),
+        FFRoute(
+          name: 'voiceResults',
+          path: '/voiceResults',
+          builder: (context, params) {
+            final data = params.state.extra as Map<String, dynamic>?;
+            return Builder(
+              builder: (context) {
+                final voicePage = VoiceResultsPageWidget(
+                  analysis: data?['analysis'] ?? {},
+                  transcript: data?['transcript'] ?? '',
+                );
+                return voicePage;
+              },
+            );
+          },
         ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );

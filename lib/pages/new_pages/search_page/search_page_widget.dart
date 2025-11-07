@@ -843,33 +843,116 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
   Widget _buildAddPersonButton() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
-      child: ElevatedButton(
-        onPressed: () => context.go('/onboarding-advanced?skipUserQuestions=true'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: violetColor,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(28),
-          ),
-          elevation: 8,
-          shadowColor: violetColor.withOpacity(0.5),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.add, color: Colors.white, size: 24),
-            const SizedBox(width: 10),
-            Text(
-              'AJOUTER UNE NOUVELLE PERSONNE',
-              style: GoogleFonts.poppins(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-                letterSpacing: 0.5,
+      child: Column(
+        children: [
+          // Bouton traditionnel avec formulaire
+          ElevatedButton(
+            onPressed: () => context.go('/onboarding-advanced?skipUserQuestions=true'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: violetColor,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
               ),
+              elevation: 8,
+              shadowColor: violetColor.withOpacity(0.5),
             ),
-          ],
-        ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.add, color: Colors.white, size: 24),
+                const SizedBox(width: 10),
+                Text(
+                  'AJOUTER UNE NOUVELLE PERSONNE',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          // Séparateur "OU"
+          Row(
+            children: [
+              Expanded(child: Divider(color: Colors.grey[300], thickness: 1)),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Text(
+                  'OU',
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
+              Expanded(child: Divider(color: Colors.grey[300], thickness: 1)),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // Bouton Assistant Vocal (BÊTA)
+          OutlinedButton(
+            onPressed: () {
+              // Naviguer vers la page d'écoute vocale
+              context.push('/voiceListening');
+            },
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(28),
+              ),
+              side: BorderSide(color: violetColor, width: 2),
+              backgroundColor: Colors.white,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.mic, color: violetColor, size: 22),
+                const SizedBox(width: 10),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Essayer l\'assistant vocal',
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: violetColor,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: violetColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'BÊTA',
+                        style: GoogleFonts.poppins(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: violetColor,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
