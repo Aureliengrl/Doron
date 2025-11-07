@@ -146,6 +146,163 @@ Privilégie CES marques pour au moins 60% de tes recommandations.
 Pour les 40% restants, explore d'autres marques de la liste complète pour diversifier.''';
   }
 
+  /// Génère des exemples concrets de produits pour les hobbies
+  static String _buildHobbiesExamples(String hobbies) {
+    final hobbiesLower = hobbies.toLowerCase();
+    final examples = <String>[];
+
+    if (hobbies.isEmpty) return '   • Aucun hobby spécifique renseigné\n';
+
+    if (hobbiesLower.contains('art') || hobbiesLower.contains('🎨')) {
+      examples.add('   ✅ Art → Kit peinture, Fnac Culture, carnets artistiques, cours créatifs');
+    }
+    if (hobbiesLower.contains('sport') || hobbiesLower.contains('⚽')) {
+      examples.add('   ✅ Sport → Chaussures Nike/Adidas, Lululemon, accessoires Decathlon, montres Garmin');
+    }
+    if (hobbiesLower.contains('jeux vidéo') || hobbiesLower.contains('gaming') || hobbiesLower.contains('🎮')) {
+      examples.add('   ✅ Gaming → Casques Razer, manettes Scuf, jeux PlayStation/Xbox, fauteuils Secretlab');
+    }
+    if (hobbiesLower.contains('lecture') || hobbiesLower.contains('📚')) {
+      examples.add('   ✅ Lecture → Livres Fnac, liseuse Kindle, lampe de lecture, marque-pages design');
+    }
+    if (hobbiesLower.contains('musique') || hobbiesLower.contains('🎵')) {
+      examples.add('   ✅ Musique → Enceintes Bose/Marshall, vinyles, écouteurs Sony, concerts');
+    }
+    if (hobbiesLower.contains('voyage') || hobbiesLower.contains('✈️')) {
+      examples.add('   ✅ Voyages → Valises Rimowa/Away, accessoires nomades, livres voyage, carnets Moleskine');
+    }
+    if (hobbiesLower.contains('cuisine') || hobbiesLower.contains('🍳')) {
+      examples.add('   ✅ Cuisine → Ustensiles Le Creuset, robots KitchenAid, cours Ferrandi, livres recettes');
+    }
+    if (hobbiesLower.contains('cinéma') || hobbiesLower.contains('🎬')) {
+      examples.add('   ✅ Cinéma → Coffrets DVD/Blu-ray, abonnements streaming, livres cinéma, affiches');
+    }
+    if (hobbiesLower.contains('yoga') || hobbiesLower.contains('🧘')) {
+      examples.add('   ✅ Yoga → Tapis Lululemon, briques Manduka, vêtements Alo Yoga, accessoires bien-être');
+    }
+    if (hobbiesLower.contains('instrument') || hobbiesLower.contains('🎸')) {
+      examples.add('   ✅ Instruments → Accessoires musicaux, partitions, cours en ligne, entretien instruments');
+    }
+    if (hobbiesLower.contains('photo') || hobbiesLower.contains('📸')) {
+      examples.add('   ✅ Photo → Accessoires photo, livres photographie, cours photo, sacs Peak Design');
+    }
+    if (hobbiesLower.contains('jardinage') || hobbiesLower.contains('🌱')) {
+      examples.add('   ✅ Jardinage → Outils Fiskars, graines bio, livres jardinage, kits potager urbain');
+    }
+
+    if (examples.isEmpty) {
+      return '   • Hobbies: $hobbies → Produits liés à ces passions\n';
+    }
+
+    return examples.join('\n') + '\n';
+  }
+
+  /// Génère des exemples concrets pour la personnalité
+  static String _buildPersonalityExamples(String personality) {
+    final personalityLower = personality.toLowerCase();
+    final examples = <String>[];
+
+    if (personality.isEmpty) return '   • Aucune personnalité spécifique renseignée\n';
+
+    if (personalityLower.contains('joyeux') || personalityLower.contains('😊')) {
+      examples.add('   ✅ Joyeux → Produits colorés, festifs, fun, qui apportent de la joie');
+    }
+    if (personalityLower.contains('intellectuel') || personalityLower.contains('🧠')) {
+      examples.add('   ✅ Intellectuel → Livres, jeux de stratégie, documentaires, abonnements culturels');
+    }
+    if (personalityLower.contains('créatif') || personalityLower.contains('🎨')) {
+      examples.add('   ✅ Créatif → Kits DIY, fournitures artistiques, design original, expériences créatives');
+    }
+    if (personalityLower.contains('actif') || personalityLower.contains('💪')) {
+      examples.add('   ✅ Actif → Équipement sport, accessoires outdoor, gadgets fitness, expériences actives');
+    }
+    if (personalityLower.contains('bienveillant') || personalityLower.contains('🤗')) {
+      examples.add('   ✅ Bienveillant → Produits éthiques, marques responsables, cadeaux solidaires');
+    }
+    if (personalityLower.contains('cool') || personalityLower.contains('😎')) {
+      examples.add('   ✅ Cool → Produits tendance, streetwear, gadgets tech, expériences urbaines');
+    }
+    if (personalityLower.contains('ambitieux') || personalityLower.contains('🎯')) {
+      examples.add('   ✅ Ambitieux → Produits pro, outils productivité, livres développement, coaching');
+    }
+    if (personalityLower.contains('extraverti') || personalityLower.contains('🌟')) {
+      examples.add('   ✅ Extraverti → Expériences sociales, jeux de société, accessoires lifestyle');
+    }
+
+    if (examples.isEmpty) {
+      return '   • Personnalité: $personality → Produits adaptés à cette personnalité\n';
+    }
+
+    return examples.join('\n') + '\n';
+  }
+
+  /// Génère des exemples concrets pour le style
+  static String _buildStyleExamples(String style) {
+    final styleLower = style.toLowerCase();
+
+    if (style.isEmpty) return '   • Aucun style spécifique renseigné\n';
+
+    if (styleLower.contains('élégant') || styleLower.contains('✨')) {
+      return '   ✅ Élégant → Sandro, Sézane, Reiss, produits raffinés, design classique\n';
+    } else if (styleLower.contains('décontracté') || styleLower.contains('😎')) {
+      return '   ✅ Décontracté → Uniqlo, H&M, Mango, basiques qualité, confort\n';
+    } else if (styleLower.contains('créatif') || styleLower.contains('🎨')) {
+      return '   ✅ Créatif → Urban Outfitters, design original, pièces uniques, art\n';
+    } else if (styleLower.contains('sportif') || styleLower.contains('🏃')) {
+      return '   ✅ Sportif → Nike, Adidas, Lululemon, athleisure, performance\n';
+    } else if (styleLower.contains('minimaliste') || styleLower.contains('🌿')) {
+      return '   ✅ Minimaliste → COS, Arket, Muji, épuré, neutres, qualité\n';
+    } else if (styleLower.contains('tendance') || styleLower.contains('🌟')) {
+      return '   ✅ Tendance → Zara, Mango, & Other Stories, nouveautés, fashion forward\n';
+    } else if (styleLower.contains('classique') || styleLower.contains('👔')) {
+      return '   ✅ Classique → A.P.C., Reiss, intemporel, qualité durable\n';
+    } else {
+      return '   • Style: $style → Produits adaptés à ce style\n';
+    }
+  }
+
+  /// Génère des exemples concrets pour les catégories
+  static String _buildCategoriesExamples(String categories) {
+    final categoriesLower = categories.toLowerCase();
+    final examples = <String>[];
+
+    if (categories.isEmpty) return '   • Aucune catégorie spécifique renseignée\n';
+
+    if (categoriesLower.contains('high-tech') || categoriesLower.contains('tech') || categoriesLower.contains('🎯')) {
+      examples.add('   ✅ High-tech → Apple, Samsung, Dyson, Bose, gadgets innovants');
+    }
+    if (categoriesLower.contains('mode') || categoriesLower.contains('👕')) {
+      examples.add('   ✅ Mode → Zara, Mango, Sézane, vêtements, accessoires tendance');
+    }
+    if (categoriesLower.contains('déco') || categoriesLower.contains('maison') || categoriesLower.contains('🏠')) {
+      examples.add('   ✅ Déco/Maison → Maisons du Monde, IKEA, Zara Home, objets design');
+    }
+    if (categoriesLower.contains('art') || categoriesLower.contains('créatif') || categoriesLower.contains('🎨')) {
+      examples.add('   ✅ Art/Créatif → Fnac Culture, Cultura, kits DIY, fournitures artistiques');
+    }
+    if (categoriesLower.contains('gastronomie') || categoriesLower.contains('🍷')) {
+      examples.add('   ✅ Gastronomie → Pierre Hermé, Kusmi Tea, produits fins, expériences culinaires');
+    }
+    if (categoriesLower.contains('culture') || categoriesLower.contains('📚')) {
+      examples.add('   ✅ Culture → Livres, vinyles, spectacles, musées, expériences culturelles');
+    }
+    if (categoriesLower.contains('bien-être') || categoriesLower.contains('💆')) {
+      examples.add('   ✅ Bien-être → Rituals, L\'Occitane, Lush, spa, produits relaxants');
+    }
+    if (categoriesLower.contains('sport') || categoriesLower.contains('outdoor') || categoriesLower.contains('⚽')) {
+      examples.add('   ✅ Sport/Outdoor → Nike, Decathlon, Patagonia, équipement sportif');
+    }
+    if (categoriesLower.contains('gaming') || categoriesLower.contains('🎮')) {
+      examples.add('   ✅ Gaming → PlayStation, Xbox, accessoires gaming, jeux vidéo');
+    }
+
+    if (examples.isEmpty) {
+      return '   • Catégories: $categories → Produits de ces catégories\n';
+    }
+
+    return examples.join('\n') + '\n';
+  }
+
   /// Construit le prompt pour générer des cadeaux personnalisés
   static String _buildOnboardingPrompt(
     Map<String, dynamic> userProfile,
@@ -341,7 +498,7 @@ $variationInstructions
 ═══════════════════════════════════════════════════════════
 🎯 PROFIL DU DESTINATAIRE: $personName
 ═══════════════════════════════════════════════════════════
-⚠️ MÉMORISE CES INFORMATIONS - ELLES SONT CRUCIALES ⚠️
+⚠️⚠️⚠️ MÉMORISE CES TAGS - ILS DÉFINISSENT TOUT ⚠️⚠️⚠️
 
 • Relation: $recipient
 • Budget disponible: ${budget}€
@@ -351,6 +508,27 @@ $variationInstructions
 • 🏷️ STYLE: $recipientStyle
 • 🏷️ CATÉGORIES PRÉFÉRÉES: $preferredCategories
 • 🎉 OCCASION: $occasion
+
+═══════════════════════════════════════════════════════════
+🎯 GUIDE DE MATCHING: TAGS → PRODUITS CONCRETS
+═══════════════════════════════════════════════════════════
+⚠️ UTILISE CE GUIDE POUR CHAQUE TAG DE $personName ⚠️
+
+📌 EXEMPLES CONCRETS PAR TAG:
+
+PASSIONS/HOBBIES - $recipientHobbies:
+${_buildHobbiesExamples(recipientHobbies)}
+
+PERSONNALITÉ - $recipientPersonality:
+${_buildPersonalityExamples(recipientPersonality)}
+
+STYLE - $recipientStyle:
+${_buildStyleExamples(recipientStyle)}
+
+CATÉGORIES - $preferredCategories:
+${_buildCategoriesExamples(preferredCategories)}
+
+💡 RÈGLE D'OR: Chaque produit DOIT matcher avec au moins 1 tag ci-dessus!
 
 ═══════════════════════════════════════════════════════════
 🏪 MARQUES RECOMMANDÉES (basées sur l'analyse des tags)
