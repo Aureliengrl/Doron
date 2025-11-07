@@ -739,6 +739,22 @@ class _ProfileWidgetState extends State<ProfileWidget> {
               ),
             ],
           ),
+          // Credits en tout petit
+          Padding(
+            padding: const EdgeInsets.only(top: 32, bottom: 8),
+            child: Center(
+              child: Text(
+                'CREDITS: ICM and to the person who never let me down. Sasha',
+                style: GoogleFonts.poppins(
+                  fontSize: 9,
+                  color: const Color(0xFF9CA3AF).withOpacity(0.6),
+                  fontWeight: FontWeight.w400,
+                  letterSpacing: 0.2,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
           // Espacement pour la bottom nav
           const SizedBox(height: 100),
           ],
