@@ -32,9 +32,13 @@ class SearchPageModel {
         // Utiliser l'ID du premier profil (normalisé en int)
         selectedProfileId = _normalizeId(profiles[0]['id']);
 
-        // Charger les favoris de cette personne
+        // Charger les favoris de cette personne (ne pas bloquer si ça échoue)
         final personId = profiles[0]['id'].toString();
-        await loadPersonFavorites(personId);
+        try {
+          await loadPersonFavorites(personId);
+        } catch (e) {
+          print('⚠️ Could not load favorites (non-blocking): $e');
+        }
 
         // Définir le contexte actuel
         await FirebaseDataService.setCurrentPersonContext(personId);
@@ -45,7 +49,12 @@ class SearchPageModel {
     } catch (e) {
       print('❌ Error loading profiles: $e');
       isLoading = false;
-      errorMessage = 'Erreur lors du chargement des profils: ${e.toString()}';
+      // Ne pas afficher d'erreur si c'est juste qu'il n'y a pas de profils
+      if (profiles.isEmpty) {
+        errorMessage = null; // Pas d'erreur, juste vide
+      } else {
+        errorMessage = 'Erreur lors du chargement: ${e.toString()}';
+      }
     }
   }
 

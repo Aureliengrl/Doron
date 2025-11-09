@@ -2,6 +2,7 @@ class HomePinterestModel {
   String activeCategory = 'Pour toi';
   String activePriceFilter = 'all';
   Set<int> likedProducts = {};
+  Set<String> likedProductTitles = {}; // Pour FlutterFlow system (par titre)
   Map<String, dynamic>? selectedProduct;
   bool isLoading = false;
   bool isLoadingMore = false;

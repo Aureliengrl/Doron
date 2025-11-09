@@ -47,21 +47,28 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
     _scrollController.addListener(_onScroll);
   }
 
-  /// Charge les favoris depuis Firebase
+  /// Charge les favoris depuis Firebase (FlutterFlow system)
   Future<void> _loadFavorites() async {
     try {
-      final favorites = await FirebaseDataService.loadFavorites();
+      // Charger les favoris FlutterFlow (sans personId = favoris "en vrac")
+      final favorites = await queryFavouritesRecordOnce(
+        queryBuilder: (favoritesRecord) => favoritesRecord
+            .where('uid', isEqualTo: currentUserReference)
+            .where('personId', isNull: true),
+      );
+
       if (mounted) {
         setState(() {
-          // Ajouter tous les IDs des favoris au modèle
+          // On ne peut pas utiliser les IDs car FlutterFlow utilise des titres
+          // On va créer un Set de titres pour la comparaison
+          _model.likedProductTitles.clear();
           for (var fav in favorites) {
-            final productId = fav['id'];
-            if (productId != null) {
-              _model.likedProducts.add(productId);
+            if (fav.product.productTitle.isNotEmpty) {
+              _model.likedProductTitles.add(fav.product.productTitle);
             }
           }
         });
-        print('✅ ${_model.likedProducts.length} favoris chargés depuis Firebase');
+        print('✅ ${_model.likedProductTitles.length} favoris chargés depuis Firebase');
       }
     } catch (e) {
       print('❌ Erreur chargement favoris: $e');
@@ -239,7 +246,8 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
   /// Toggle favorite avec sauvegarde Firebase
   Future<void> _toggleFavorite(Map<String, dynamic> product) async {
     final productId = product['id'] as int;
-    final isCurrentlyLiked = _model.likedProducts.contains(productId);
+    final productTitle = product['name'] ?? '';
+    final isCurrentlyLiked = _model.likedProductTitles.contains(productTitle);
 
     // Haptic feedback
     HapticFeedback.mediumImpact();
@@ -248,6 +256,11 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
     if (mounted) {
       setState(() {
         _model.toggleLike(productId);
+        if (isCurrentlyLiked) {
+          _model.likedProductTitles.remove(productTitle);
+        } else {
+          _model.likedProductTitles.add(productTitle);
+        }
       });
     }
 
@@ -310,6 +323,12 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
       if (mounted) {
         setState(() {
           _model.toggleLike(productId);
+          // Restaurer aussi likedProductTitles
+          if (isCurrentlyLiked) {
+            _model.likedProductTitles.add(productTitle);
+          } else {
+            _model.likedProductTitles.remove(productTitle);
+          }
         });
         // Afficher un message d'erreur à l'utilisateur
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1055,7 +1074,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
   }
 
   Widget _buildProductCard(Map<String, dynamic> product) {
-    final isLiked = _model.likedProducts.contains(product['id']);
+    final isLiked = _model.likedProductTitles.contains(product['name'] ?? '');
     final productIndex = _model.products.indexOf(product);
 
     return Material(
@@ -1197,7 +1216,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
   }
 
   void _showProductDetail(Map<String, dynamic> product) {
-    final isLiked = _model.likedProducts.contains(product['id']);
+    final isLiked = _model.likedProductTitles.contains(product['name'] ?? '');
 
     showDialog(
       context: context,

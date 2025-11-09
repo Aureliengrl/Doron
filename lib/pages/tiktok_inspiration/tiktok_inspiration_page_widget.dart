@@ -144,26 +144,58 @@ class _TikTokInspirationPageWidgetState
       value: _model,
       child: Scaffold(
         backgroundColor: Colors.black,
-        body: Consumer<TikTokInspirationPageModel>(
-          builder: (context, model, child) {
-            // État de chargement
-            if (model.isLoading) {
-              return _buildLoadingState();
-            }
+        body: SafeArea(
+          child: Stack(
+            children: [
+              // Contenu principal
+              Consumer<TikTokInspirationPageModel>(
+                builder: (context, model, child) {
+                  // État de chargement
+                  if (model.isLoading) {
+                    return _buildLoadingState();
+                  }
 
-            // État d'erreur
-            if (model.hasError) {
-              return _buildErrorState(model);
-            }
+                  // État d'erreur
+                  if (model.hasError) {
+                    return _buildErrorState(model);
+                  }
 
-            // Aucun produit
-            if (model.products.isEmpty) {
-              return _buildEmptyState();
-            }
+                  // Aucun produit
+                  if (model.products.isEmpty) {
+                    return _buildEmptyState();
+                  }
 
-            // Vue TikTok
-            return _buildTikTokView(model);
-          },
+                  // Vue TikTok
+                  return _buildTikTokView(model);
+                },
+              ),
+
+              // Bouton retour toujours visible en haut à gauche
+              Positioned(
+                top: 16,
+                left: 16,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => Navigator.pop(context),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
