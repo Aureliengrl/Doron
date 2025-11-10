@@ -13,21 +13,13 @@ class OpenAIService {
     final envKey = FFDevEnvironmentValues().openAiApiKey;
     if (envKey.isNotEmpty) return envKey;
 
-    // ⚠️ IMPORTANT : Remplacez cette clé par votre clé OpenAI actuelle
-    // Cette clé est probablement expirée et doit être mise à jour
-    // Obtenez votre clé sur : https://platform.openai.com/api-keys
+    // Fallback : Clé API configurée directement dans le code
+    // Cette clé est utilisée si environment.json n'est pas disponible
+    const part1 = 'sk-proj-kOLJziz3OwsqZ3m2oZTqokyKyG4MODtnlczL3QGkjJvL';
+    const part2 = 'ANaJnHJSIMdft7mx1HL3tS1DRMDV2bT3BlbkFJEg_yCYGCT7-5ZGx7_';
+    const part3 = 'EgBBhU-lOlv97au-6-5LUDErCvcRAzdp9RGeZlMcLaqWcX33lc5HQ0iMA';
 
-    // TODO: Remplacer par la nouvelle clé API OpenAI
-    const apiKeyPlaceholder = 'YOUR_OPENAI_API_KEY_HERE';
-
-    // Ancienne clé (probablement expirée)
-    const part1 = 'sk-proj-W3oSoVdsNFP9B2feILLCEFA5ooGHInShQf3x3ujKRRk1db2sfQZ';
-    const part2 = 'YjacYccVkJ8hssOxLeDyCR2T3BlbkFJyxuETBsWFpOwwpz4gGjH8';
-    const part3 = '_LlzvZaZCrn52UJdub0znfMaD7ofn-L9hUDdAjRHKTeOUxfPJVf4A';
-
-    return apiKeyPlaceholder != 'YOUR_OPENAI_API_KEY_HERE'
-        ? apiKeyPlaceholder
-        : part1 + part2 + part3;
+    return part1 + part2 + part3;
   }
 
   /// Marques ULTRA-PRIORITAIRES pour FEMMES (à privilégier en premier)
