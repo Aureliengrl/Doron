@@ -4,6 +4,7 @@ import '/flutter_flow/flutter_flow_animations.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
+import 'dart:convert';
 import 'dart:math';
 import 'dart:ui';
 import '/index.dart';
@@ -13,6 +14,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '/services/firebase_data_service.dart';
 import 'authentification_model.dart';
 export 'authentification_model.dart';
 
@@ -172,10 +175,10 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(8.0),
                     child: Image.asset(
-                      'assets/images/IMG_1926.jpeg',
-                      width: 308.7,
-                      height: 161.77,
-                      fit: BoxFit.cover,
+                      'assets/images/doron_logo.png',
+                      width: 200,
+                      height: 200,
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
@@ -317,7 +320,7 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                               }
 
                                               context.goNamedAuth(
-                                                  HomeAlgoaceWidget.routeName,
+                                                  OnboardingGiftsResultWidget.routeName,
                                                   context.mounted);
                                             }
                                           ][i]();
@@ -1187,7 +1190,7 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                   () {});
 
                                                               context.goNamedAuth(
-                                                                  HomeAlgoaceWidget
+                                                                  OnboardingGiftsResultWidget
                                                                       .routeName,
                                                                   context
                                                                       .mounted);
@@ -1265,9 +1268,9 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                 0.0, 0.0),
                                                         child: FFButtonWidget(
                                                           onPressed: () async {
-                                                            context.pushNamed(
-                                                                HomeAlgoaceWidget
-                                                                    .routeName);
+                                                            context.go(
+                                                                OnboardingGiftsResultWidget
+                                                                    .routePath);
                                                           },
                                                           text: FFLocalizations
                                                                   .of(context)
@@ -1450,7 +1453,20 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                               return;
                                                                             }
 
-                                                                            context.goNamedAuth(HomeAlgoaceWidget.routeName,
+                                                                            // Transférer les réponses d'onboarding locales vers Firebase
+                                                                            try {
+                                                                              final prefs = await SharedPreferences.getInstance();
+                                                                              final localData = prefs.getString('local_onboarding_answers');
+                                                                              if (localData != null) {
+                                                                                final answers = json.decode(localData) as Map<String, dynamic>;
+                                                                                await FirebaseDataService.saveOnboardingAnswers(answers);
+                                                                                print('✅ Transferred onboarding answers to Firebase after auth');
+                                                                              }
+                                                                            } catch (e) {
+                                                                              print('❌ Error transferring onboarding answers: $e');
+                                                                            }
+
+                                                                            context.goNamedAuth('HomePinterest',
                                                                                 context.mounted);
                                                                           },
                                                                           text:
@@ -1522,7 +1538,7 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                                   return;
                                                                                 }
 
-                                                                                context.goNamedAuth(HomeAlgoaceWidget.routeName, context.mounted);
+                                                                                context.goNamedAuth(OnboardingGiftsResultWidget.routeName, context.mounted);
                                                                               },
                                                                               text: FFLocalizations.of(context).getText(
                                                                                 'xy6o5xqi' /* Continue with Apple */,
@@ -2239,9 +2255,21 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                     return;
                                                                   }
 
+                                                                  // Transférer les réponses d'onboarding locales vers Firebase
+                                                                  try {
+                                                                    final prefs = await SharedPreferences.getInstance();
+                                                                    final localData = prefs.getString('local_onboarding_answers');
+                                                                    if (localData != null) {
+                                                                      final answers = json.decode(localData) as Map<String, dynamic>;
+                                                                      await FirebaseDataService.saveOnboardingAnswers(answers);
+                                                                      print('✅ Transferred onboarding answers to Firebase after auth');
+                                                                    }
+                                                                  } catch (e) {
+                                                                    print('❌ Error transferring onboarding answers: $e');
+                                                                  }
+
                                                                   context.goNamedAuth(
-                                                                      HomeAlgoaceWidget
-                                                                          .routeName,
+                                                                      'HomePinterest',
                                                                       context
                                                                           .mounted);
                                                                 },
@@ -2336,7 +2364,7 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                         }
 
                                                                         context.goNamedAuth(
-                                                                            HomeAlgoaceWidget.routeName,
+                                                                            OnboardingGiftsResultWidget.routeName,
                                                                             context.mounted);
                                                                       },
                                                                       text: FFLocalizations.of(
