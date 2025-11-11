@@ -8,6 +8,7 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import '/pages/pages/components/open_ai_result_bottom_sheet/open_ai_result_bottom_sheet_widget.dart';
 import '/pages/pages/components/text_field_with_heading/text_field_with_heading_widget.dart';
 import 'dart:math';
+import '/services/gift_search_helper.dart';
 import 'dart:ui';
 import '/custom_code/actions/index.dart' as actions;
 import 'package:flutter/material.dart';
@@ -1086,182 +1087,130 @@ class _GiftGeneratorWidgetState extends State<GiftGeneratorWidget>
                               alignment: AlignmentDirectional(0.0, -1.0),
                               child: FFButtonWidget(
                                 onPressed: () async {
+                                  // Validation du formulaire
                                   if (_model.formKey.currentState == null ||
-                                      !_model.formKey.currentState!
-                                          .validate()) {
+                                      !_model.formKey.currentState!.validate()) {
                                     return;
                                   }
-                                  _model.min = double.tryParse(
-                                      _model.minTextController.text);
-                                  _model.max = double.tryParse(
-                                      _model.maxTextController.text);
-                                  safeSetState(() {});
-                                  if (_model.min! < _model.max!) {
-                                    _model.query = ContentStruct(
-                                      giftrecipient: _model
-                                          .relationModel.textController.text,
-                                      budget: (String min, String max,
-                                              String currency) {
-                                        return '$min $currency - $max $currency';
-                                      }(
-                                          _model.minTextController.text,
-                                          _model.maxTextController.text,
-                                          ('USD')),
-                                      age: int.tryParse(
-                                          _model.ageModel.textController.text),
-                                      interests:
-                                          _model.interests.unique((e) => e),
-                                    );
-                                    safeSetState(() {});
-                                    _model.stringQuerry =
-                                        await actions.contentToString(
-                                      _model.query!,
-                                    );
-                                    _model.apiResponse =
-                                        await OpenAiChatGPTAlgoaceCall.call(
-                                      query: _model.stringQuerry,
-                                    );
 
-                                    if ((_model.apiResponse?.succeeded ??
-                                        true)) {
-                                      _model.apiResultoga =
-                                          await AmazonApiForOpenAICall.call(
-                                        query: OpenAiChatGPTAlgoaceCall.querry(
-                                          (_model.apiResponse?.jsonBody ?? ''),
-                                        ),
-                                        minPrice: double.tryParse(
-                                            _model.minTextController.text),
-                                        maxPrice: double.tryParse(
-                                            _model.maxTextController.text),
-                                      );
+                                  // Récupérer les budgets
+                                  final min = double.tryParse(_model.minTextController.text) ?? 0;
+                                  final max = double.tryParse(_model.maxTextController.text) ?? 100;
 
-                                      if ((_model.apiResultoga?.succeeded ??
-                                          true)) {
-                                        if (AmazonApiForOpenAICall.productsList(
-                                                  (_model.apiResultoga
-                                                          ?.jsonBody ??
-                                                      ''),
-                                                ) !=
-                                                null &&
-                                            (AmazonApiForOpenAICall
-                                                    .productsList(
-                                              (_model.apiResultoga?.jsonBody ??
-                                                  ''),
-                                            ))!
-                                                .isNotEmpty) {
-                                          await showModalBottomSheet(
-                                            isScrollControlled: true,
-                                            backgroundColor: Colors.transparent,
-                                            enableDrag: false,
-                                            context: context,
-                                            builder: (context) {
-                                              return GestureDetector(
-                                                onTap: () {
-                                                  FocusScope.of(context)
-                                                      .unfocus();
-                                                  FocusManager
-                                                      .instance.primaryFocus
-                                                      ?.unfocus();
-                                                },
-                                                child: Padding(
-                                                  padding:
-                                                      MediaQuery.viewInsetsOf(
-                                                          context),
-                                                  child:
-                                                      OpenAiResultBottomSheetWidget(
-                                                    fetchedProducts:
-                                                        AmazonApiForOpenAICall
-                                                            .productsList(
-                                                      (_model.apiResultoga
-                                                              ?.jsonBody ??
-                                                          ''),
-                                                    )!,
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                          ).then(
-                                              (value) => safeSetState(() {}));
-                                        } else {
-                                          ScaffoldMessenger.of(context)
-                                              .clearSnackBars();
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                'Please add relevant interests and price for better search results.',
-                                                style: TextStyle(
-                                                  color: FlutterFlowTheme.of(
-                                                          context)
-                                                      .secondaryBackground,
-                                                ),
-                                              ),
-                                              duration:
-                                                  Duration(milliseconds: 2000),
-                                              backgroundColor:
-                                                  FlutterFlowTheme.of(context)
-                                                      .primary,
-                                            ),
-                                          );
-                                        }
-                                      }
-                                    }
-                                  } else {
-                                    ScaffoldMessenger.of(context)
-                                        .clearSnackBars();
+                                  // Vérifier que le budget est cohérent
+                                  if (min >= max) {
+                                    ScaffoldMessenger.of(context).clearSnackBars();
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text(
-                                          'The minimum budget should be less than the maximum budget.',
+                                          'Le budget minimum doit être inférieur au maximum.',
                                           style: TextStyle(
-                                            color: FlutterFlowTheme.of(context)
-                                                .secondaryBackground,
+                                            color: FlutterFlowTheme.of(context).secondaryBackground,
                                           ),
                                         ),
                                         duration: Duration(milliseconds: 2000),
-                                        backgroundColor:
-                                            FlutterFlowTheme.of(context)
-                                                .primary,
+                                        backgroundColor: FlutterFlowTheme.of(context).primary,
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  // Vérifier qu'il y a au moins un intérêt
+                                  if (_model.interests.isEmpty) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Ajoutez au moins un centre d\'intérêt pour des résultats personnalisés.',
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                        backgroundColor: FlutterFlowTheme.of(context).error,
+                                      ),
+                                    );
+                                    return;
+                                  }
+
+                                  // Afficher le loading
+                                  showDialog(
+                                    context: context,
+                                    barrierDismissible: false,
+                                    builder: (context) => Center(
+                                      child: CircularProgressIndicator(
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          FlutterFlowTheme.of(context).primary,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+
+                                  try {
+                                    print('🎁 Génération de cadeaux personnalisés...');
+
+                                    // Générer des cadeaux personnalisés avec OpenAI (RAPIDE!)
+                                    final products = await GiftSearchHelper.generatePersonalizedGifts(
+                                      recipient: _model.relationModel.textController.text,
+                                      age: _model.ageModel.textController.text,
+                                      interests: _model.interests,
+                                      minBudget: min,
+                                      maxBudget: max,
+                                    );
+
+                                    print('✅ \${products.length} cadeaux générés');
+
+                                    // Fermer le loading
+                                    if (mounted) Navigator.of(context).pop();
+
+                                    if (products.isNotEmpty) {
+                                      // Afficher les résultats dans le bottom sheet
+                                      await showModalBottomSheet(
+                                        isScrollControlled: true,
+                                        backgroundColor: Colors.transparent,
+                                        enableDrag: false,
+                                        context: context,
+                                        builder: (context) {
+                                          return GestureDetector(
+                                            onTap: () {
+                                              FocusScope.of(context).unfocus();
+                                              FocusManager.instance.primaryFocus?.unfocus();
+                                            },
+                                            child: Padding(
+                                              padding: MediaQuery.viewInsetsOf(context),
+                                              child: OpenAiResultBottomSheetWidget(
+                                                fetchedProducts: products,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      ).then((value) => safeSetState(() {}));
+                                    } else {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Aucun cadeau trouvé. Essayez avec d\'autres paramètres.',
+                                            style: TextStyle(color: Colors.white),
+                                          ),
+                                          backgroundColor: FlutterFlowTheme.of(context).error,
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    // Fermer le loading si erreur
+                                    if (mounted) {
+                                      Navigator.of(context).pop();
+                                    }
+
+                                    print('❌ Erreur lors de la recherche: \$e');
+
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Erreur lors de la recherche. Vérifiez votre connexion et réessayez.',
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                        backgroundColor: FlutterFlowTheme.of(context).error,
+                                        duration: Duration(milliseconds: 3000),
                                       ),
                                     );
                                   }
-
-                                  _model.addToDummyProducts(ProductsStruct(
-                                    productTitle:
-                                        'Gifts for Men Women, Phone Stand with Bluetooth Speaker, HD Surround Sound Speaker, Compatible with All iPhone/Android Phones iPad Kindle, Cool Gadget Gift for Men Women Dad Mom Christmas Birthday',
-                                    productPrice: '\$19.99',
-                                    productUrl:
-                                        'https://www.amazon.com/dp/B0CZJP9N38',
-                                    productOriginalPrice: '\$24.99',
-                                    productStarRating: '4.6',
-                                    productPhoto:
-                                        'https://m.media-amazon.com/images/I/71ni2fAZ-EL._AC_UL960_FMwebp_QL65_.jpg',
-                                    productNumRatings: 241,
-                                  ));
-                                  safeSetState(() {});
-                                  await showModalBottomSheet(
-                                    isScrollControlled: true,
-                                    backgroundColor: Colors.transparent,
-                                    enableDrag: false,
-                                    context: context,
-                                    builder: (context) {
-                                      return GestureDetector(
-                                        onTap: () {
-                                          FocusScope.of(context).unfocus();
-                                          FocusManager.instance.primaryFocus
-                                              ?.unfocus();
-                                        },
-                                        child: Padding(
-                                          padding:
-                                              MediaQuery.viewInsetsOf(context),
-                                          child: OpenAiResultBottomSheetWidget(
-                                            fetchedProducts:
-                                                _model.dummyProducts,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ).then((value) => safeSetState(() {}));
 
                                   safeSetState(() {});
                                 },

@@ -1,4 +1,5 @@
 // Export pages
+export '/pages/onboarding/onboarding_widget.dart' show OnboardingWidget;
 export '/pages/authentification/authentification_widget.dart'
     show AuthentificationWidget;
 export '/pages/pages/gift_generator/gift_generator_widget.dart'
