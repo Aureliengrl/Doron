@@ -41,11 +41,10 @@ post_install do |installer|
     target.build_configurations.each do |config|
       config.build_settings.delete 'IPHONEOS_DEPLOYMENT_TARGET'
 
-      # Fix pour le SWIFT_OPTIMIZATION_LEVEL qui cause des erreurs avec Firebase
-      # En mode Debug, on utilise -Onone pour permettre les previews et le debugging
-      if config.name == 'Debug'
-        config.build_settings['SWIFT_OPTIMIZATION_LEVEL'] = '-Onone'
-      end
+      # Fix CRITICAL pour SWIFT_OPTIMIZATION_LEVEL qui cause des erreurs avec Firebase et Flutter
+      # On force -Onone pour TOUS les modes (Debug, Profile, Release) pour éviter les erreurs de build
+      # Cela résout: "SWIFT_OPTIMIZATION_LEVEL=-O, expected -Onone"
+      config.build_settings['SWIFT_OPTIMIZATION_LEVEL'] = '-Onone'
 
       # S'assurer que Swift est configuré correctement pour tous les pods
       config.build_settings['SWIFT_VERSION'] = '5.0'

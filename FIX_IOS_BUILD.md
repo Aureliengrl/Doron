@@ -12,8 +12,9 @@ Disabling previews because SWIFT_VERSION is set and SWIFT_OPTIMIZATION_LEVEL=-O,
 
 J'ai modifié le fichier `ios/Podfile` pour configurer correctement le niveau d'optimisation Swift :
 
-- En mode **Debug** : `SWIFT_OPTIMIZATION_LEVEL = -Onone` (pas d'optimisation, nécessaire pour les previews et le debugging)
+- Pour **TOUS les modes** (Debug, Profile, Release) : `SWIFT_OPTIMIZATION_LEVEL = -Onone`
 - Configuration de **SWIFT_VERSION = 5.0** pour tous les pods
+- Cela force l'absence d'optimisation pour éviter les conflits avec Firebase et Flutter
 
 ## 🚀 Étapes à Suivre (SUR VOTRE MACHINE)
 
@@ -58,10 +59,12 @@ Si vous voyez toujours des erreurs :
 
 ## 📝 Changements Techniques
 
-Le `post_install` hook dans `ios/Podfile` a été modifié (lignes 44-51) pour :
-- Définir `SWIFT_OPTIMIZATION_LEVEL = '-Onone'` en mode Debug
+Le `post_install` hook dans `ios/Podfile` a été modifié (lignes 44-50) pour :
+- Définir `SWIFT_OPTIMIZATION_LEVEL = '-Onone'` pour **TOUS les modes** (Debug, Profile, Release)
 - Définir `SWIFT_VERSION = '5.0'` pour tous les pods
-- Éviter les conflits avec Firebase et autres pods qui nécessitent ces paramètres
+- Éviter les conflits avec Firebase et Flutter pods qui nécessitent ces paramètres
+
+**IMPORTANT**: La correction s'applique maintenant à tous les modes de build, pas seulement Debug!
 
 ---
 
