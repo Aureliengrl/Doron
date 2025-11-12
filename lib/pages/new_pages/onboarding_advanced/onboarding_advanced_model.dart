@@ -15,6 +15,9 @@ class OnboardingAdvancedModel {
     'interests': <String>[],
     'style': '',
     'giftTypes': <String>[],
+    // Onboarding "Personne" - Étape de création du profil destinataire
+    'personName': '', // Nom de la personne
+    'personGender': '', // Sexe de la personne
     // Onboarding "Cadeau" - AMÉLIORÉ
     'recipient': '',
     'budget': 50.0,
@@ -190,6 +193,36 @@ class OnboardingAdvancedModel {
       ]);
     }
 
+    // PARTIE "PERSONNE" - Création du profil destinataire
+    if (!onlyUserQuestions) {
+      baseSteps.addAll([
+        {
+          'section': 'person',
+          'id': 'personName',
+          'type': 'text',
+          'question': 'Pour qui cherches-tu un cadeau ?',
+          'subtitle': '✨ Entre le prénom de cette personne',
+          'field': 'personName',
+          'placeholder': 'Son prénom',
+          'icon': '👤',
+        },
+        {
+          'section': 'person',
+          'id': 'personGender',
+          'type': 'single',
+          'question': 'Son sexe ?',
+          'subtitle': '🎯 Pour mieux personnaliser les suggestions',
+          'field': 'personGender',
+          'options': [
+            '🙋‍♀️ Femme',
+            '🙋‍♂️ Homme',
+            '🌈 Autre',
+          ],
+          'icon': '👥',
+        },
+      ]);
+    }
+
     // PARTIE "CADEAU" - Incluse uniquement si on ne veut pas SEULEMENT les questions utilisateur
     if (!onlyUserQuestions) {
       baseSteps.addAll([
@@ -197,7 +230,7 @@ class OnboardingAdvancedModel {
         'section': 'gift',
         'id': 'recipient',
         'type': 'single',
-        'question': 'Pour qui est ce cadeau ?',
+        'question': 'Quelle est votre relation ?',
         'subtitle': '🎯 Trouve le cadeau parfait',
         'field': 'recipient',
         'options': [
@@ -492,6 +525,8 @@ class OnboardingAdvancedModel {
         // ==================== NOUVELLE ARCHITECTURE ====================
         // 1. Créer la première personne (Étape B) avec isPendingFirstGen=true
         final personTags = {
+          'name': answers['personName'], // Nom de la personne
+          'gender': answers['personGender'], // Sexe de la personne
           'recipient': answers['recipient'],
           'budget': answers['budget'],
           'recipientAge': answers['recipientAge'],
