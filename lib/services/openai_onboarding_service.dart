@@ -2,16 +2,47 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'openai_service.dart';
 import 'brand_list.dart';
+import 'product_matching_service.dart';
 
 /// Service dédié à la génération de cadeaux personnalisés après l'onboarding
 class OpenAIOnboardingService {
   static const String _baseUrl = 'https://api.openai.com/v1';
+
+  // Mode de fonctionnement: 'matching' (rapide, Firebase) ou 'openai' (lent, API)
+  static const String _mode = 'matching'; // ⚡ MATCHING LOCAL PAR DÉFAUT
 
   /// Génère des cadeaux personnalisés basés sur le profil utilisateur de l'onboarding
   static Future<List<Map<String, dynamic>>> generateOnboardingGifts({
     required Map<String, dynamic> userProfile,
     int count = 50,
   }) async {
+    // ⚡ NOUVEAU: Utiliser le matching local au lieu d'OpenAI
+    if (_mode == 'matching') {
+      print('');
+      print('═══════════════════════════════════════════════════════════');
+      print('⚡ MATCHING LOCAL - Génération de $count cadeaux personnalisés');
+      print('═══════════════════════════════════════════════════════════');
+      print('📋 TAGS DÉTECTÉS:');
+      print('   • Destinataire: ${userProfile['recipient'] ?? 'N/A'}');
+      print('   • Passions/Hobbies: ${(userProfile['recipientHobbies'] as List?)?.join(', ') ?? 'N/A'}');
+      print('   • Budget: ${userProfile['budget'] ?? 'N/A'}€');
+      print('═══════════════════════════════════════════════════════════');
+
+      try {
+        final products = await ProductMatchingService.getPersonalizedProducts(
+          userTags: userProfile,
+          count: count,
+        );
+
+        print('✅ ${products.length} cadeaux matchés instantanément');
+        return products;
+      } catch (e) {
+        print('❌ Erreur matching: $e');
+        return [];
+      }
+    }
+
+    // Mode OpenAI (legacy, lent)
     print('');
     print('═══════════════════════════════════════════════════════════');
     print('🤖 APPEL API CHATGPT - Génération de $count cadeaux personnalisés');

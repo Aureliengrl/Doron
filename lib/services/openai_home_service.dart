@@ -3,10 +3,14 @@ import 'package:http/http.dart' as http;
 import 'openai_service.dart';
 import 'brand_list.dart';
 import 'http_service.dart';
+import 'product_matching_service.dart';
 
 /// Service dédié à la génération de produits pour la page d'accueil
 class OpenAIHomeService {
   static const String _baseUrl = 'https://api.openai.com/v1';
+
+  // Mode de fonctionnement: 'matching' (rapide, Firebase) ou 'openai' (lent, API)
+  static const String _mode = 'matching'; // ⚡ MATCHING LOCAL PAR DÉFAUT
 
   /// Génère des produits pour la page d'accueil selon la catégorie sélectionnée
   /// Catégories: 'Pour toi', 'Tendances', 'Tech', 'Mode', 'Maison', 'Beauté', 'Food'
@@ -15,6 +19,30 @@ class OpenAIHomeService {
     Map<String, dynamic>? userProfile,
     int count = 10,
   }) async {
+    // ⚡ NOUVEAU: Utiliser le matching local au lieu d'OpenAI
+    if (_mode == 'matching') {
+      print('');
+      print('═══════════════════════════════════════════════════════════');
+      print('⚡ MATCHING LOCAL - Feed Home ($category) - $count produits');
+      print('═══════════════════════════════════════════════════════════');
+
+      try {
+        final products = await ProductMatchingService.getPersonalizedProducts(
+          userTags: userProfile ?? {},
+          count: count,
+          category: category,
+        );
+
+        print('✅ ${products.length} produits matchés instantanément');
+        return products;
+      } catch (e) {
+        print('❌ Erreur matching: $e');
+        // Fallback sur des produits par défaut si erreur
+        return [];
+      }
+    }
+
+    // Mode OpenAI (legacy, lent)
     print('');
     print('═══════════════════════════════════════════════════════════');
     print('🏠 APPEL API CHATGPT - Feed Home ($category) - $count produits');
