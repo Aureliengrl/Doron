@@ -19,6 +19,7 @@ class ProductMatchingService {
     try {
       print('🎯 Matching produits pour tags: ${userTags.keys.join(", ")}');
       print('📋 User tags complets: $userTags');
+      print('🚫 Exclusion de ${excludeProductIds?.length ?? 0} produits');
 
       // Convertir les réponses utilisateur en tags de recherche
       final searchTags = _convertUserTagsToSearchTags(userTags);
@@ -75,15 +76,17 @@ class ProductMatchingService {
       }
 
       if (allProducts.isEmpty) {
-        print('⚠️ Firebase vide, chargement depuis assets...');
+        print('⚠️ Firebase vide, chargement depuis assets (fallback_products.json)...');
         allProducts.addAll(await _loadFallbackProducts());
-        print('📦 ${allProducts.length} produits chargés depuis assets');
+        print('📦 ${allProducts.length} produits chargés depuis assets/jsons/fallback_products.json');
       }
 
       if (allProducts.isEmpty) {
-        print('⚠️ Assets vides aussi, utiliser des produits hardcodés');
+        print('⚠️ Assets vides aussi, utiliser des produits hardcodés (3 produits répétés)');
         return _getFallbackProducts(count);
       }
+
+      print('✨ SOURCE DES PRODUITS: ${allProducts.length} produits disponibles pour le scoring');
 
       // Scorer et trier les produits par pertinence
       final scoredProducts = allProducts.map((product) {
@@ -96,29 +99,40 @@ class ProductMatchingService {
 
       // 🔥 FILTRER PAR SCORE MINIMUM (éliminer produits trop génériques)
       // Seuil : 20 points minimum (au moins un tag majeur doit matcher)
-      final relevantProducts = scoredProducts.where((p) => (p['_matchScore'] as double) >= 20.0).toList();
+      var relevantProducts = scoredProducts.where((p) => (p['_matchScore'] as double) >= 20.0).toList();
 
       print('📊 ${relevantProducts.length} produits pertinents (score ≥ 20) sur ${scoredProducts.length}');
 
+      // ⚠️ Si pas assez de produits pertinents, BAISSER le seuil pour avoir de la variété
+      if (relevantProducts.length < count * 2) {
+        print('⚠️ Pas assez de produits pertinents (${relevantProducts.length}), relaxation du seuil à 10 points...');
+        relevantProducts = scoredProducts.where((p) => (p['_matchScore'] as double) >= 10.0).toList();
+        print('📊 ${relevantProducts.length} produits après relaxation (score ≥ 10)');
+      }
+
       if (relevantProducts.isEmpty) {
-        print('⚠️ Aucun produit pertinent trouvé, relaxation du seuil...');
-        relevantProducts.addAll(scoredProducts);
+        print('⚠️ Aucun produit pertinent trouvé même avec seuil à 10, on prend TOUS les produits...');
+        relevantProducts = scoredProducts;
       }
 
       // Trier par score décroissant
       relevantProducts.sort((a, b) => (b['_matchScore'] as double).compareTo(a['_matchScore'] as double));
 
-      // 🎲 SHUFFLE PARTIEL pour diversité (mélanger les produits de score similaire)
-      // On garde le top 30% intact, mais on shuffle le reste pour éviter toujours les mêmes
-      final topCount = (relevantProducts.length * 0.3).ceil();
+      // 🎲 SHUFFLE PARTIEL AMÉLIORÉ pour VRAIMENT éviter les mêmes produits
+      // On garde le top 20% intact (meilleurs scores), mais on shuffle 80% restants
+      final topCount = (relevantProducts.length * 0.2).ceil();
       final topProducts = relevantProducts.take(topCount).toList();
       final middleProducts = relevantProducts.skip(topCount).toList();
 
-      // Shuffle les produits du milieu avec seed basé sur timestamp
-      final random = Random(DateTime.now().millisecondsSinceEpoch);
+      // Shuffle les produits du milieu avec seed basé sur timestamp + microsecond pour plus de variation
+      final random = Random(DateTime.now().microsecondsSinceEpoch);
       middleProducts.shuffle(random);
 
+      // 🎯 SHUFFLE TOTAL pour vraiment varier (on mélange même le top pour plus de variété)
       final shuffledProducts = [...topProducts, ...middleProducts];
+      shuffledProducts.shuffle(random);
+
+      print('🎲 Shuffle effectué: top ${topCount} produits + ${middleProducts.length} produits mélangés');
 
       // 🎯 DÉDUPLICATION ET DIVERSITÉ DES MARQUES (max 20% d'une même marque)
       final selectedProducts = <Map<String, dynamic>>[];
@@ -131,6 +145,8 @@ class ProductMatchingService {
       final excludedIds = excludeProductIds?.toSet() ?? {};
 
       print('🔄 Exclusion de ${excludedIds.length} produits déjà vus');
+      print('🎯 Max par marque: $maxPerBrand produits (20%)');
+      print('🎯 Max par catégorie: $maxPerCategory produits (30%)');
 
       for (var product in shuffledProducts) {
         if (selectedProducts.length >= count) break;
@@ -186,6 +202,8 @@ class ProductMatchingService {
 
       print('✅ ${selectedProducts.length} produits matchés et retournés');
       print('📊 Diversité des marques: ${brandCounts.length} marques différentes');
+      print('📊 Répartition marques: ${brandCounts.entries.map((e) => '${e.key}: ${e.value}').take(10).join(", ")}');
+      print('📊 Répartition catégories: ${categoryCounts.entries.map((e) => '${e.key}: ${e.value}').join(", ")}');
       return selectedProducts;
     } catch (e) {
       print('❌ Erreur matching produits: $e');
