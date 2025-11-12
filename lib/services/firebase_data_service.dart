@@ -556,6 +556,19 @@ class FirebaseDataService {
   }
 
   // ============= NEW ARCHITECTURE: USER PROFILE TAGS =============
+  //
+  // IMPORTANT: Distinction entre 2 types de données :
+  // 1. USER PROFILE TAGS (ci-dessous) = Données de L'UTILISATEUR
+  //    - Stockées dans: users/{uid}/profile/tags
+  //    - Utilisées pour: Personnaliser le feed d'accueil (page Home)
+  //    - Contenu: firstName, age, gender, interests, style, giftTypes
+  //
+  // 2. PEOPLE (voir section suivante) = Données des DESTINATAIRES DE CADEAUX
+  //    - Stockées dans: users/{uid}/people/{personId}
+  //    - Utilisées pour: Générer des cadeaux pour des personnes spécifiques
+  //    - Contenu: name, gender, recipient, budget, recipientAge, hobbies, etc.
+  //
+  // Ces deux entités sont SÉPARÉES par design et ne doivent PAS être confondues.
 
   /// Sauvegarde les tags du profil utilisateur (Étape A onboarding)
   /// Ces tags servent uniquement pour le feed d'accueil personnalisé
@@ -623,6 +636,14 @@ class FirebaseDataService {
   }
 
   // ============= NEW ARCHITECTURE: PEOPLE (GIFT RECIPIENTS) =============
+  //
+  // NOTE: Ces données concernent les DESTINATAIRES pour qui on cherche des cadeaux,
+  // PAS l'utilisateur lui-même. Les données de l'utilisateur sont dans profile/tags.
+  //
+  // Architecture:
+  // - Stockage: users/{uid}/people/{personId}
+  // - Utilisation: Page Personnes/Search, génération de cadeaux par personne
+  // - Persistance: Local (SharedPreferences) + Firebase (si connecté)
 
   /// Crée une nouvelle personne (Étape B onboarding ou ajout manuel)
   /// Retourne le personId généré
