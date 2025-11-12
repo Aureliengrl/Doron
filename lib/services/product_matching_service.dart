@@ -14,6 +14,7 @@ class ProductMatchingService {
     required Map<String, dynamic> userTags,
     int count = 50,
     String? category,
+    List<dynamic>? excludeProductIds, // Pour refresh intelligent
   }) async {
     try {
       print('🎯 Matching produits pour tags: ${userTags.keys.join(", ")}');
@@ -62,11 +63,42 @@ class ProductMatchingService {
       // Trier par score décroissant
       scoredProducts.sort((a, b) => (b['_matchScore'] as double).compareTo(a['_matchScore'] as double));
 
-      // Prendre les N meilleurs + ajouter un peu de randomisation pour varier
-      final topProducts = scoredProducts.take(count * 2).toList();
-      topProducts.shuffle(Random(DateTime.now().millisecondsSinceEpoch));
+      // 🎯 DÉDUPLICATION ET DIVERSITÉ DES MARQUES (max 20% d'une même marque)
+      final selectedProducts = <Map<String, dynamic>>[];
+      final brandCounts = <String, int>{};
+      final maxPerBrand = (count * 0.2).ceil(); // 20% max par marque
+      final seenProductIds = <dynamic>{};
+      final excludedIds = excludeProductIds?.toSet() ?? {};
 
-      final selectedProducts = topProducts.take(count).toList();
+      print('🔄 Exclusion de ${excludedIds.length} produits déjà vus');
+
+      for (var product in scoredProducts) {
+        if (selectedProducts.length >= count) break;
+
+        final productId = product['id'];
+        final brand = product['brand']?.toString() ?? 'Unknown';
+
+        // Vérifier exclusion (produits déjà vus)
+        if (excludedIds.contains(productId)) {
+          continue;
+        }
+
+        // Vérifier dédupli par ID
+        if (seenProductIds.contains(productId)) {
+          continue;
+        }
+
+        // Vérifier limite par marque
+        final currentBrandCount = brandCounts[brand] ?? 0;
+        if (currentBrandCount >= maxPerBrand) {
+          continue; // Skip, trop de produits de cette marque
+        }
+
+        // Ajouter le produit
+        selectedProducts.add(product);
+        seenProductIds.add(productId);
+        brandCounts[brand] = currentBrandCount + 1;
+      }
 
       // Retirer le score de matching avant de retourner
       for (var product in selectedProducts) {
@@ -74,6 +106,7 @@ class ProductMatchingService {
       }
 
       print('✅ ${selectedProducts.length} produits matchés et retournés');
+      print('📊 Diversité des marques: ${brandCounts.length} marques différentes');
       return selectedProducts;
     } catch (e) {
       print('❌ Erreur matching produits: $e');
@@ -163,6 +196,7 @@ class ProductMatchingService {
   }
 
   /// Calcule le score de matching entre un produit et les tags recherchés
+  /// Priorise SEXE et ÂGE (critères principaux pour personnalisation)
   static double _calculateMatchScore(
     Map<String, dynamic> product,
     Set<String> searchTags,
@@ -175,16 +209,64 @@ class ProductMatchingService {
     final productCategories = (product['categories'] as List?)?.cast<String>() ?? [];
     final allProductTags = {...productTags, ...productCategories};
 
-    // Matching exact des tags (poids fort)
-    for (var searchTag in searchTags) {
-      for (var productTag in allProductTags) {
-        if (productTag.toLowerCase().contains(searchTag) || searchTag.contains(productTag.toLowerCase())) {
-          score += 10.0;
+    // 🎯 PRIORITÉ 1: SEXE (poids très fort - 40 points max)
+    final gender = userTags['gender'] ?? userTags['recipientGender'];
+    if (gender != null) {
+      final genderStr = gender.toString().toLowerCase();
+      bool genderMatch = false;
+
+      if (genderStr.contains('homme') || genderStr.contains('male')) {
+        genderMatch = allProductTags.any((tag) => tag.toLowerCase() == 'homme');
+      } else if (genderStr.contains('femme') || genderStr.contains('female')) {
+        genderMatch = allProductTags.any((tag) => tag.toLowerCase() == 'femme');
+      }
+
+      if (genderMatch) {
+        score += 40.0; // Bonus énorme pour match sexe
+      }
+
+      // Bonus pour produits unisexes (plus faible)
+      if (allProductTags.any((tag) => tag.toLowerCase() == 'unisexe')) {
+        score += 15.0;
+      }
+    }
+
+    // 🎯 PRIORITÉ 2: ÂGE (poids très fort - 35 points max)
+    final age = userTags['age'] ?? userTags['recipientAge'];
+    if (age != null) {
+      final ageInt = age is int ? age : int.tryParse(age.toString()) ?? 25;
+      String ageGroup = '';
+
+      if (ageInt < 18) {
+        ageGroup = 'enfant';
+      } else if (ageInt < 30) {
+        ageGroup = '20-30ans';
+      } else if (ageInt < 50) {
+        ageGroup = '30-50ans';
+      } else {
+        ageGroup = '50+';
+      }
+
+      // Match exact de la tranche d'âge
+      if (allProductTags.any((tag) => tag.toLowerCase() == ageGroup)) {
+        score += 35.0; // Bonus énorme pour match âge
+      }
+    }
+
+    // 🎯 CRITÈRE 3: Centres d'intérêt / Hobbies (20 points max)
+    final interests = userTags['interests'] ?? userTags['hobbies'] ?? userTags['recipientHobbies'];
+    if (interests != null) {
+      final interestsList = interests is List ? interests : [interests];
+      for (var interest in interestsList) {
+        final interestLower = interest.toString().toLowerCase();
+        if (allProductTags.any((tag) => tag.toLowerCase().contains(interestLower) ||
+                                         interestLower.contains(tag.toLowerCase()))) {
+          score += 20.0;
         }
       }
     }
 
-    // Matching du budget
+    // 🎯 CRITÈRE 4: Budget (15 points)
     final budget = userTags['budget'];
     final price = product['price'];
     if (budget != null && price != null) {
@@ -197,16 +279,22 @@ class ProductMatchingService {
       if (budgetStr.contains('200') && priceValue >= 100 && priceValue <= 200) budgetMatch = true;
 
       if (budgetMatch) {
-        score += 15.0; // Le budget est très important
+        score += 15.0;
       }
     }
 
-    // Bonus pour les produits populaires
-    final popularity = product['popularity'] as int? ?? 0;
-    score += popularity * 0.5;
+    // 🎯 CRITÈRE 5: Style / Catégories (10 points)
+    final style = userTags['style'];
+    if (style != null && allProductTags.any((tag) => tag.toLowerCase() == style.toString().toLowerCase())) {
+      score += 10.0;
+    }
 
-    // Bonus aléatoire léger pour varier
-    score += Random().nextDouble() * 2.0;
+    // 📈 TENDANCES: Popularité (facteur de 0.3 - max ~30 points pour produit à 99)
+    final popularity = product['popularity'] as int? ?? 0;
+    score += popularity * 0.3;
+
+    // 🎲 Variation aléatoire légère (pour éviter ordre identique)
+    score += Random().nextDouble() * 3.0;
 
     return score;
   }
@@ -226,6 +314,139 @@ class ProductMatchingService {
       print('❌ Erreur chargement assets: $e');
       return [];
     }
+  }
+
+  /// Génère des sections thématiques pour la page d'accueil
+  /// Retourne une liste de sections avec titre et produits
+  static Future<List<Map<String, dynamic>>> getHomeSections({
+    required Map<String, dynamic> userTags,
+  }) async {
+    final sections = <Map<String, dynamic>>[];
+
+    // Extraire sexe et âge de l'utilisateur
+    final gender = userTags['gender'] ?? userTags['recipientGender'];
+    final age = userTags['age'] ?? userTags['recipientAge'];
+    final ageInt = age is int ? age : int.tryParse(age.toString()) ?? 25;
+
+    String genderLabel = 'Unisexe';
+    String ageLabel = '';
+
+    if (gender != null) {
+      final genderStr = gender.toString().toLowerCase();
+      if (genderStr.contains('homme') || genderStr.contains('male')) {
+        genderLabel = 'Homme';
+      } else if (genderStr.contains('femme') || genderStr.contains('female')) {
+        genderLabel = 'Femme';
+      }
+    }
+
+    if (ageInt < 18) {
+      ageLabel = 'Ado';
+    } else if (ageInt < 30) {
+      ageLabel = '18–25';
+    } else if (ageInt < 50) {
+      ageLabel = '30–50';
+    } else {
+      ageLabel = '50+';
+    }
+
+    // Section 1: Tendances personnalisées (60% relevance)
+    final trendingPersonalizedProducts = await getPersonalizedProducts(
+      userTags: userTags,
+      count: 10,
+    );
+    sections.add({
+      'title': '🔥 Tendance $genderLabel $ageLabel',
+      'subtitle': 'Les must-have du moment pour toi',
+      'products': trendingPersonalizedProducts,
+      'filter': {'gender': genderLabel, 'age': ageLabel},
+    });
+
+    // Section 2: Top Tech (catégorie spécifique)
+    final techProducts = await getPersonalizedProducts(
+      userTags: {...userTags},
+      count: 10,
+      category: 'tech',
+    );
+    sections.add({
+      'title': '📱 Top Tech $ageLabel',
+      'subtitle': 'Les gadgets qui font la différence',
+      'products': techProducts,
+      'filter': {'category': 'tech', 'age': ageLabel},
+    });
+
+    // Section 3: Beauté/Mode selon le sexe
+    if (genderLabel == 'Femme') {
+      final beautyProducts = await getPersonalizedProducts(
+        userTags: {...userTags},
+        count: 10,
+        category: 'beauty',
+      );
+      sections.add({
+        'title': '💄 Beauté qui cartonne',
+        'subtitle': 'Les produits beauté tendance',
+        'products': beautyProducts,
+        'filter': {'category': 'beauty'},
+      });
+    } else if (genderLabel == 'Homme') {
+      final fashionProducts = await getPersonalizedProducts(
+        userTags: {...userTags},
+        count: 10,
+        category: 'fashion',
+      );
+      sections.add({
+        'title': '👔 Mode Homme Tendance',
+        'subtitle': 'Le style qui fait mouche',
+        'products': fashionProducts,
+        'filter': {'category': 'fashion'},
+      });
+    }
+
+    // Section 4: Sport du moment (si pertinent)
+    final sportProducts = await getPersonalizedProducts(
+      userTags: {...userTags},
+      count: 10,
+      category: 'sport',
+    );
+    if (sportProducts.length >= 5) {
+      sections.add({
+        'title': '⚽ Sport du moment',
+        'subtitle': 'Pour rester actif',
+        'products': sportProducts,
+        'filter': {'category': 'sport'},
+      });
+    }
+
+    // Section 5: Maison & Déco
+    final homeProducts = await getPersonalizedProducts(
+      userTags: {...userTags},
+      count: 10,
+      category: 'home',
+    );
+    if (homeProducts.length >= 5) {
+      sections.add({
+        'title': '🏠 Maison Cosy',
+        'subtitle': 'Pour un intérieur stylé',
+        'products': homeProducts,
+        'filter': {'category': 'home'},
+      });
+    }
+
+    // Section 6: Coups de cœur budget (prix < 50€)
+    final budgetTags = {...userTags, 'budget': 'Moins de 50€'};
+    final budgetProducts = await getPersonalizedProducts(
+      userTags: budgetTags,
+      count: 10,
+    );
+    sections.add({
+      'title': '💝 Petits prix, grandes idées',
+      'subtitle': 'Moins de 50€',
+      'products': budgetProducts,
+      'filter': {'maxPrice': 50},
+    });
+
+    print('✅ ${sections.length} sections générées pour l\'accueil');
+    return sections;
   }
 
   /// Produits de secours hardcodés en cas d'erreur totale

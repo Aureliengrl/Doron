@@ -27,10 +27,18 @@ class OpenAIHomeService {
       print('═══════════════════════════════════════════════════════════');
 
       try {
+        // Extraire les IDs des produits déjà vus depuis le profil
+        List<dynamic>? excludeIds;
+        if (userProfile != null && userProfile.containsKey('_seen_product_ids')) {
+          excludeIds = userProfile['_seen_product_ids'] as List?;
+          print('🔄 Exclusion de ${excludeIds?.length ?? 0} produits déjà vus pour refresh');
+        }
+
         final products = await ProductMatchingService.getPersonalizedProducts(
           userTags: userProfile ?? {},
           count: count,
           category: category,
+          excludeProductIds: excludeIds,
         );
 
         print('✅ ${products.length} produits matchés instantanément');

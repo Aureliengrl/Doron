@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '/services/openai_home_service.dart';
 import '/services/firebase_data_service.dart';
+import '/services/product_matching_service.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/backend/backend.dart';
 import '/backend/schema/structs/index.dart';
@@ -104,41 +105,64 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
       final firstName = userProfileTags?['firstName'] as String? ?? '';
       _model.setFirstName(firstName);
 
-      // Charger la liste des produits déjà vus depuis le cache
-      final prefs = await SharedPreferences.getInstance();
-      final seenProductsJson = prefs.getStringList('seen_home_products_${_model.activeCategory}') ?? [];
-      print('📋 ${seenProductsJson.length} produits déjà vus dans la catégorie ${_model.activeCategory}');
+      // Charger les sections thématiques (seulement pour "Pour toi")
+      if (_model.activeCategory == 'Pour toi' && userProfileTags != null) {
+        try {
+          final sections = await ProductMatchingService.getHomeSections(
+            userTags: userProfileTags,
+          );
+          if (mounted) {
+            setState(() {
+              _model.setSections(sections);
+            });
+          }
+        } catch (e) {
+          print('❌ Erreur chargement sections: $e');
+        }
+      } else {
+        // Clear sections si on n'est pas dans "Pour toi"
+        if (mounted) {
+          setState(() {
+            _model.setSections([]);
+          });
+        }
+      }
 
-      // Ajouter un seed de variation pour forcer ChatGPT à générer de nouveaux produits à chaque refresh
+      // Charger la liste des IDs de produits déjà vus depuis le cache
+      final prefs = await SharedPreferences.getInstance();
+      final seenProductIds = prefs.getStringList('seen_home_product_ids_${_model.activeCategory}')?.map((s) => int.tryParse(s) ?? 0).toList() ?? [];
+      print('📋 ${seenProductIds.length} produits déjà vus dans la catégorie ${_model.activeCategory}');
+
+      // Passer les IDs à exclure pour refresh intelligent
       final profileWithVariation = {
         ...?userProfileTags,
         '_refresh_timestamp': DateTime.now().millisecondsSinceEpoch,
         '_variation_seed': DateTime.now().microsecond,
-        '_seen_products': seenProductsJson, // Passer les produits déjà vus
+        '_seen_product_ids': seenProductIds, // IDs des produits déjà vus
         '_page': 0,
       };
 
-      // Générer les produits via ChatGPT (12 premiers)
+      // Générer les produits (12 premiers)
       final products = await OpenAIHomeService.generateHomeProducts(
         category: _model.activeCategory,
         userProfile: profileWithVariation,
         count: HomePinterestModel.productsPerPage,
       );
 
-      // Sauvegarder les nouveaux produits dans le cache
-      final newSeenProducts = [...seenProductsJson];
+      // Sauvegarder les nouveaux IDs dans le cache
+      final newSeenIds = <String>[...seenProductIds.map((id) => id.toString())];
       for (var product in products) {
-        final productName = '${product['brand']}_${product['name']}';
-        if (!newSeenProducts.contains(productName)) {
-          newSeenProducts.add(productName);
+        final productId = product['id']?.toString() ?? '';
+        if (productId.isNotEmpty && !newSeenIds.contains(productId)) {
+          newSeenIds.add(productId);
         }
       }
-      // Limiter à 200 produits max pour ne pas surcharger
-      if (newSeenProducts.length > 200) {
-        newSeenProducts.removeRange(0, newSeenProducts.length - 200);
+      // Limiter à 300 IDs max pour ne pas surcharger
+      if (newSeenIds.length > 300) {
+        newSeenIds.removeRange(0, newSeenIds.length - 300);
       }
-      await prefs.setStringList('seen_home_products_${_model.activeCategory}', newSeenProducts);
-      print('💾 ${newSeenProducts.length} produits dans le cache (${products.length} nouveaux ajoutés)');
+      await prefs.setStringList('seen_home_product_ids_${_model.activeCategory}', newSeenIds);
+      print('💾 ${newSeenIds.length} produits dans le cache (${products.length} nouveaux ajoutés)');
 
       if (mounted) {
         setState(() {
@@ -445,6 +469,12 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
 
             // Filtres par prix
             SliverToBoxAdapter(child: _buildPriceFilters()),
+
+            // Sections thématiques (seulement pour "Pour toi")
+            if (_model.sections.isNotEmpty) ...[
+              SliverToBoxAdapter(child: _buildSections()),
+              const SliverToBoxAdapter(child: SizedBox(height: 16)),
+            ],
 
             // Grille Pinterest 2 colonnes
             _buildPinterestGrid(),
@@ -877,6 +907,220 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
         const SizedBox(height: 16),
       ],
     );
+  }
+
+  Widget _buildSections() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: _model.sections.map((section) {
+        final title = section['title'] as String? ?? '';
+        final subtitle = section['subtitle'] as String? ?? '';
+        final products = section['products'] as List<Map<String, dynamic>>? ?? [];
+
+        if (products.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 24),
+            // Titre de la section avec flèche
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.poppins(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF111827),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                          color: const Color(0xFF6B7280),
+                        ),
+                      ),
+                    ],
+                  ),
+                  // Bouton "Tout voir"
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        // TODO: Navigate to filtered page
+                        HapticFeedback.lightImpact();
+                      },
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Row(
+                          children: [
+                            Text(
+                              'Tout voir',
+                              style: GoogleFonts.poppins(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: violetColor,
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              size: 12,
+                              color: violetColor,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Liste horizontale de produits
+            SizedBox(
+              height: 260,
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                scrollDirection: Axis.horizontal,
+                itemCount: products.length,
+                itemBuilder: (context, index) {
+                  final product = products[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: _buildSectionProductCard(product),
+                  );
+                },
+              ),
+            ),
+          ],
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildSectionProductCard(Map<String, dynamic> product) {
+    final isLiked = _model.likedProductTitles.contains(product['name'] ?? '');
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          setState(() {
+            _model.selectedProduct = product;
+          });
+          _showProductDetail(product);
+        },
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          width: 160,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Image avec coeur
+              Stack(
+                children: [
+                  ProductImage(
+                    imageUrl: product['image'] as String? ?? '',
+                    height: 160,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
+                    ),
+                  ),
+                  // Bouton coeur
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => _toggleFavorite(product),
+                        borderRadius: BorderRadius.circular(50),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: isLiked ? Colors.red : Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            isLiked ? Icons.favorite : Icons.favorite_border,
+                            color: isLiked ? Colors.white : const Color(0xFF374151),
+                            size: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              // Info produit
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product['name'] as String? ?? '',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF111827),
+                        height: 1.3,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '${product['price']}€',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: violetColor,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    )
+        .animate()
+        .fadeIn(duration: 300.ms, curve: Curves.easeOut)
+        .slideX(begin: 0.2, end: 0, duration: 300.ms, curve: Curves.easeOut);
   }
 
   Widget _buildPinterestGrid() {

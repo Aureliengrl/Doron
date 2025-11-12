@@ -7,6 +7,7 @@ class HomePinterestModel {
   bool isLoading = false;
   bool isLoadingMore = false;
   List<Map<String, dynamic>> products = [];
+  List<Map<String, dynamic>> sections = []; // Sections thématiques pour l'accueil
   String firstName = '';
   String searchQuery = '';
   String? errorMessage;
@@ -54,6 +55,10 @@ class HomePinterestModel {
 
   void setProducts(List<Map<String, dynamic>> newProducts) {
     products = newProducts;
+  }
+
+  void setSections(List<Map<String, dynamic>> newSections) {
+    sections = newSections;
   }
 
   void setFirstName(String name) {
