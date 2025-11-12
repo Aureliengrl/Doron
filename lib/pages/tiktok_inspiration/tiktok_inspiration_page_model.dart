@@ -72,11 +72,14 @@ class TikTokInspirationPageModel extends ChangeNotifier {
       }).toList();
 
       // Mettre à jour le cache des produits vus
-      final newSeenIds = [...seenProductIds];
+      final newSeenIds = seenProductIds.map((id) => id.toString()).toList();
       for (var product in products) {
         final id = product['id'];
-        if (id != null && !newSeenIds.contains(id)) {
-          newSeenIds.add(id.toString());
+        if (id != null) {
+          final idStr = id.toString();
+          if (!newSeenIds.contains(idStr)) {
+            newSeenIds.add(idStr);
+          }
         }
       }
       // Limiter à 200 derniers produits vus

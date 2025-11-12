@@ -122,11 +122,14 @@ class _OnboardingGiftsResultWidgetState
 
       // Mettre à jour le cache des produits vus
       if (forceRefresh) {
-        final newSeenIds = [...seenProductIds];
+        final newSeenIds = seenProductIds.map((id) => id.toString()).toList();
         for (var gift in gifts) {
           final id = gift['id'];
-          if (id != null && !newSeenIds.contains(id)) {
-            newSeenIds.add(id.toString());
+          if (id != null) {
+            final idStr = id.toString();
+            if (!newSeenIds.contains(idStr)) {
+              newSeenIds.add(idStr);
+            }
           }
         }
         // Limiter à 500 derniers produits vus
