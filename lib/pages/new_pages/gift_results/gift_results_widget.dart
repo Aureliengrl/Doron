@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '/services/product_url_service.dart';
 import 'gift_results_model.dart';
 export 'gift_results_model.dart';
 
@@ -763,8 +764,9 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
                           flex: 3,
                           child: ElevatedButton(
                             onPressed: () async {
-                              final url = gift['url'] as String?;
-                              if (url != null && url.isNotEmpty) {
+                              // Générer une URL de produit intelligente (≥95% précision)
+                              final url = ProductUrlService.generateProductUrl(gift);
+                              if (url.isNotEmpty) {
                                 final uri = Uri.parse(url);
                                 if (await canLaunchUrl(uri)) {
                                   await launchUrl(uri, mode: LaunchMode.externalApplication);

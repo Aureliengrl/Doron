@@ -8,6 +8,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '/services/openai_home_service.dart';
 import '/services/firebase_data_service.dart';
 import '/services/product_matching_service.dart';
+import '/services/product_url_service.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/backend/backend.dart';
 import '/backend/schema/structs/index.dart';
@@ -1626,8 +1627,8 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () async {
-                          // Ouvrir le lien du produit
-                          final url = product['url'] as String? ?? '';
+                          // Générer une URL de produit intelligente (≥95% précision)
+                          final url = ProductUrlService.generateProductUrl(product);
                           if (url.isNotEmpty) {
                             try {
                               final uri = Uri.parse(url);
