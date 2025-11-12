@@ -358,22 +358,24 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
                 ),
               ],
             ),
-            child: Row(
-              children: [
-                // Image
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    bottomLeft: Radius.circular(24),
-                  ),
-                  child: Stack(
-                    children: [
-                      Image.network(
-                        gift['image'] as String,
-                        width: 140,
-                        height: 160,
-                        fit: BoxFit.cover,
-                      ),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Image
+                  ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      bottomLeft: Radius.circular(24),
+                    ),
+                    child: Stack(
+                      children: [
+                        Image.network(
+                          gift['image'] as String,
+                          width: 140,
+                          height: 160,
+                          fit: BoxFit.cover,
+                        ),
                       // Match badge
                       Positioned(
                         top: 8,
@@ -417,16 +419,17 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
                       ),
                     ],
                   ),
-                ),
-                // Info
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Badge source
-                        Container(
+                  ),
+                  // Info
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Badge source
+                          Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
                             vertical: 4,
@@ -457,19 +460,22 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
                             height: 1.3,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        // Prix
-                        Text(
-                          '${gift['price']}€',
-                          style: GoogleFonts.poppins(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                            color: violetColor,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        // Boutons
-                        Row(
+                          const SizedBox(height: 8),
+                          // Prix toujours visible en bas
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${gift['price']}€',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: violetColor,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              // Boutons
+                              Row(
                           children: [
                             // Bouton coeur
                             Material(
@@ -534,17 +540,19 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
                                 ),
                               ),
                             ),
-                          ],
-                        ),
-                      ],
-                    ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
+    ),
     );
   }
 
