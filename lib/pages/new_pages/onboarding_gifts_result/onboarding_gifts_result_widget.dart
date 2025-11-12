@@ -148,6 +148,45 @@ class _OnboardingGiftsResultWidgetState
           _model.clearError();
         });
       }
+
+      // 🎯 AUTO-SAUVEGARDE: Si c'est la première génération après onboarding (isPendingFirstGen=true),
+      // sauvegarder automatiquement la liste SANS attendre que l'utilisateur clique "Enregistrer"
+      if (_model.personId != null && gifts.isNotEmpty && !forceRefresh) {
+        try {
+          // Vérifier si la personne a le flag isPendingFirstGen
+          final people = await FirebaseDataService.loadPeople();
+          final person = people.firstWhere(
+            (p) => p['id'] == _model.personId,
+            orElse: () => {},
+          );
+
+          final isPendingFirstGen = person['meta']?['isPendingFirstGen'] == true;
+
+          if (isPendingFirstGen) {
+            print('💾 Auto-sauvegarde: première génération détectée (isPendingFirstGen=true)');
+
+            // Sauvegarder la liste automatiquement
+            final listName = 'Liste ${DateTime.now().day}/${DateTime.now().month}';
+            final listId = await FirebaseDataService.saveGiftListForPerson(
+              personId: _model.personId!,
+              gifts: gifts,
+              listName: listName,
+            );
+            print('✅ ${gifts.length} cadeaux auto-sauvegardés (liste: $listId)');
+
+            // Retirer le flag isPendingFirstGen
+            await FirebaseDataService.updatePersonPendingFlag(_model.personId!, false);
+            print('✅ Flag isPendingFirstGen retiré (auto-save)');
+
+            // Définir le contexte pour que les futurs favoris soient liés à cette personne
+            await FirebaseDataService.setCurrentPersonContext(_model.personId!);
+            print('✅ Contexte de personne défini: ${_model.personId} (auto-save)');
+          }
+        } catch (e) {
+          print('⚠️ Erreur lors de l\'auto-sauvegarde (non-bloquant): $e');
+          // Ne pas bloquer l'affichage si l'auto-save échoue
+        }
+      }
     } catch (e) {
       print('❌ Erreur chargement cadeaux: $e');
 

@@ -575,10 +575,16 @@ class OnboardingAdvancedModel {
             print('🚀 Navigation vers $returnTo');
             context.go(returnTo);
           } else {
-            // NOUVELLE LOGIQUE: Rediriger vers l'authentification
-            // Après auth, l'utilisateur sera automatiquement redirigé vers la page de génération
-            print('🚀 Navigation vers authentification');
-            context.go('/authentification');
+            // NOUVELLE LOGIQUE: Rediriger IMMÉDIATEMENT vers la page de génération
+            // avec le personId pour générer les cadeaux personnalisés
+            if (personId != null) {
+              print('🚀 Navigation vers génération avec personId: $personId');
+              context.go('/onboarding-gifts-result?personId=$personId');
+            } else {
+              // Fallback: si pas de personId (erreur), aller à l'authentification
+              print('⚠️ Pas de personId, navigation vers authentification');
+              context.go('/authentification');
+            }
           }
         }
       } catch (e) {
