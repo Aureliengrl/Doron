@@ -226,11 +226,14 @@ class ProductMatchingService {
       }
     }
 
-    // Centres d'intérêt
+    // Centres d'intérêt (normalisés pour meilleur matching)
     final interests = userTags['interests'] ?? userTags['hobbies'];
     if (interests != null) {
       final interestsList = interests is List ? interests : [interests];
       for (var interest in interestsList) {
+        final normalized = _normalizeTag(interest.toString());
+        tags.add(normalized);
+        // Garder aussi l'original pour compatibilité
         tags.add(interest.toString().toLowerCase());
       }
     }
@@ -337,10 +340,17 @@ class ProductMatchingService {
     if (interests != null) {
       final interestsList = interests is List ? interests : [interests];
       for (var interest in interestsList) {
-        final interestLower = interest.toString().toLowerCase();
-        if (allProductTags.any((tag) => tag.toLowerCase().contains(interestLower) ||
-                                         interestLower.contains(tag.toLowerCase()))) {
+        final normalizedInterest = _normalizeTag(interest.toString());
+        // Vérifier match exact ou partiel avec tags normalisés
+        final hasMatch = allProductTags.any((tag) {
+          final normalizedTag = _normalizeTag(tag);
+          return normalizedTag == normalizedInterest ||
+                 normalizedTag.contains(normalizedInterest) ||
+                 normalizedInterest.contains(normalizedTag);
+        });
+        if (hasMatch) {
           score += 20.0;
+          break; // Un seul bonus par produit pour éviter surpondération
         }
       }
     }
@@ -526,6 +536,99 @@ class ProductMatchingService {
 
     print('✅ ${sections.length} sections générées pour l\'accueil');
     return sections;
+  }
+
+  /// Normalise un tag pour le matching (gère pluriels, synonymes, accents)
+  /// Ex: "sports" → "sport", "fitness" → "sport", "beauté" → "beaute"
+  static String _normalizeTag(String tag) {
+    var normalized = tag
+        .toLowerCase()
+        .trim()
+        // Retirer les accents
+        .replaceAll(RegExp(r'[àáâãäå]'), 'a')
+        .replaceAll(RegExp(r'[èéêë]'), 'e')
+        .replaceAll(RegExp(r'[ìíîï]'), 'i')
+        .replaceAll(RegExp(r'[òóôõö]'), 'o')
+        .replaceAll(RegExp(r'[ùúûü]'), 'u')
+        .replaceAll(RegExp(r'[ýÿ]'), 'y')
+        .replaceAll('ç', 'c')
+        .replaceAll('ñ', 'n');
+
+    // Dictionnaire de synonymes et mapping pluriel → singulier
+    final synonymMap = {
+      // Sport & Fitness
+      'sports': 'sport',
+      'fitness': 'sport',
+      'musculation': 'sport',
+      'gym': 'sport',
+      'running': 'sport',
+      'yoga': 'sport',
+
+      // Tech
+      'technologie': 'tech',
+      'high-tech': 'tech',
+      'hightech': 'tech',
+      'gadgets': 'tech',
+      'gadget': 'tech',
+
+      // Mode
+      'mode': 'fashion',
+      'vetements': 'fashion',
+      'vetement': 'fashion',
+      'style': 'fashion',
+
+      // Beauté
+      'beaute': 'beauty',
+      'cosmetique': 'beauty',
+      'cosmetiques': 'beauty',
+      'maquillage': 'beauty',
+      'soin': 'beauty',
+      'soins': 'beauty',
+
+      // Maison
+      'maison': 'home',
+      'deco': 'home',
+      'decoration': 'home',
+      'interieur': 'home',
+
+      // Gaming
+      'jeux': 'gaming',
+      'jeu': 'gaming',
+      'gaming': 'gaming',
+      'gamer': 'gaming',
+      'console': 'gaming',
+      'consoles': 'gaming',
+
+      // Lecture
+      'lecture': 'book',
+      'livres': 'book',
+      'livre': 'book',
+      'reading': 'book',
+
+      // Musique
+      'musique': 'music',
+      'audio': 'music',
+      'son': 'music',
+
+      // Cuisine
+      'cuisine': 'cooking',
+      'culinaire': 'cooking',
+      'gastronomie': 'cooking',
+
+      // Art
+      'art': 'art',
+      'artistique': 'art',
+      'creation': 'art',
+      'creatif': 'art',
+
+      // Voyage
+      'voyage': 'travel',
+      'voyages': 'travel',
+      'aventure': 'travel',
+      'aventures': 'travel',
+    };
+
+    return synonymMap[normalized] ?? normalized;
   }
 
   /// Normalise un nom de produit pour détecter les doublons visuels
