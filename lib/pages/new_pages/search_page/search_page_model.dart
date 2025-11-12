@@ -37,11 +37,15 @@ class SearchPageModel {
         final meta = person['meta'] as Map<String, dynamic>? ?? {};
 
         // Extraire le nom du destinataire depuis les tags
-        final recipientName = tags['recipient'] as String? ?? 'Sans nom';
-        final relation = tags['relation'] as String? ?? 'Proche';
+        // Utiliser 'name' (prénom réel) ou 'personName' s'il existe, sinon fallback sur 'recipient'
+        final recipientName = tags['name'] as String? ??
+                               tags['personName'] as String? ??
+                               tags['recipient'] as String? ??
+                               'Sans nom';
+        final relation = tags['recipient'] as String? ?? tags['relation'] as String? ?? 'Proche';
         final occasion = tags['occasion'] as String? ?? 'Occasion';
 
-        // Générer initiales et couleur
+        // Générer initiales et couleur (basées sur le prénom réel)
         final initials = _generateInitials(recipientName);
         final color = _generateColor(recipientName);
 
@@ -98,11 +102,26 @@ class SearchPageModel {
   /// Génère des initiales à partir d'un nom
   String _generateInitials(String name) {
     if (name.isEmpty) return '?';
-    final parts = name.trim().split(' ');
-    if (parts.length >= 2) {
+
+    // Nettoyer le nom (enlever les emojis et caractères spéciaux)
+    final cleanName = name
+        .replaceAll(RegExp(r'[^\p{L}\s]', unicode: true), '') // Supprimer tout sauf lettres et espaces
+        .trim();
+
+    if (cleanName.isEmpty) return '?';
+
+    final parts = cleanName.split(' ');
+    if (parts.length >= 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
+      // Prendre la première lettre de chaque mot (prénom + nom)
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     }
-    return name.substring(0, name.length >= 2 ? 2 : 1).toUpperCase();
+
+    // Si un seul mot, prendre les 2 premières lettres ou la première si trop court
+    if (cleanName.length >= 2) {
+      return cleanName.substring(0, 2).toUpperCase();
+    }
+
+    return cleanName.substring(0, 1).toUpperCase();
   }
 
   /// Génère une couleur basée sur le nom (couleurs cohérentes)
