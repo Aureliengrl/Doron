@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:doron/components/cached_image.dart';
 import 'package:doron/components/skeleton_loader.dart';
+import '/services/firebase_data_service.dart';
 import 'voice_results_page_model.dart';
 
 class VoiceResultsPageWidget extends StatefulWidget {
@@ -150,24 +151,61 @@ class _VoiceResultsPageWidgetState extends State<VoiceResultsPageWidget> {
 
                         const SizedBox(height: 16),
 
-                        // Bouton sauvegarder
+                        // Bouton sauvegarder et générer
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
                             onPressed: () async {
-                              await model.saveProfile();
-                              if (mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Profil sauvegardé !'),
-                                    backgroundColor: Colors.green,
-                                  ),
-                                );
+                              // 1. Créer la personne avec les tags de l'analyse vocale
+                              if (model.analysis != null) {
+                                try {
+                                  print('🎯 Création personne depuis assistant vocal...');
+
+                                  // Extraire les informations de l'analyse
+                                  final analysis = model.analysis!;
+                                  final personTags = {
+                                    'name': analysis['recipientName'] ?? 'Sans nom',
+                                    'gender': analysis['gender'],
+                                    'recipient': analysis['recipientType'] ?? 'une personne',
+                                    'budget': (analysis['budget']?['max'] ?? 50).toDouble(),
+                                    'recipientAge': analysis['age']?.toString() ?? analysis['ageRange'] ?? '25',
+                                    'recipientHobbies': analysis['hobbies'] ?? [],
+                                    'recipientPersonality': analysis['personality'] ?? '',
+                                    'occasion': analysis['occasion'] ?? 'sans occasion',
+                                    'recipientStyle': analysis['style'] ?? '',
+                                    'preferredCategories': analysis['preferredCategories'] ?? [],
+                                    'interests': analysis['interests'] ?? [],
+                                  };
+
+                                  // Créer la personne avec isPendingFirstGen=true
+                                  final personId = await FirebaseDataService.createPerson(
+                                    tags: personTags,
+                                    isPendingFirstGen: true,
+                                  );
+
+                                  print('✅ Personne créée: $personId');
+
+                                  if (mounted) {
+                                    // 2. Rediriger vers la page de génération
+                                    print('🚀 Redirection vers génération pour personne: $personId');
+                                    context.go('/onboarding-gifts-result?personId=$personId');
+                                  }
+                                } catch (e) {
+                                  print('❌ Erreur création personne: $e');
+                                  if (mounted) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Erreur lors de la création. Réessayez.'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
                               }
                             },
-                            icon: const Icon(Icons.save, size: 20),
+                            icon: const Icon(Icons.card_giftcard, size: 20),
                             label: const Text(
-                              'Sauvegarder ce profil',
+                              'Générer les cadeaux',
                               style: TextStyle(
                                 fontFamily: 'Outfit',
                                 fontSize: 15,

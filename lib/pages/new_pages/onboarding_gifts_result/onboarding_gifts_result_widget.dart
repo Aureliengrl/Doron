@@ -4,8 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '/services/openai_onboarding_service.dart';
+import '/services/product_matching_service.dart';
 import '/services/firebase_data_service.dart';
+import '/services/product_url_service.dart';
 import 'onboarding_gifts_result_model.dart';
 export 'onboarding_gifts_result_model.dart';
 
@@ -91,18 +92,51 @@ class _OnboardingGiftsResultWidgetState
         profileForGeneration = userProfile;
       }
 
-      // Ajouter un seed aléatoire pour forcer ChatGPT à générer de nouveaux produits
-      final profileWithVariation = {
-        ...?profileForGeneration,
-        if (forceRefresh) '_refresh_seed': DateTime.now().millisecondsSinceEpoch,
-        '_variation': DateTime.now().second, // Variation basée sur la seconde
-      };
+      // Charger les IDs des produits déjà vus pour refresh intelligent
+      final prefs = await SharedPreferences.getInstance();
+      final seenProductIds = prefs.getStringList('seen_gift_product_ids')
+          ?.map((s) => int.tryParse(s) ?? 0).toList() ?? [];
 
-      // Générer les cadeaux via ChatGPT
-      final gifts = await OpenAIOnboardingService.generateOnboardingGifts(
-        userProfile: profileWithVariation,
-        count: 50, // 50 produits minimum comme demandé
+      // 🎯 Générer les cadeaux via ProductMatchingService (NOUVELLE MÉTHODE)
+      // Firebase-first, déduplication, diversité des marques, scoring sexe+âge
+      final rawGifts = await ProductMatchingService.getPersonalizedProducts(
+        userTags: profileForGeneration ?? {},
+        count: 50,
+        excludeProductIds: forceRefresh ? seenProductIds : null,
       );
+
+      // Convertir les produits au format attendu et ajouter les URLs intelligentes
+      final gifts = rawGifts.map((product) {
+        return {
+          'id': product['id'],
+          'name': product['name'] ?? 'Produit',
+          'brand': product['brand'] ?? '',
+          'price': product['price'] ?? 0,
+          'image': product['image'] ?? product['imageUrl'] ?? '',
+          'url': ProductUrlService.generateProductUrl(product),
+          'source': product['source'] ?? 'Amazon',
+          'categories': product['categories'] ?? [],
+          'match': ((product['_matchScore'] ?? 0.0) as double).toInt().clamp(0, 100),
+        };
+      }).toList();
+
+      // Mettre à jour le cache des produits vus
+      if (forceRefresh) {
+        final newSeenIds = [...seenProductIds];
+        for (var gift in gifts) {
+          final id = gift['id'];
+          if (id != null && !newSeenIds.contains(id)) {
+            newSeenIds.add(id.toString());
+          }
+        }
+        // Limiter à 500 derniers produits vus
+        if (newSeenIds.length > 500) {
+          newSeenIds.removeRange(0, newSeenIds.length - 500);
+        }
+        await prefs.setStringList('seen_gift_product_ids', newSeenIds);
+      }
+
+      print('✅ ${gifts.length} cadeaux générés localement (Firebase + scoring intelligent)');
 
       if (mounted) {
         setState(() {
@@ -119,21 +153,15 @@ class _OnboardingGiftsResultWidgetState
       String errorDetails = e.toString();
 
       // Analyser le type d'erreur
-      if (errorDetails.contains('401')) {
-        errorMessage = '🔑 Clé API invalide ou expirée';
-        errorDetails = 'La clé OpenAI n\'est plus valide. Contacte le développeur pour la renouveler.';
-      } else if (errorDetails.contains('429')) {
-        errorMessage = '⚠️ Quota API dépassé';
-        errorDetails = 'Le quota OpenAI a été atteint. Réessaye plus tard ou contacte le développeur.';
-      } else if (errorDetails.contains('500') || errorDetails.contains('502') || errorDetails.contains('503')) {
-        errorMessage = '🔧 Serveur OpenAI indisponible';
-        errorDetails = 'Le serveur OpenAI a un problème temporaire. Réessaye dans quelques minutes.';
-      } else if (errorDetails.contains('SocketException') || errorDetails.contains('Network')) {
+      if (errorDetails.contains('SocketException') || errorDetails.contains('Network')) {
         errorMessage = '📡 Pas de connexion internet';
         errorDetails = 'Vérifie ta connexion internet et réessaye.';
-      } else if (errorDetails.contains('FormatException') || errorDetails.contains('json')) {
-        errorMessage = '⚠️ Réponse API invalide';
-        errorDetails = 'ChatGPT a retourné un format incorrect. Réessaye ou contacte le développeur.';
+      } else if (errorDetails.contains('firebase')) {
+        errorMessage = '🔥 Erreur Firebase';
+        errorDetails = 'Impossible de charger les produits depuis la base de données. Réessaye plus tard.';
+      } else {
+        errorMessage = '⚠️ Erreur de chargement';
+        errorDetails = 'Une erreur est survenue lors du chargement des produits. Réessaye.';
       }
 
       if (mounted) {
@@ -263,7 +291,7 @@ class _OnboardingGiftsResultWidgetState
           ),
           const SizedBox(height: 20),
           Text(
-            '✨ ChatGPT génère tes cadeaux personnalisés...',
+            '✨ Génération de tes cadeaux personnalisés...',
             style: GoogleFonts.poppins(
               color: Colors.grey[700],
               fontSize: 16,
@@ -273,7 +301,7 @@ class _OnboardingGiftsResultWidgetState
           ),
           const SizedBox(height: 8),
           Text(
-            'Cela peut prendre quelques secondes',
+            'Matching intelligent par tags (sexe, âge, centres d\'intérêt)',
             style: GoogleFonts.poppins(
               color: Colors.grey[500],
               fontSize: 14,

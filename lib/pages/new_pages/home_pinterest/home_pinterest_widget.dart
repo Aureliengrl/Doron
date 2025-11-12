@@ -134,21 +134,28 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
       final seenProductIds = prefs.getStringList('seen_home_product_ids_${_model.activeCategory}')?.map((s) => int.tryParse(s) ?? 0).toList() ?? [];
       print('📋 ${seenProductIds.length} produits déjà vus dans la catégorie ${_model.activeCategory}');
 
-      // Passer les IDs à exclure pour refresh intelligent
-      final profileWithVariation = {
-        ...?userProfileTags,
-        '_refresh_timestamp': DateTime.now().millisecondsSinceEpoch,
-        '_variation_seed': DateTime.now().microsecond,
-        '_seen_product_ids': seenProductIds, // IDs des produits déjà vus
-        '_page': 0,
-      };
-
-      // Générer les produits (12 premiers)
-      final products = await OpenAIHomeService.generateHomeProducts(
-        category: _model.activeCategory,
-        userProfile: profileWithVariation,
+      // 🎯 Générer les produits via ProductMatchingService (Firebase-first)
+      final rawProducts = await ProductMatchingService.getPersonalizedProducts(
+        userTags: userProfileTags ?? {},
         count: HomePinterestModel.productsPerPage,
+        category: _model.activeCategory != 'Pour toi' ? _model.activeCategory : null,
+        excludeProductIds: seenProductIds,
       );
+
+      // Convertir au format attendu et ajouter URLs intelligentes
+      final products = rawProducts.map((product) {
+        return {
+          'id': product['id'],
+          'name': product['name'] ?? 'Produit',
+          'brand': product['brand'] ?? '',
+          'price': product['price'] ?? 0,
+          'image': product['image'] ?? product['imageUrl'] ?? '',
+          'url': ProductUrlService.generateProductUrl(product),
+          'source': product['source'] ?? 'Amazon',
+          'categories': product['categories'] ?? [],
+          'match': ((product['_matchScore'] ?? 0.0) as double).toInt().clamp(0, 100),
+        };
+      }).toList();
 
       // Sauvegarder les nouveaux IDs dans le cache
       final newSeenIds = <String>[...seenProductIds.map((id) => id.toString())];
@@ -181,18 +188,15 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
       String errorDetails = e.toString();
 
       // Analyser le type d'erreur
-      if (errorDetails.contains('401')) {
-        errorMessage = '🔑 Clé API invalide';
-        errorDetails = 'La clé OpenAI n\'est plus valide. Les cadeaux ne peuvent pas être générés.';
-      } else if (errorDetails.contains('429')) {
-        errorMessage = '⚠️ Quota API dépassé';
-        errorDetails = 'Le quota OpenAI a été atteint. Réessaye plus tard.';
-      } else if (errorDetails.contains('500') || errorDetails.contains('502') || errorDetails.contains('503')) {
-        errorMessage = '🔧 Serveur indisponible';
-        errorDetails = 'Le serveur OpenAI a un problème temporaire. Réessaye dans quelques minutes.';
-      } else if (errorDetails.contains('SocketException') || errorDetails.contains('Network')) {
+      if (errorDetails.contains('SocketException') || errorDetails.contains('Network')) {
         errorMessage = '📡 Pas de connexion';
         errorDetails = 'Vérifie ta connexion internet et tire pour rafraîchir.';
+      } else if (errorDetails.contains('firebase') || errorDetails.contains('Firestore')) {
+        errorMessage = '🔥 Erreur Firebase';
+        errorDetails = 'Impossible de charger les produits depuis la base de données. Réessaye plus tard.';
+      } else {
+        errorMessage = '⚠️ Erreur de chargement';
+        errorDetails = 'Une erreur est survenue lors du chargement des produits.';
       }
 
       if (mounted) {
@@ -220,35 +224,43 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
       // Charger les tags utilisateur (nouvelle architecture)
       final userProfileTags = await FirebaseDataService.loadUserProfileTags();
       final prefs = await SharedPreferences.getInstance();
-      final seenProductsJson = prefs.getStringList('seen_home_products_${_model.activeCategory}') ?? [];
+      final seenProductIds = prefs.getStringList('seen_home_product_ids_${_model.activeCategory}')?.map((s) => int.tryParse(s) ?? 0).toList() ?? [];
 
-      final profileWithVariation = {
-        ...?userProfileTags,
-        '_refresh_timestamp': DateTime.now().millisecondsSinceEpoch,
-        '_variation_seed': DateTime.now().microsecond,
-        '_seen_products': seenProductsJson,
-        '_page': _model.currentPage,
-      };
-
-      // Charger 12 produits supplémentaires
-      final products = await OpenAIHomeService.generateHomeProducts(
-        category: _model.activeCategory,
-        userProfile: profileWithVariation,
+      // 🎯 Générer plus de produits via ProductMatchingService (Firebase-first)
+      final rawProducts = await ProductMatchingService.getPersonalizedProducts(
+        userTags: userProfileTags ?? {},
         count: HomePinterestModel.productsPerPage,
+        category: _model.activeCategory != 'Pour toi' ? _model.activeCategory : null,
+        excludeProductIds: seenProductIds,
       );
 
+      // Convertir au format attendu et ajouter URLs intelligentes
+      final products = rawProducts.map((product) {
+        return {
+          'id': product['id'],
+          'name': product['name'] ?? 'Produit',
+          'brand': product['brand'] ?? '',
+          'price': product['price'] ?? 0,
+          'image': product['image'] ?? product['imageUrl'] ?? '',
+          'url': ProductUrlService.generateProductUrl(product),
+          'source': product['source'] ?? 'Amazon',
+          'categories': product['categories'] ?? [],
+          'match': ((product['_matchScore'] ?? 0.0) as double).toInt().clamp(0, 100),
+        };
+      }).toList();
+
       // Mettre à jour le cache
-      final newSeenProducts = [...seenProductsJson];
+      final newSeenIds = <String>[...seenProductIds.map((id) => id.toString())];
       for (var product in products) {
-        final productName = '${product['brand']}_${product['name']}';
-        if (!newSeenProducts.contains(productName)) {
-          newSeenProducts.add(productName);
+        final productId = product['id']?.toString() ?? '';
+        if (productId.isNotEmpty && !newSeenIds.contains(productId)) {
+          newSeenIds.add(productId);
         }
       }
-      if (newSeenProducts.length > 200) {
-        newSeenProducts.removeRange(0, newSeenProducts.length - 200);
+      if (newSeenIds.length > 300) {
+        newSeenIds.removeRange(0, newSeenIds.length - 300);
       }
-      await prefs.setStringList('seen_home_products_${_model.activeCategory}', newSeenProducts);
+      await prefs.setStringList('seen_home_product_ids_${_model.activeCategory}', newSeenIds);
 
       if (mounted) {
         setState(() {
@@ -952,35 +964,19 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                       ),
                     ],
                   ),
-                  // Bouton "Tout voir"
-                  Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () {
-                        // TODO: Navigate to filtered page
-                        HapticFeedback.lightImpact();
-                      },
-                      borderRadius: BorderRadius.circular(8),
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Row(
-                          children: [
-                            Text(
-                              'Tout voir',
-                              style: GoogleFonts.poppins(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: violetColor,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              size: 12,
-                              color: violetColor,
-                            ),
-                          ],
-                        ),
+                  // Compteur de produits dans la section
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: violetColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${products.length}',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: violetColor,
                       ),
                     ),
                   ),

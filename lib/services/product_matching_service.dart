@@ -66,8 +66,11 @@ class ProductMatchingService {
       // 🎯 DÉDUPLICATION ET DIVERSITÉ DES MARQUES (max 20% d'une même marque)
       final selectedProducts = <Map<String, dynamic>>[];
       final brandCounts = <String, int>{};
+      final categoryCounts = <String, int>{}; // Diversité des catégories
       final maxPerBrand = (count * 0.2).ceil(); // 20% max par marque
+      final maxPerCategory = (count * 0.3).ceil(); // 30% max par catégorie
       final seenProductIds = <dynamic>{};
+      final seenProductNames = <String>{}; // Déduplication par nom normalisé
       final excludedIds = excludeProductIds?.toSet() ?? {};
 
       print('🔄 Exclusion de ${excludedIds.length} produits déjà vus');
@@ -77,27 +80,46 @@ class ProductMatchingService {
 
         final productId = product['id'];
         final brand = product['brand']?.toString() ?? 'Unknown';
+        final productName = product['name']?.toString() ?? '';
+        final normalizedName = _normalizeProductName(productName);
 
-        // Vérifier exclusion (produits déjà vus)
+        // Extraire la catégorie principale
+        final categories = (product['categories'] as List?)?.cast<String>() ?? [];
+        final mainCategory = categories.isNotEmpty ? categories.first : 'Autre';
+
+        // 1️⃣ Vérifier exclusion (produits déjà vus)
         if (excludedIds.contains(productId)) {
           continue;
         }
 
-        // Vérifier dédupli par ID
+        // 2️⃣ Vérifier dédupli par ID
         if (seenProductIds.contains(productId)) {
           continue;
         }
 
-        // Vérifier limite par marque
+        // 3️⃣ Vérifier dédupli par nom normalisé (doublons visuels)
+        if (seenProductNames.contains(normalizedName)) {
+          continue;
+        }
+
+        // 4️⃣ Vérifier limite par marque (max 20%)
         final currentBrandCount = brandCounts[brand] ?? 0;
         if (currentBrandCount >= maxPerBrand) {
           continue; // Skip, trop de produits de cette marque
         }
 
-        // Ajouter le produit
+        // 5️⃣ Vérifier limite par catégorie (max 30%)
+        final currentCategoryCount = categoryCounts[mainCategory] ?? 0;
+        if (currentCategoryCount >= maxPerCategory) {
+          continue; // Skip, trop de produits de cette catégorie
+        }
+
+        // ✅ Ajouter le produit
         selectedProducts.add(product);
         seenProductIds.add(productId);
+        seenProductNames.add(normalizedName);
         brandCounts[brand] = currentBrandCount + 1;
+        categoryCounts[mainCategory] = currentCategoryCount + 1;
       }
 
       // Retirer le score de matching avant de retourner
@@ -447,6 +469,27 @@ class ProductMatchingService {
 
     print('✅ ${sections.length} sections générées pour l\'accueil');
     return sections;
+  }
+
+  /// Normalise un nom de produit pour détecter les doublons visuels
+  /// Retire les espaces, ponctuation, accents, convertit en minuscules
+  static String _normalizeProductName(String name) {
+    return name
+        .toLowerCase()
+        .trim()
+        // Retirer les accents
+        .replaceAll(RegExp(r'[àáâãäå]'), 'a')
+        .replaceAll(RegExp(r'[èéêë]'), 'e')
+        .replaceAll(RegExp(r'[ìíîï]'), 'i')
+        .replaceAll(RegExp(r'[òóôõö]'), 'o')
+        .replaceAll(RegExp(r'[ùúûü]'), 'u')
+        .replaceAll(RegExp(r'[ýÿ]'), 'y')
+        .replaceAll('ç', 'c')
+        .replaceAll('ñ', 'n')
+        // Retirer les caractères spéciaux et espaces multiples
+        .replaceAll(RegExp(r'[^\w\s]'), '')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
   }
 
   /// Produits de secours hardcodés en cas d'erreur totale

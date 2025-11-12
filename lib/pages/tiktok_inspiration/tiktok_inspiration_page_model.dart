@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '/services/openai_home_service.dart';
+import '/services/product_matching_service.dart';
 import '/services/firebase_data_service.dart';
+import '/services/product_url_service.dart';
 
 /// Model pour la page TikTok Inspiration (BÊTA)
 class TikTokInspirationPageModel extends ChangeNotifier {
@@ -23,55 +24,73 @@ class TikTokInspirationPageModel extends ChangeNotifier {
   int get currentProductIndex => _currentProductIndex;
   int get currentPhotoIndex => _currentPhotoIndex;
 
-  /// Charge les produits via OpenAI Home Service
+  /// Charge les produits via ProductMatchingService (Firebase-first)
+  /// Précharge 20 produits pour l'expérience TikTok avec scroll vertical
   Future<void> loadProducts() async {
     _isLoading = true;
     _hasError = false;
     _errorMessage = '';
+    _errorDetails = '';
     notifyListeners();
 
     try {
-      // Charger le profil utilisateur
-      final userProfile = await FirebaseDataService.loadOnboardingAnswers();
+      // Charger les tags du profil utilisateur
+      final userProfileTags = await FirebaseDataService.loadUserProfileTags();
 
-      // Charger les produits déjà vus
+      // Charger les IDs des produits déjà vus
       final prefs = await SharedPreferences.getInstance();
-      final seenProductsJson = prefs.getStringList('seen_home_products_Tout') ?? [];
+      final seenProductIds = prefs.getStringList('seen_inspiration_product_ids')
+          ?.map((s) => int.tryParse(s) ?? 0).toList() ?? [];
 
-      // Ajouter variation pour diversité
-      final profileWithVariation = {
-        ...?userProfile,
-        '_refresh_timestamp': DateTime.now().millisecondsSinceEpoch,
-        '_variation_seed': DateTime.now().microsecond,
-        '_seen_products': seenProductsJson,
-        '_page': 0,
-      };
+      print('🎬 Chargement TikTok Inspiration (exclusion de ${seenProductIds.length} produits déjà vus)');
 
-      // Générer 20 produits pour l'expérience TikTok
-      final products = await OpenAIHomeService.generateHomeProducts(
-        category: 'Tout',
-        userProfile: profileWithVariation,
-        count: 20,
+      // 🎯 Générer les produits via ProductMatchingService
+      // Prefetch 30 produits pour un scroll fluide (on en affichera 20 à la fois)
+      final rawProducts = await ProductMatchingService.getPersonalizedProducts(
+        userTags: userProfileTags ?? {},
+        count: 30,
+        excludeProductIds: seenProductIds,
       );
 
-      // Mettre à jour le cache
-      final newSeenProducts = [...seenProductsJson];
+      if (rawProducts.isEmpty) {
+        throw Exception('Aucun produit disponible. Réessaye plus tard.');
+      }
+
+      // Convertir au format TikTok et ajouter URLs intelligentes
+      final products = rawProducts.take(20).map((product) {
+        return {
+          'id': product['id'],
+          'name': product['name'] ?? 'Produit',
+          'brand': product['brand'] ?? '',
+          'price': product['price'] ?? 0,
+          'image': product['image'] ?? product['imageUrl'] ?? '',
+          'url': ProductUrlService.generateProductUrl(product),
+          'source': product['source'] ?? 'Amazon',
+          'categories': product['categories'] ?? [],
+          'match': ((product['_matchScore'] ?? 0.0) as double).toInt().clamp(0, 100),
+        };
+      }).toList();
+
+      // Mettre à jour le cache des produits vus
+      final newSeenIds = [...seenProductIds];
       for (var product in products) {
-        final productName = '${product['brand']}_${product['name']}';
-        if (!newSeenProducts.contains(productName)) {
-          newSeenProducts.add(productName);
+        final id = product['id'];
+        if (id != null && !newSeenIds.contains(id)) {
+          newSeenIds.add(id.toString());
         }
       }
-      if (newSeenProducts.length > 200) {
-        newSeenProducts.removeRange(0, newSeenProducts.length - 200);
+      // Limiter à 200 derniers produits vus
+      if (newSeenIds.length > 200) {
+        newSeenIds.removeRange(0, newSeenIds.length - 200);
       }
-      await prefs.setStringList('seen_home_products_Tout', newSeenProducts);
+      await prefs.setStringList('seen_inspiration_product_ids', newSeenIds);
 
       _products = products;
       _isLoading = false;
+      _hasError = false;
       notifyListeners();
 
-      print('✅ TikTok Inspiration: ${products.length} produits chargés');
+      print('✅ TikTok Inspiration: ${products.length} produits chargés (Firebase + matching local)');
     } catch (e) {
       print('❌ Erreur chargement TikTok Inspiration: $e');
 
@@ -79,18 +98,15 @@ class TikTokInspirationPageModel extends ChangeNotifier {
       String errorDetails = e.toString();
 
       // Analyser le type d'erreur
-      if (errorDetails.contains('401')) {
-        _errorMessage = '🔑 Clé API invalide';
-        _errorDetails = 'La clé OpenAI n\'est plus valide. Les produits ne peuvent pas être générés.';
-      } else if (errorDetails.contains('429')) {
-        _errorMessage = '⚠️ Quota API dépassé';
-        _errorDetails = 'Le quota OpenAI a été atteint. Réessaye plus tard.';
-      } else if (errorDetails.contains('500') || errorDetails.contains('502') || errorDetails.contains('503')) {
-        _errorMessage = '🔧 Serveur indisponible';
-        _errorDetails = 'Le serveur OpenAI a un problème temporaire. Réessaye dans quelques minutes.';
-      } else if (errorDetails.contains('SocketException') || errorDetails.contains('Network')) {
+      if (errorDetails.contains('SocketException') || errorDetails.contains('Network')) {
         _errorMessage = '📡 Pas de connexion';
         _errorDetails = 'Vérifie ta connexion internet et réessaye.';
+      } else if (errorDetails.contains('firebase') || errorDetails.contains('Firestore')) {
+        _errorMessage = '🔥 Erreur Firebase';
+        _errorDetails = 'Impossible de charger les produits. Réessaye plus tard.';
+      } else if (errorDetails.contains('Aucun produit')) {
+        _errorMessage = '📦 Pas de nouveaux produits';
+        _errorDetails = 'Tous les produits disponibles ont déjà été vus. Reviens plus tard !';
       } else {
         _errorMessage = 'Erreur de chargement';
         _errorDetails = 'Une erreur est survenue lors du chargement des produits.';
