@@ -11,3 +11,4 @@ ios/Runner/GoogleService-Info.plist
 android/app/google-services.json
 
 assets/environment_values/environment.json
+firebase-service-account.json
