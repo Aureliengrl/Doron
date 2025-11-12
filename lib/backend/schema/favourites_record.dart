@@ -23,8 +23,8 @@ class FavouritesRecord extends FirestoreRecord {
   bool hasUid() => _uid != null;
 
   // "platform" field.
-  Platforms? _platform;
-  Platforms? get platform => _platform;
+  String? _platform;
+  String? get platform => _platform;
   bool hasPlatform() => _platform != null;
 
   // "product" field.
@@ -44,9 +44,7 @@ class FavouritesRecord extends FirestoreRecord {
 
   void _initializeFields() {
     _uid = snapshotData['uid'] as DocumentReference?;
-    _platform = snapshotData['platform'] is Platforms
-        ? snapshotData['platform']
-        : deserializeEnum<Platforms>(snapshotData['platform']);
+    _platform = snapshotData['platform'] as String?;
     _product = snapshotData['product'] is ProductsStruct
         ? snapshotData['product']
         : ProductsStruct.maybeFromMap(snapshotData['product']);
@@ -90,7 +88,7 @@ class FavouritesRecord extends FirestoreRecord {
 
 Map<String, dynamic> createFavouritesRecordData({
   DocumentReference? uid,
-  Platforms? platform,
+  String? platform,
   ProductsStruct? product,
   DateTime? timeStamp,
   String? personId,
