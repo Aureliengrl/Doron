@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Produits Firebase - Doron</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #333; margin-bottom: 10px; }
+        .subtitle { color: #666; margin-bottom: 30px; }
+        .step {
+            background: #f8f9fa;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border-left: 4px solid #007aff;
+        }
+        .step h3 { margin-top: 0; color: #007aff; }
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover { background: #0051d5; }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .progress {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #e8f5e9;
+            border-radius: 8px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #ddd;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+            width: 0%;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .log {
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: none;
+        }
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            text-align: center;
+            display: none;
+        }
+        .success h2 { margin-top: 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎁 Upload 2500 Produits vers Firebase</h1>
+        <p class="subtitle">Application Doron - Upload depuis iPad</p>
+
+        <div class="step">
+            <h3>Étape 1: Configuration Firebase</h3>
+            <p>Colle ta <strong>Firebase Web Config</strong> ici:</p>
+            <p style="font-size: 12px; color: #666;">
+                Va sur Firebase Console → Project Settings → Scroll vers le bas → Dans "Your apps",
+                clique sur l'icône web (&lt;/&gt;) → Copie l'objet firebaseConfig
+            </p>
+            <textarea id="firebaseConfig" placeholder='{
+  "apiKey": "...",
+  "authDomain": "...",
+  "projectId": "...",
+  "storageBucket": "...",
+  "messagingSenderId": "...",
+  "appId": "..."
+}'></textarea>
+        </div>
+
+        <div class="step">
+            <h3>Étape 2: Clé Service Account</h3>
+            <p>Colle ta <strong>clé Service Account</strong> complète ici:</p>
+            <p style="font-size: 12px; color: #666;">
+                Firebase Console → Project Settings → Service Accounts → Generate New Private Key
+            </p>
+            <textarea id="serviceAccount" placeholder='{
+  "type": "service_account",
+  "project_id": "...",
+  "private_key_id": "...",
+  "private_key": "...",
+  ...
+}'></textarea>
+        </div>
+
+        <button id="uploadBtn" onclick="startUpload()">🚀 Commencer l'Upload des 2500 Produits</button>
+
+        <div class="error" id="error"></div>
+
+        <div class="progress" id="progress">
+            <h3>Upload en cours... ⚡</h3>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill">0%</div>
+            </div>
+            <div class="log" id="log"></div>
+        </div>
+
+        <div class="success" id="success">
+            <h2>🎉 Upload Terminé!</h2>
+            <p><strong>2500 produits</strong> ont été uploadés avec succès dans Firebase!</p>
+            <p>Tu peux maintenant rebuild ton app TestFlight et voir tous les produits!</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc, writeBatch, doc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        window.startUpload = async function() {
+            const errorDiv = document.getElementById('error');
+            const progressDiv = document.getElementById('progress');
+            const successDiv = document.getElementById('success');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const logDiv = document.getElementById('log');
+            const progressFill = document.getElementById('progressFill');
+
+            // Reset
+            errorDiv.style.display = 'none';
+            successDiv.style.display = 'none';
+            progressDiv.style.display = 'none';
+            logDiv.innerHTML = '';
+
+            // Get config
+            const configText = document.getElementById('firebaseConfig').value.trim();
+
+            if (!configText) {
+                errorDiv.textContent = '❌ Erreur: Colle ta Firebase Config dans l\'Étape 1';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            let firebaseConfig;
+            try {
+                firebaseConfig = JSON.parse(configText);
+            } catch (e) {
+                errorDiv.textContent = '❌ Erreur: Firebase Config invalide (doit être du JSON valide)';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // Initialize Firebase
+            let app, db;
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                log('✅ Connecté à Firebase!');
+            } catch (e) {
+                errorDiv.textContent = '❌ Erreur de connexion Firebase: ' + e.message;
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // Load products
+            log('📦 Chargement des produits...');
+            let products;
+            try {
+                const response = await fetch('products_all_brands.json');
+                const data = await response.json();
+                products = data.products;
+                log(`✅ ${products.length} produits chargés!`);
+            } catch (e) {
+                errorDiv.textContent = '❌ Erreur de chargement du fichier products: ' + e.message;
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            // Start upload
+            progressDiv.style.display = 'block';
+            uploadBtn.disabled = true;
+            log('🚀 Début de l\'upload...');
+
+            try {
+                const batchSize = 500;
+                let uploaded = 0;
+
+                for (let i = 0; i < products.length; i += batchSize) {
+                    const batch = writeBatch(db);
+                    const chunk = products.slice(i, i + batchSize);
+
+                    chunk.forEach((product) => {
+                        const docRef = doc(collection(db, 'products'));
+                        batch.set(docRef, {
+                            product_title: product.product_title || '',
+                            product_price: product.product_price || '',
+                            product_original_price: product.product_original_price || '',
+                            product_star_rating: product.product_star_rating || '',
+                            product_num_ratings: parseInt(product.product_num_ratings) || 0,
+                            product_url: product.product_url || '',
+                            product_photo: product.product_photo || '',
+                            platform: product.platform || ''
+                        });
+                    });
+
+                    await batch.commit();
+                    uploaded += chunk.length;
+                    const percent = Math.round(uploaded / products.length * 100);
+                    progressFill.style.width = percent + '%';
+                    progressFill.textContent = percent + '%';
+                    log(`✅ ${uploaded}/${products.length} produits uploadés (${percent}%)`);
+
+                    // Small delay to avoid rate limiting
+                    if (i + batchSize < products.length) {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+
+                log('🎉 Upload terminé avec succès!');
+                progressDiv.style.display = 'none';
+                successDiv.style.display = 'block';
+
+            } catch (e) {
+                errorDiv.textContent = '❌ Erreur pendant l\'upload: ' + e.message;
+                errorDiv.style.display = 'block';
+                uploadBtn.disabled = false;
+                log('❌ Erreur: ' + e.message);
+            }
+        };
+
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${time}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html>
