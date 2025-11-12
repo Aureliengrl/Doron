@@ -549,7 +549,7 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
                   ),
                 ),
               ),
-            ],
+                ],
           ),
         ),
       ),
