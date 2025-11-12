@@ -55,8 +55,8 @@ class ProductMatchingService {
         }
       }
 
-      // Charger 1000 produits (plus large pour avoir de la variété)
-      final snapshot = await query.limit(1000).get();
+      // Charger 2000 produits (augmenté pour plus de variété)
+      var snapshot = await query.limit(2000).get();
       var allProducts = snapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
@@ -64,6 +64,19 @@ class ProductMatchingService {
       }).toList();
 
       print('📦 ${allProducts.length} produits chargés depuis Firebase');
+
+      // 🔥 RETRY SANS FILTRE si Firebase retourne 0 (le filtre sexe peut être trop restrictif)
+      if (allProducts.isEmpty && genderFilter != null) {
+        print('⚠️ Aucun produit avec filtre sexe, retry SANS filtre...');
+        query = _firestore.collection('products');
+        snapshot = await query.limit(2000).get();
+        allProducts = snapshot.docs.map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return data;
+        }).toList();
+        print('📦 ${allProducts.length} produits chargés depuis Firebase SANS filtre');
+      }
 
       // Filtrer par catégorie côté client si nécessaire
       if (category != null && category != 'Pour toi' && category != 'all' && genderFilter != null) {
@@ -97,26 +110,15 @@ class ProductMatchingService {
         };
       }).toList();
 
-      // 🔥 FILTRER PAR SCORE MINIMUM (éliminer produits trop génériques)
-      // Seuil : 20 points minimum (au moins un tag majeur doit matcher)
-      var relevantProducts = scoredProducts.where((p) => (p['_matchScore'] as double) >= 20.0).toList();
+      // 🎯 PAS DE SEUIL MINIMUM - On prend les meilleurs produits peu importe leur score
+      // Cela garantit qu'on a toujours des produits variés même si le matching n'est pas parfait
+      print('📊 ${scoredProducts.length} produits disponibles pour sélection');
 
-      print('📊 ${relevantProducts.length} produits pertinents (score ≥ 20) sur ${scoredProducts.length}');
+      // Trier par score décroissant pour avoir les meilleurs en premier
+      scoredProducts.sort((a, b) => (b['_matchScore'] as double).compareTo(a['_matchScore'] as double));
 
-      // ⚠️ Si pas assez de produits pertinents, BAISSER le seuil pour avoir de la variété
-      if (relevantProducts.length < count * 2) {
-        print('⚠️ Pas assez de produits pertinents (${relevantProducts.length}), relaxation du seuil à 10 points...');
-        relevantProducts = scoredProducts.where((p) => (p['_matchScore'] as double) >= 10.0).toList();
-        print('📊 ${relevantProducts.length} produits après relaxation (score ≥ 10)');
-      }
-
-      if (relevantProducts.isEmpty) {
-        print('⚠️ Aucun produit pertinent trouvé même avec seuil à 10, on prend TOUS les produits...');
-        relevantProducts = scoredProducts;
-      }
-
-      // Trier par score décroissant
-      relevantProducts.sort((a, b) => (b['_matchScore'] as double).compareTo(a['_matchScore'] as double));
+      // Garder tous les produits (pas de filtrage par score)
+      var relevantProducts = scoredProducts;
 
       // 🎲 SHUFFLE PARTIEL AMÉLIORÉ pour VRAIMENT éviter les mêmes produits
       // On garde le top 20% intact (meilleurs scores), mais on shuffle 80% restants
@@ -144,7 +146,9 @@ class ProductMatchingService {
       final seenProductNames = <String>{}; // Déduplication par nom normalisé
       final excludedIds = excludeProductIds?.toSet() ?? {};
 
-      print('🔄 Exclusion de ${excludedIds.length} produits déjà vus');
+      // ⚠️ DÉSACTIVER TEMPORAIREMENT LE CACHE pour garantir de la variété
+      // Le cache peut exclure TOUS les produits disponibles
+      print('🔄 Exclusion désactivée pour garantir variété (${excludedIds.length} produits ignorés)');
       print('🎯 Max par marque: $maxPerBrand produits (20%)');
       print('🎯 Max par catégorie: $maxPerCategory produits (30%)');
 
@@ -160,10 +164,10 @@ class ProductMatchingService {
         final categories = (product['categories'] as List?)?.cast<String>() ?? [];
         final mainCategory = categories.isNotEmpty ? categories.first : 'Autre';
 
-        // 1️⃣ Vérifier exclusion (produits déjà vus)
-        if (excludedIds.contains(productId)) {
-          continue;
-        }
+        // 1️⃣ Vérifier exclusion (DÉSACTIVÉ pour garantir variété)
+        // if (excludedIds.contains(productId)) {
+        //   continue;
+        // }
 
         // 2️⃣ Vérifier dédupli par ID
         if (seenProductIds.contains(productId)) {
