@@ -7,6 +7,8 @@ class OnboardingGiftsResultModel {
   Map<String, dynamic>? userProfile;
   String? errorMessage;
   String? errorDetails;
+  String? personId; // ID de la personne pour laquelle on génère les cadeaux
+  Map<String, dynamic>? personTags; // Tags de la personne (recipient, budget, etc.)
 
   void setGifts(List<Map<String, dynamic>> newGifts) {
     gifts = newGifts;
@@ -28,6 +30,14 @@ class OnboardingGiftsResultModel {
   void clearError() {
     errorMessage = null;
     errorDetails = null;
+  }
+
+  void setPersonId(String? id) {
+    personId = id;
+  }
+
+  void setPersonTags(Map<String, dynamic>? tags) {
+    personTags = tags;
   }
 
   void dispose() {

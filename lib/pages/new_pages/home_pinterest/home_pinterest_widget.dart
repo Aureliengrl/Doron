@@ -97,11 +97,11 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
     }
 
     try {
-      // Charger le profil utilisateur depuis Firebase
-      final userProfile = await FirebaseDataService.loadOnboardingAnswers();
+      // Charger les tags utilisateur depuis Firebase (nouvelle architecture)
+      final userProfileTags = await FirebaseDataService.loadUserProfileTags();
 
       // Extraire et stocker le prénom
-      final firstName = userProfile?['firstName'] as String? ?? '';
+      final firstName = userProfileTags?['firstName'] as String? ?? '';
       _model.setFirstName(firstName);
 
       // Charger la liste des produits déjà vus depuis le cache
@@ -111,7 +111,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
 
       // Ajouter un seed de variation pour forcer ChatGPT à générer de nouveaux produits à chaque refresh
       final profileWithVariation = {
-        ...?userProfile,
+        ...?userProfileTags,
         '_refresh_timestamp': DateTime.now().millisecondsSinceEpoch,
         '_variation_seed': DateTime.now().microsecond,
         '_seen_products': seenProductsJson, // Passer les produits déjà vus
@@ -192,12 +192,13 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
     try {
       _model.incrementPage();
 
-      final userProfile = await FirebaseDataService.loadOnboardingAnswers();
+      // Charger les tags utilisateur (nouvelle architecture)
+      final userProfileTags = await FirebaseDataService.loadUserProfileTags();
       final prefs = await SharedPreferences.getInstance();
       final seenProductsJson = prefs.getStringList('seen_home_products_${_model.activeCategory}') ?? [];
 
       final profileWithVariation = {
-        ...?userProfile,
+        ...?userProfileTags,
         '_refresh_timestamp': DateTime.now().millisecondsSinceEpoch,
         '_variation_seed': DateTime.now().microsecond,
         '_seen_products': seenProductsJson,

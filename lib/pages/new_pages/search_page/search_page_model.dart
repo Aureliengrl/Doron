@@ -11,6 +11,7 @@ class SearchPageModel {
   String? errorMessage;
 
   List<Map<String, dynamic>> profiles = [];
+  Map<String, List<Map<String, dynamic>>> personGifts = {}; // Cache des cadeaux par personId
 
   /// Normalise un ID (String ou int) en int pour cohérence
   int _normalizeId(dynamic id) {
@@ -19,13 +20,49 @@ class SearchPageModel {
     return 0;
   }
 
-  /// Charge les profils depuis Firebase/Local Storage
+  /// Charge les profils depuis Firebase/Local Storage (nouvelle architecture)
   Future<void> loadProfiles() async {
     try {
       isLoading = true;
       errorMessage = null;
 
-      profiles = await FirebaseDataService.loadGiftProfiles();
+      // Nouvelle architecture: charger les personnes depuis la collection people
+      final people = await FirebaseDataService.loadPeople();
+
+      // Transformer les personnes en format de profils pour la UI
+      profiles = [];
+      for (var person in people) {
+        final personId = person['id'] as String;
+        final tags = person['tags'] as Map<String, dynamic>? ?? {};
+        final meta = person['meta'] as Map<String, dynamic>? ?? {};
+
+        // Extraire le nom du destinataire depuis les tags
+        final recipientName = tags['recipient'] as String? ?? 'Sans nom';
+        final relation = tags['relation'] as String? ?? 'Proche';
+        final occasion = tags['occasion'] as String? ?? 'Occasion';
+
+        // Générer initiales et couleur
+        final initials = _generateInitials(recipientName);
+        final color = _generateColor(recipientName);
+
+        // Charger la dernière liste de cadeaux pour cette personne
+        final giftListData = await FirebaseDataService.loadLatestGiftListForPerson(personId);
+        final gifts = giftListData?['gifts'] as List? ?? [];
+
+        // Mettre en cache les cadeaux
+        personGifts[personId] = gifts.cast<Map<String, dynamic>>();
+
+        profiles.add({
+          'id': personId,
+          'name': recipientName,
+          'initials': initials,
+          'color': color,
+          'relation': relation,
+          'occasion': occasion,
+          'tags': tags,
+          'meta': meta,
+        });
+      }
 
       // Sélectionner le premier profil par défaut s'il y en a
       if (profiles.isNotEmpty && selectedProfileId == null) {
@@ -45,7 +82,7 @@ class SearchPageModel {
       }
 
       isLoading = false;
-      print('✅ Loaded ${profiles.length} profiles');
+      print('✅ Loaded ${profiles.length} people with their gift lists');
     } catch (e) {
       print('❌ Error loading profiles: $e');
       isLoading = false;
@@ -56,6 +93,32 @@ class SearchPageModel {
         errorMessage = 'Erreur lors du chargement: ${e.toString()}';
       }
     }
+  }
+
+  /// Génère des initiales à partir d'un nom
+  String _generateInitials(String name) {
+    if (name.isEmpty) return '?';
+    final parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return name.substring(0, name.length >= 2 ? 2 : 1).toUpperCase();
+  }
+
+  /// Génère une couleur basée sur le nom (couleurs cohérentes)
+  String _generateColor(String name) {
+    final colors = [
+      '#8A2BE2', // Violet
+      '#EC4899', // Rose
+      '#F59E0B', // Orange
+      '#10B981', // Vert
+      '#3B82F6', // Bleu
+      '#EF4444', // Rouge
+      '#8B5CF6', // Violet clair
+      '#06B6D4', // Cyan
+    ];
+    final hash = name.hashCode.abs();
+    return colors[hash % colors.length];
   }
 
   /// Charge les favoris pour une personne spécifique
@@ -95,16 +158,18 @@ class SearchPageModel {
   List<Map<String, dynamic>> getFilteredProducts() {
     if (selectedProfileId == null) return [];
 
-    // Récupérer les cadeaux sauvegardés pour le profil sélectionné
+    // Récupérer les cadeaux depuis le cache pour la personne sélectionnée
     final currentProf = currentProfile;
-    if (currentProf != null && currentProf.containsKey('gifts')) {
-      final gifts = currentProf['gifts'] as List?;
-      if (gifts != null && gifts.isNotEmpty) {
-        return gifts.cast<Map<String, dynamic>>();
+    if (currentProf != null) {
+      final personId = currentProf['id'] as String;
+
+      // Retourner les cadeaux depuis le cache
+      if (personGifts.containsKey(personId)) {
+        return personGifts[personId] ?? [];
       }
     }
 
-    // Si pas de cadeaux, retourner une liste vide (pas de données de test)
+    // Si pas de cadeaux, retourner une liste vide
     return [];
   }
 

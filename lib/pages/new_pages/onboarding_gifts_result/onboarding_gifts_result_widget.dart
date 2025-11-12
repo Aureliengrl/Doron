@@ -30,6 +30,23 @@ class _OnboardingGiftsResultWidgetState
   void initState() {
     super.initState();
     _model = OnboardingGiftsResultModel();
+
+    // Parse le personId depuis les query parameters (sera fait dans didChangeDependencies)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _parseQueryParameters();
+    });
+  }
+
+  /// Parse les paramètres de query de l'URL
+  void _parseQueryParameters() {
+    final goRouterState = GoRouterState.of(context);
+    final personId = goRouterState.uri.queryParameters['personId'];
+
+    if (personId != null) {
+      _model.setPersonId(personId);
+      print('✅ PersonId détecté: $personId');
+    }
+
     _loadGifts();
   }
 
@@ -43,13 +60,40 @@ class _OnboardingGiftsResultWidgetState
     }
 
     try {
-      // Charger le profil utilisateur depuis Firebase/SharedPreferences
-      final userProfile = await FirebaseDataService.loadOnboardingAnswers();
-      _model.setUserProfile(userProfile);
+      Map<String, dynamic>? profileForGeneration;
+
+      // Si un personId est spécifié, charger les tags de la personne (nouvelle architecture)
+      if (_model.personId != null) {
+        print('🔍 Chargement des données pour personne: ${_model.personId}');
+        final people = await FirebaseDataService.loadPeople();
+        final person = people.firstWhere(
+          (p) => p['id'] == _model.personId,
+          orElse: () => {},
+        );
+
+        if (person.isEmpty) {
+          throw Exception('Personne non trouvée: ${_model.personId}');
+        }
+
+        final personTags = person['tags'] as Map<String, dynamic>?;
+        if (personTags == null) {
+          throw Exception('Tags de personne manquants');
+        }
+
+        _model.setPersonTags(personTags);
+        profileForGeneration = personTags;
+        print('✅ Tags de personne chargés: ${personTags.keys.join(", ")}');
+      } else {
+        // Ancienne méthode (compatibilité): charger les réponses d'onboarding complètes
+        print('🔍 Chargement du profil onboarding (mode compatibilité)');
+        final userProfile = await FirebaseDataService.loadOnboardingAnswers();
+        _model.setUserProfile(userProfile);
+        profileForGeneration = userProfile;
+      }
 
       // Ajouter un seed aléatoire pour forcer ChatGPT à générer de nouveaux produits
       final profileWithVariation = {
-        ...?userProfile,
+        ...?profileForGeneration,
         if (forceRefresh) '_refresh_seed': DateTime.now().millisecondsSinceEpoch,
         '_variation': DateTime.now().second, // Variation basée sur la seconde
       };
@@ -643,21 +687,42 @@ class _OnboardingGiftsResultWidgetState
               onPressed: _model.isLoading
                   ? null
                   : () async {
-                      // Sauvegarder le profil avec les cadeaux dans Firebase
-                      if (_model.userProfile != null) {
-                        // Ajouter les cadeaux au profil
-                        final profileWithGifts = {
-                          ..._model.userProfile!,
-                          'gifts': _model.gifts,
-                          'savedAt': DateTime.now().toIso8601String(),
-                        };
-                        final profileId = await FirebaseDataService.saveGiftProfile(profileWithGifts);
-                        print('✅ Profil et ${_model.gifts.length} cadeaux sauvegardés');
+                      // Nouvelle architecture: sauvegarder la liste de cadeaux pour une personne
+                      if (_model.personId != null) {
+                        print('💾 Sauvegarde via nouvelle architecture (personId: ${_model.personId})');
+
+                        // Sauvegarder la liste de cadeaux
+                        final listName = 'Liste ${DateTime.now().day}/${DateTime.now().month}';
+                        final listId = await FirebaseDataService.saveGiftListForPerson(
+                          personId: _model.personId!,
+                          gifts: _model.gifts,
+                          listName: listName,
+                        );
+                        print('✅ ${_model.gifts.length} cadeaux sauvegardés (liste: $listId)');
+
+                        // Retirer le flag isPendingFirstGen
+                        await FirebaseDataService.updatePersonPendingFlag(_model.personId!, false);
+                        print('✅ Flag isPendingFirstGen retiré');
 
                         // Définir le contexte pour que les futurs favoris soient liés à cette personne
-                        if (profileId != null) {
-                          await FirebaseDataService.setCurrentPersonContext(profileId);
-                          print('✅ Contexte de personne défini: $profileId');
+                        await FirebaseDataService.setCurrentPersonContext(_model.personId!);
+                        print('✅ Contexte de personne défini: ${_model.personId}');
+                      } else {
+                        // Ancienne méthode (compatibilité)
+                        print('💾 Sauvegarde via ancienne architecture');
+                        if (_model.userProfile != null) {
+                          final profileWithGifts = {
+                            ..._model.userProfile!,
+                            'gifts': _model.gifts,
+                            'savedAt': DateTime.now().toIso8601String(),
+                          };
+                          final profileId = await FirebaseDataService.saveGiftProfile(profileWithGifts);
+                          print('✅ Profil et ${_model.gifts.length} cadeaux sauvegardés');
+
+                          if (profileId != null) {
+                            await FirebaseDataService.setCurrentPersonContext(profileId);
+                            print('✅ Contexte de personne défini: $profileId');
+                          }
                         }
                       }
 
