@@ -551,7 +551,7 @@ class _AiChatComponentWidgetState extends State<AiChatComponentWidget> {
                                       AmazonApiForOpenAICall.productsList(
                                         (_model.products?.jsonBody ?? ''),
                                       )?.toList(),
-                                      Platforms.amazon,
+                                      "amazon",
                                     );
                                     _model.listOfProducts = _model
                                         .combineListOnSubmit!
@@ -630,7 +630,7 @@ class _AiChatComponentWidgetState extends State<AiChatComponentWidget> {
                                                   ''),
                                             )?.elementAtOrNull(
                                                 _model.loopCounter))),
-                                            platform: Platforms.sephora,
+                                            platform: "sephora",
                                           ));
                                           _model.loopCounter =
                                               _model.loopCounter + 1;
@@ -686,7 +686,7 @@ class _AiChatComponentWidgetState extends State<AiChatComponentWidget> {
                                                   ''),
                                             )?.elementAtOrNull(
                                                 _model.loopCounter),
-                                            platform: Platforms.ikea,
+                                            platform: "ikea",
                                           ));
                                           _model.loopCounter =
                                               _model.loopCounter + 1;
@@ -1144,7 +1144,7 @@ class _AiChatComponentWidgetState extends State<AiChatComponentWidget> {
                                       AmazonApiForOpenAICall.productsList(
                                         (_model.productsCopy?.jsonBody ?? ''),
                                       )?.toList(),
-                                      Platforms.amazon,
+                                      "amazon",
                                     );
                                     _model.listOfProducts = _model
                                         .combineListCopy!
@@ -1214,7 +1214,7 @@ class _AiChatComponentWidgetState extends State<AiChatComponentWidget> {
                                                 ''),
                                           )?.elementAtOrNull(
                                               _model.loopCounter))),
-                                          platform: Platforms.sephora,
+                                          platform: "sephora",
                                         ));
                                         _model.loopCounter =
                                             _model.loopCounter + 1;
@@ -1290,7 +1290,7 @@ class _AiChatComponentWidgetState extends State<AiChatComponentWidget> {
                                                 ''),
                                           )?.elementAtOrNull(
                                               _model.loopCounter),
-                                          platform: Platforms.ikea,
+                                          platform: "ikea",
                                         ));
                                         _model.loopCounter =
                                             _model.loopCounter + 1;

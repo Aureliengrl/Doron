@@ -209,7 +209,7 @@ class _OpenAiSuggestedGiftsWidgetState
                                             await favouritesRecordReference
                                                 .set(createFavouritesRecordData(
                                               uid: currentUserReference,
-                                              platform: Platforms.amazon,
+                                              platform: "amazon",
                                               product: updateProductsStruct(
                                                 fetchedProductsItem,
                                                 clearUnsetFields: false,
@@ -223,7 +223,7 @@ class _OpenAiSuggestedGiftsWidgetState
                                                     createFavouritesRecordData(
                                                       uid: currentUserReference,
                                                       platform:
-                                                          Platforms.amazon,
+                                                          "amazon",
                                                       product:
                                                           updateProductsStruct(
                                                         fetchedProductsItem,

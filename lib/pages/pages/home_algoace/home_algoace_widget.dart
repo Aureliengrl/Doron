@@ -170,7 +170,7 @@ class _HomeAlgoaceWidgetState extends State<HomeAlgoaceWidget>
                     )!
                       .elementAtOrNull(_model.loopCounter))!)))
                   : 0,
-              platform: Platforms.sephora,
+              platform: "sephora",
             ));
             _model.loopCounter = _model.loopCounter + 1;
           }
@@ -206,7 +206,7 @@ class _HomeAlgoaceWidgetState extends State<HomeAlgoaceWidget>
               productPhoto: IkeaCall.productphoto(
                 (_model.ikeaOnPageLoad?.jsonBody ?? ''),
               )?.elementAtOrNull(_model.loopCounter),
-              platform: Platforms.ikea,
+              platform: "ikea",
             ));
             _model.loopCounter = _model.loopCounter + 1;
           }
@@ -235,7 +235,7 @@ class _HomeAlgoaceWidgetState extends State<HomeAlgoaceWidget>
               productPhoto: IkeaCall.productphoto(
                 (_model.ikeaOnPageLoad?.jsonBody ?? ''),
               )?.elementAtOrNull(_model.loopCounter),
-              platform: Platforms.ikea,
+              platform: "ikea",
             ));
             _model.loopCounter = _model.loopCounter + 1;
           }
@@ -553,7 +553,7 @@ class _HomeAlgoaceWidgetState extends State<HomeAlgoaceWidget>
                                   )!
                                           .elementAtOrNull(
                                               _model.loopCounter))!)),
-                                  platform: Platforms.sephora,
+                                  platform: "sephora",
                                 ));
                                 _model.loopCounter = _model.loopCounter + 1;
                               }
@@ -606,7 +606,7 @@ class _HomeAlgoaceWidgetState extends State<HomeAlgoaceWidget>
                                   productPhoto: IkeaCall.productphoto(
                                     (_model.ikeaOnChange?.jsonBody ?? ''),
                                   )?.elementAtOrNull(_model.loopCounter),
-                                  platform: Platforms.ikea,
+                                  platform: "ikea",
                                 ));
                                 _model.loopCounter = _model.loopCounter + 1;
                               }
@@ -870,7 +870,7 @@ class _HomeAlgoaceWidgetState extends State<HomeAlgoaceWidget>
                                       productPhoto: IkeaCall.productphoto(
                                         (_model.ikeaOnSubmit?.jsonBody ?? ''),
                                       )?.elementAtOrNull(_model.loopCounter),
-                                      platform: Platforms.ikea,
+                                      platform: "ikea",
                                     ));
                                     _model.loopCounter = _model.loopCounter + 1;
                                   }
@@ -1023,7 +1023,7 @@ class _HomeAlgoaceWidgetState extends State<HomeAlgoaceWidget>
                                                       .set(
                                                           createFavouritesRecordData(
                                                     uid: currentUserReference,
-                                                    platform: Platforms.amazon,
+                                                    platform: "amazon",
                                                     product:
                                                         updateProductsStruct(
                                                       searchProductsItem,
@@ -1188,7 +1188,7 @@ class _HomeAlgoaceWidgetState extends State<HomeAlgoaceWidget>
                                                                 null
                                                             ? intialiProductListItem
                                                                 .platform
-                                                            : Platforms.amazon,
+                                                            : "amazon",
                                                         product:
                                                             updateProductsStruct(
                                                           intialiProductListItem,

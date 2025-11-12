@@ -95,7 +95,7 @@ class _TikTokInspirationPageWidgetState
         await FavouritesRecord.collection.add(
           createFavouritesRecordData(
             uid: currentUserReference,
-            platform: Platforms.amazon,
+            platform: "amazon",
             timeStamp: DateTime.now(),
             personId: null,
             product: ProductsStruct(
@@ -106,7 +106,7 @@ class _TikTokInspirationPageWidgetState
               productStarRating: '',
               productOriginalPrice: '',
               productNumRatings: 0,
-              platform: Platforms.amazon,
+              platform: "amazon",
             ),
           ),
         );
