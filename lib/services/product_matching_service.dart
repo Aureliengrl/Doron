@@ -1,10 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
+import 'dart:convert';
+import 'package:flutter/services.dart' show rootBundle;
 
 /// Service de matching de produits basé sur les tags
 /// Remplace les appels OpenAI pour des résultats instantanés
 class ProductMatchingService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static List<Map<String, dynamic>>? _cachedFallbackProducts;
 
   /// Génère des produits personnalisés en matchant les tags utilisateur avec la base de produits
   static Future<List<Map<String, dynamic>>> getPersonalizedProducts({
@@ -37,7 +40,13 @@ class ProductMatchingService {
       print('📦 ${allProducts.length} produits chargés depuis Firebase');
 
       if (allProducts.isEmpty) {
-        print('⚠️ Aucun produit en base, utiliser des produits par défaut');
+        print('⚠️ Firebase vide, chargement depuis assets...');
+        allProducts.addAll(await _loadFallbackProducts());
+        print('📦 ${allProducts.length} produits chargés depuis assets');
+      }
+
+      if (allProducts.isEmpty) {
+        print('⚠️ Assets vides aussi, utiliser des produits hardcodés');
         return _getFallbackProducts(count);
       }
 
@@ -202,7 +211,24 @@ class ProductMatchingService {
     return score;
   }
 
-  /// Produits de secours en cas d'erreur ou de base vide
+  /// Charge les produits depuis le fichier JSON des assets
+  static Future<List<Map<String, dynamic>>> _loadFallbackProducts() async {
+    if (_cachedFallbackProducts != null) {
+      return _cachedFallbackProducts!;
+    }
+
+    try {
+      final jsonString = await rootBundle.loadString('assets/jsons/fallback_products.json');
+      final List<dynamic> jsonList = json.decode(jsonString);
+      _cachedFallbackProducts = jsonList.cast<Map<String, dynamic>>();
+      return _cachedFallbackProducts!;
+    } catch (e) {
+      print('❌ Erreur chargement assets: $e');
+      return [];
+    }
+  }
+
+  /// Produits de secours hardcodés en cas d'erreur totale
   static List<Map<String, dynamic>> _getFallbackProducts(int count) {
     final fallbackProducts = [
       {
