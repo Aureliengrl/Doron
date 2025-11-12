@@ -12,3 +12,4 @@ android/app/google-services.json
 
 assets/environment_values/environment.json
 firebase-service-account.json
+node_modules/
