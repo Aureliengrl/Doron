@@ -18,27 +18,61 @@ class ProductMatchingService {
   }) async {
     try {
       print('🎯 Matching produits pour tags: ${userTags.keys.join(", ")}');
+      print('📋 User tags complets: $userTags');
 
       // Convertir les réponses utilisateur en tags de recherche
       final searchTags = _convertUserTagsToSearchTags(userTags);
       print('🏷️ Tags de recherche: $searchTags');
 
-      // Récupérer tous les produits (ou filtrer par catégorie)
+      // 🎯 FILTRAGE FIREBASE PAR SEXE (critère le plus discriminant)
       Query<Map<String, dynamic>> query = _firestore.collection('products');
 
-      // Si une catégorie est spécifiée, filtrer
-      if (category != null && category != 'Pour toi' && category != 'all') {
-        query = query.where('categories', arrayContains: category.toLowerCase());
+      final gender = userTags['gender'] ?? userTags['recipientGender'];
+      String? genderFilter;
+      if (gender != null) {
+        final genderStr = gender.toString().toLowerCase();
+        if (genderStr.contains('homme') || genderStr.contains('male')) {
+          genderFilter = 'homme';
+        } else if (genderStr.contains('femme') || genderStr.contains('female')) {
+          genderFilter = 'femme';
+        }
       }
 
-      final snapshot = await query.limit(500).get();
-      final allProducts = snapshot.docs.map((doc) {
+      // Filtrer par sexe SI disponible (réduit drastiquement le bruit)
+      if (genderFilter != null) {
+        query = query.where('tags', arrayContains: genderFilter);
+        print('🎯 Filtrage Firebase par sexe: $genderFilter');
+      }
+
+      // Si une catégorie est spécifiée, filtrer aussi
+      if (category != null && category != 'Pour toi' && category != 'all') {
+        // Si déjà un filtre sexe, on ne peut pas faire 2 arrayContains
+        // On va donc charger plus et filtrer côté client
+        if (genderFilter == null) {
+          query = query.where('categories', arrayContains: category.toLowerCase());
+          print('🎯 Filtrage Firebase par catégorie: $category');
+        }
+      }
+
+      // Charger 1000 produits (plus large pour avoir de la variété)
+      final snapshot = await query.limit(1000).get();
+      var allProducts = snapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
         return data;
       }).toList();
 
       print('📦 ${allProducts.length} produits chargés depuis Firebase');
+
+      // Filtrer par catégorie côté client si nécessaire
+      if (category != null && category != 'Pour toi' && category != 'all' && genderFilter != null) {
+        final categoryLower = category.toLowerCase();
+        allProducts = allProducts.where((product) {
+          final categories = (product['categories'] as List?)?.cast<String>() ?? [];
+          return categories.any((cat) => cat.toLowerCase() == categoryLower);
+        }).toList();
+        print('📦 ${allProducts.length} produits après filtre catégorie côté client');
+      }
 
       if (allProducts.isEmpty) {
         print('⚠️ Firebase vide, chargement depuis assets...');
@@ -60,8 +94,31 @@ class ProductMatchingService {
         };
       }).toList();
 
+      // 🔥 FILTRER PAR SCORE MINIMUM (éliminer produits trop génériques)
+      // Seuil : 20 points minimum (au moins un tag majeur doit matcher)
+      final relevantProducts = scoredProducts.where((p) => (p['_matchScore'] as double) >= 20.0).toList();
+
+      print('📊 ${relevantProducts.length} produits pertinents (score ≥ 20) sur ${scoredProducts.length}');
+
+      if (relevantProducts.isEmpty) {
+        print('⚠️ Aucun produit pertinent trouvé, relaxation du seuil...');
+        relevantProducts.addAll(scoredProducts);
+      }
+
       // Trier par score décroissant
-      scoredProducts.sort((a, b) => (b['_matchScore'] as double).compareTo(a['_matchScore'] as double));
+      relevantProducts.sort((a, b) => (b['_matchScore'] as double).compareTo(a['_matchScore'] as double));
+
+      // 🎲 SHUFFLE PARTIEL pour diversité (mélanger les produits de score similaire)
+      // On garde le top 30% intact, mais on shuffle le reste pour éviter toujours les mêmes
+      final topCount = (relevantProducts.length * 0.3).ceil();
+      final topProducts = relevantProducts.take(topCount).toList();
+      final middleProducts = relevantProducts.skip(topCount).toList();
+
+      // Shuffle les produits du milieu avec seed basé sur timestamp
+      final random = Random(DateTime.now().millisecondsSinceEpoch);
+      middleProducts.shuffle(random);
+
+      final shuffledProducts = [...topProducts, ...middleProducts];
 
       // 🎯 DÉDUPLICATION ET DIVERSITÉ DES MARQUES (max 20% d'une même marque)
       final selectedProducts = <Map<String, dynamic>>[];
@@ -75,7 +132,7 @@ class ProductMatchingService {
 
       print('🔄 Exclusion de ${excludedIds.length} produits déjà vus');
 
-      for (var product in scoredProducts) {
+      for (var product in shuffledProducts) {
         if (selectedProducts.length >= count) break;
 
         final productId = product['id'];
