@@ -458,14 +458,63 @@ class OnboardingAdvancedModel {
   }
 
   void handleNext(List<Map<String, dynamic>> steps, BuildContext context, {bool skipUserQuestions = false, String? returnTo}) async {
+    final currentStepData = steps[currentStep];
+
+    // ==================== NOUVELLE ARCHITECTURE ====================
+    // Détecter la fin de l'Étape A (section user) - juste après la transition
+    if (currentStepData['id'] == 'transition') {
+      // Sauvegarder les tags utilisateur (Étape A)
+      final userTags = {
+        'firstName': answers['firstName'],
+        'age': answers['age'],
+        'gender': answers['gender'],
+        'interests': answers['interests'],
+        'style': answers['style'],
+        'giftTypes': answers['giftTypes'],
+      };
+
+      try {
+        await FirebaseDataService.saveUserProfileTags(userTags);
+        print('✅ Étape A terminée: Tags utilisateur sauvegardés');
+      } catch (e) {
+        print('❌ Erreur sauvegarde tags utilisateur: $e');
+      }
+    }
+    // =================================================================
+
     if (currentStep < steps.length - 1) {
       currentStep++;
     } else {
-      // Onboarding terminé
+      // Onboarding terminé (fin de l'Étape B)
       print('✅ Onboarding terminé: $answers');
 
       try {
-        // 1. Sauvegarder les réponses (localement et dans Firebase si connecté)
+        // ==================== NOUVELLE ARCHITECTURE ====================
+        // 1. Créer la première personne (Étape B) avec isPendingFirstGen=true
+        final personTags = {
+          'recipient': answers['recipient'],
+          'budget': answers['budget'],
+          'recipientAge': answers['recipientAge'],
+          'recipientRelationDuration': answers['recipientRelationDuration'],
+          'recipientHobbies': answers['recipientHobbies'],
+          'recipientPersonality': answers['recipientPersonality'],
+          'recipientLifeSituation': answers['recipientLifeSituation'],
+          'recipientStyle': answers['recipientStyle'],
+          'occasion': answers['occasion'],
+          'recipientAlreadyHas': answers['recipientAlreadyHas'],
+          'specialMemory': answers['specialMemory'],
+          'preferredCategories': answers['preferredCategories'],
+        };
+
+        final personId = await FirebaseDataService.createPerson(
+          tags: personTags,
+          isPendingFirstGen: true, // Flag pour génération post-auth
+        );
+
+        print('✅ Première personne créée: $personId (isPendingFirstGen=true)');
+        // =================================================================
+
+        // 2. Sauvegarder aussi l'ancien format pour compatibilité
         await FirebaseDataService.saveOnboardingAnswers(answers);
 
         // Afficher un feedback de succès
@@ -479,21 +528,22 @@ class OnboardingAdvancedModel {
           );
         }
 
-        // 2. Marquer l'onboarding comme complété (seulement si c'est le premier onboarding)
+        // 3. Marquer l'onboarding comme complété (seulement si c'est le premier onboarding)
         if (!skipUserQuestions) {
           await FirstTimeService.setOnboardingCompleted();
         }
 
-        // 3. Navigation
+        // 4. Navigation
         if (context.mounted) {
           // Si returnTo est spécifié, naviguer vers cette page
           if (returnTo != null && returnTo.isNotEmpty) {
             print('🚀 Navigation vers $returnTo');
             context.go(returnTo);
           } else {
-            // Aller vers la page de résultats des cadeaux
-            print('🚀 Navigation vers page de cadeaux');
-            context.go('/onboarding-gifts-result');
+            // NOUVELLE LOGIQUE: Rediriger vers l'authentification
+            // Après auth, l'utilisateur sera automatiquement redirigé vers la page de génération
+            print('🚀 Navigation vers authentification');
+            context.go('/authentification');
           }
         }
       } catch (e) {
@@ -503,7 +553,7 @@ class OnboardingAdvancedModel {
           if (returnTo != null && returnTo.isNotEmpty) {
             context.go(returnTo);
           } else {
-            context.go('/onboarding-gifts-result');
+            context.go('/authentification');
           }
         }
       }

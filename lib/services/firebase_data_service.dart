@@ -554,4 +554,416 @@ class FirebaseDataService {
     }
     return null;
   }
+
+  // ============= NEW ARCHITECTURE: USER PROFILE TAGS =============
+
+  /// Sauvegarde les tags du profil utilisateur (Étape A onboarding)
+  /// Ces tags servent uniquement pour le feed d'accueil personnalisé
+  static Future<void> saveUserProfileTags(Map<String, dynamic> tags) async {
+    // Sauvegarder localement
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('local_user_profile_tags', json.encode(tags));
+      print('✅ User profile tags saved locally');
+    } catch (e) {
+      print('❌ Error saving user profile tags locally: $e');
+    }
+
+    // Sauvegarder sur Firebase si connecté
+    if (!isLoggedIn) {
+      print('⚠️ User not logged in, skipping Firebase save for profile tags');
+      return;
+    }
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .set({
+        'profile': {
+          'tags': tags,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }
+      }, SetOptions(merge: true));
+
+      print('✅ User profile tags saved to Firebase');
+    } catch (e) {
+      print('❌ Error saving user profile tags to Firebase: $e');
+    }
+  }
+
+  /// Charge les tags du profil utilisateur
+  static Future<Map<String, dynamic>?> loadUserProfileTags() async {
+    // Essayer Firebase d'abord si connecté
+    if (isLoggedIn) {
+      try {
+        final doc = await _firestore.collection('users').doc(currentUserId).get();
+        if (doc.exists && doc.data()?['profile']?['tags'] != null) {
+          print('✅ Loaded user profile tags from Firebase');
+          return doc.data()!['profile']['tags'] as Map<String, dynamic>;
+        }
+      } catch (e) {
+        print('❌ Error loading user profile tags from Firebase: $e');
+      }
+    }
+
+    // Fallback local
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final localData = prefs.getString('local_user_profile_tags');
+      if (localData != null) {
+        print('✅ Loaded user profile tags from local storage');
+        return json.decode(localData) as Map<String, dynamic>;
+      }
+    } catch (e) {
+      print('❌ Error loading user profile tags locally: $e');
+    }
+
+    return null;
+  }
+
+  // ============= NEW ARCHITECTURE: PEOPLE (GIFT RECIPIENTS) =============
+
+  /// Crée une nouvelle personne (Étape B onboarding ou ajout manuel)
+  /// Retourne le personId généré
+  static Future<String?> createPerson({
+    required Map<String, dynamic> tags,
+    bool isPendingFirstGen = false,
+  }) async {
+    final personId = DateTime.now().millisecondsSinceEpoch.toString();
+
+    // Sauvegarder localement
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final peopleJson = prefs.getString('local_people') ?? '[]';
+      final people = (json.decode(peopleJson) as List).cast<Map<String, dynamic>>();
+
+      people.add({
+        'id': personId,
+        'tags': tags,
+        'meta': {
+          'isPendingFirstGen': isPendingFirstGen,
+          'createdAt': DateTime.now().toIso8601String(),
+        },
+      });
+
+      await prefs.setString('local_people', json.encode(people));
+      print('✅ Person created locally: $personId (pending=$isPendingFirstGen)');
+    } catch (e) {
+      print('❌ Error creating person locally: $e');
+    }
+
+    // Sauvegarder sur Firebase si connecté
+    if (!isLoggedIn) return personId;
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('people')
+          .doc(personId)
+          .set({
+        'tags': tags,
+        'meta': {
+          'isPendingFirstGen': isPendingFirstGen,
+          'createdAt': FieldValue.serverTimestamp(),
+        },
+      });
+
+      print('✅ Person created in Firebase: $personId');
+      return personId;
+    } catch (e) {
+      print('❌ Error creating person in Firebase: $e');
+      return personId; // Retourne quand même l'ID local
+    }
+  }
+
+  /// Charge toutes les personnes
+  static Future<List<Map<String, dynamic>>> loadPeople() async {
+    // Essayer Firebase si connecté
+    if (isLoggedIn) {
+      try {
+        final snapshot = await _firestore
+            .collection('users')
+            .doc(currentUserId)
+            .collection('people')
+            .orderBy('meta.createdAt', descending: true)
+            .get();
+
+        if (snapshot.docs.isNotEmpty) {
+          print('✅ Loaded ${snapshot.docs.length} people from Firebase');
+          return snapshot.docs.map((doc) {
+            return {
+              'id': doc.id,
+              ...doc.data(),
+            };
+          }).toList();
+        }
+      } catch (e) {
+        print('❌ Error loading people from Firebase: $e');
+      }
+    }
+
+    // Fallback local
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final peopleJson = prefs.getString('local_people') ?? '[]';
+      final people = (json.decode(peopleJson) as List)
+          .map((e) => e as Map<String, dynamic>)
+          .toList();
+
+      print('✅ Loaded ${people.length} people from local storage');
+      return people;
+    } catch (e) {
+      print('❌ Error loading people locally: $e');
+      return [];
+    }
+  }
+
+  /// Charge la première personne avec isPendingFirstGen=true
+  static Future<Map<String, dynamic>?> getFirstPendingPerson() async {
+    final people = await loadPeople();
+    try {
+      return people.firstWhere(
+        (p) => p['meta']?['isPendingFirstGen'] == true,
+      );
+    } catch (e) {
+      return null; // Aucune personne en attente
+    }
+  }
+
+  /// Met à jour le flag isPendingFirstGen d'une personne
+  static Future<void> updatePersonPendingFlag(
+    String personId,
+    bool isPending,
+  ) async {
+    // Mise à jour locale
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final peopleJson = prefs.getString('local_people') ?? '[]';
+      final people = (json.decode(peopleJson) as List).cast<Map<String, dynamic>>();
+
+      final index = people.indexWhere((p) => p['id'] == personId);
+      if (index != -1) {
+        people[index]['meta'] = {
+          ...people[index]['meta'] ?? {},
+          'isPendingFirstGen': isPending,
+        };
+        await prefs.setString('local_people', json.encode(people));
+        print('✅ Person pending flag updated locally');
+      }
+    } catch (e) {
+      print('❌ Error updating person pending flag locally: $e');
+    }
+
+    // Mise à jour Firebase si connecté
+    if (!isLoggedIn) return;
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('people')
+          .doc(personId)
+          .update({
+        'meta.isPendingFirstGen': isPending,
+      });
+
+      print('✅ Person pending flag updated in Firebase');
+    } catch (e) {
+      print('❌ Error updating person pending flag in Firebase: $e');
+    }
+  }
+
+  // ============= GIFT LISTS (PER PERSON) =============
+
+  /// Sauvegarde une liste de cadeaux pour une personne
+  static Future<String?> saveGiftListForPerson({
+    required String personId,
+    required List<Map<String, dynamic>> gifts,
+    String? listName,
+  }) async {
+    final listId = DateTime.now().millisecondsSinceEpoch.toString();
+
+    // Sauvegarder localement
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final listsJson = prefs.getString('local_gift_lists_$personId') ?? '[]';
+      final lists = (json.decode(listsJson) as List).cast<Map<String, dynamic>>();
+
+      lists.add({
+        'id': listId,
+        'personId': personId,
+        'name': listName ?? 'Liste ${DateTime.now().day}/${DateTime.now().month}',
+        'gifts': gifts,
+        'createdAt': DateTime.now().toIso8601String(),
+      });
+
+      await prefs.setString('local_gift_lists_$personId', json.encode(lists));
+      print('✅ Gift list saved locally for person $personId');
+    } catch (e) {
+      print('❌ Error saving gift list locally: $e');
+    }
+
+    // Sauvegarder sur Firebase si connecté
+    if (!isLoggedIn) return listId;
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('people')
+          .doc(personId)
+          .collection('gift_lists')
+          .doc(listId)
+          .set({
+        'name': listName ?? 'Liste ${DateTime.now().day}/${DateTime.now().month}',
+        'gifts': gifts,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      print('✅ Gift list saved to Firebase for person $personId');
+      return listId;
+    } catch (e) {
+      print('❌ Error saving gift list to Firebase: $e');
+      return listId;
+    }
+  }
+
+  /// Charge toutes les listes de cadeaux pour une personne
+  static Future<List<Map<String, dynamic>>> loadGiftListsForPerson(
+    String personId,
+  ) async {
+    // Essayer Firebase si connecté
+    if (isLoggedIn) {
+      try {
+        final snapshot = await _firestore
+            .collection('users')
+            .doc(currentUserId)
+            .collection('people')
+            .doc(personId)
+            .collection('gift_lists')
+            .orderBy('createdAt', descending: true)
+            .get();
+
+        if (snapshot.docs.isNotEmpty) {
+          print('✅ Loaded ${snapshot.docs.length} gift lists from Firebase');
+          return snapshot.docs.map((doc) {
+            return {
+              'id': doc.id,
+              ...doc.data(),
+            };
+          }).toList();
+        }
+      } catch (e) {
+        print('❌ Error loading gift lists from Firebase: $e');
+      }
+    }
+
+    // Fallback local
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final listsJson = prefs.getString('local_gift_lists_$personId') ?? '[]';
+      final lists = (json.decode(listsJson) as List)
+          .map((e) => e as Map<String, dynamic>)
+          .toList();
+
+      print('✅ Loaded ${lists.length} gift lists from local storage');
+      return lists;
+    } catch (e) {
+      print('❌ Error loading gift lists locally: $e');
+      return [];
+    }
+  }
+
+  /// Charge la dernière liste de cadeaux pour une personne
+  static Future<Map<String, dynamic>?> loadLatestGiftListForPerson(
+    String personId,
+  ) async {
+    final lists = await loadGiftListsForPerson(personId);
+    return lists.isEmpty ? null : lists.first;
+  }
+
+  // ============= HOME FEED =============
+
+  /// Sauvegarde un feed d'accueil généré
+  static Future<void> saveHomeFeed(List<Map<String, dynamic>> products) async {
+    final feedId = DateTime.now().millisecondsSinceEpoch.toString();
+
+    // Sauvegarder localement
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('local_home_feed_latest', json.encode({
+        'id': feedId,
+        'products': products,
+        'createdAt': DateTime.now().toIso8601String(),
+      }));
+      print('✅ Home feed saved locally');
+    } catch (e) {
+      print('❌ Error saving home feed locally: $e');
+    }
+
+    // Sauvegarder sur Firebase si connecté
+    if (!isLoggedIn) return;
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('home_feed')
+          .doc(feedId)
+          .set({
+        'products': products,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      print('✅ Home feed saved to Firebase');
+    } catch (e) {
+      print('❌ Error saving home feed to Firebase: $e');
+    }
+  }
+
+  /// Charge le dernier feed d'accueil
+  static Future<List<Map<String, dynamic>>?> loadLatestHomeFeed() async {
+    // Essayer Firebase si connecté
+    if (isLoggedIn) {
+      try {
+        final snapshot = await _firestore
+            .collection('users')
+            .doc(currentUserId)
+            .collection('home_feed')
+            .orderBy('createdAt', descending: true)
+            .limit(1)
+            .get();
+
+        if (snapshot.docs.isNotEmpty) {
+          final products = snapshot.docs.first.data()['products'] as List?;
+          if (products != null) {
+            print('✅ Loaded home feed from Firebase');
+            return products.cast<Map<String, dynamic>>();
+          }
+        }
+      } catch (e) {
+        print('❌ Error loading home feed from Firebase: $e');
+      }
+    }
+
+    // Fallback local
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final feedJson = prefs.getString('local_home_feed_latest');
+      if (feedJson != null) {
+        final feedData = json.decode(feedJson) as Map<String, dynamic>;
+        final products = feedData['products'] as List?;
+        if (products != null) {
+          print('✅ Loaded home feed from local storage');
+          return products.cast<Map<String, dynamic>>();
+        }
+      }
+    } catch (e) {
+      print('❌ Error loading home feed locally: $e');
+    }
+
+    return null;
+  }
 }
