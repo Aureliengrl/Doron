@@ -1487,7 +1487,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                 children: [
                   ProductImage(
                     imageUrl: product['image'] as String? ?? '',
-                    height: 280,
+                    height: 350,
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(24),
                       topRight: Radius.circular(24),
@@ -1582,7 +1582,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        product['source'] as String,
+                        product['source'] as String? ?? product['brand'] as String? ?? 'Amazon',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -1592,7 +1592,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      product['name'] as String,
+                      product['name'] as String? ?? 'Produit',
                       style: GoogleFonts.poppins(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -1601,7 +1601,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      '${product['price']}€',
+                      '${product['price'] ?? 0}€',
                       style: GoogleFonts.poppins(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
@@ -1609,14 +1609,26 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      product['description'] as String,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: const Color(0xFF6B7280),
-                        height: 1.6,
+                    if (product['description'] != null && (product['description'] as String).isNotEmpty)
+                      Text(
+                        product['description'] as String,
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: const Color(0xFF6B7280),
+                          height: 1.6,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      )
+                    else
+                      Text(
+                        'Cadeau parfait par ${product['brand'] as String? ?? 'une marque de qualité'}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: const Color(0xFF6B7280),
+                          height: 1.6,
+                        ),
                       ),
-                    ),
                     const SizedBox(height: 20),
                     // Bouton Voir sur...
                     SizedBox(

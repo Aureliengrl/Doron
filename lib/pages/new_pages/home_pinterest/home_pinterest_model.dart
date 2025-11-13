@@ -54,7 +54,16 @@ class HomePinterestModel {
   }
 
   void setProducts(List<Map<String, dynamic>> newProducts) {
-    products = newProducts;
+    // Supprimer les doublons en utilisant un Set basé sur l'ID
+    final seenIds = <dynamic>{};
+    products = newProducts.where((product) {
+      final productId = product['id'];
+      if (seenIds.contains(productId)) {
+        return false; // Doublon, on l'ignore
+      }
+      seenIds.add(productId);
+      return true; // Premier occurrence, on le garde
+    }).toList();
   }
 
   void setSections(List<Map<String, dynamic>> newSections) {
@@ -70,7 +79,17 @@ class HomePinterestModel {
   }
 
   void addProducts(List<Map<String, dynamic>> newProducts) {
-    products.addAll(newProducts);
+    // Créer un Set des IDs existants pour éviter les doublons
+    final existingIds = products.map((p) => p['id']).toSet();
+
+    // Filtrer les nouveaux produits pour ne garder que ceux qui n'existent pas déjà
+    final uniqueNewProducts = newProducts.where((product) {
+      final productId = product['id'];
+      return !existingIds.contains(productId);
+    }).toList();
+
+    // Ajouter uniquement les produits uniques
+    products.addAll(uniqueNewProducts);
   }
 
   void resetPagination() {
