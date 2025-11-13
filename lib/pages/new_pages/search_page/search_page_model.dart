@@ -45,8 +45,8 @@ class SearchPageModel {
         final relation = tags['recipient'] as String? ?? tags['relation'] as String? ?? 'Proche';
         final occasion = tags['occasion'] as String? ?? 'Occasion';
 
-        // Générer initiales et couleur (basées sur le prénom réel)
-        final initials = _generateInitials(recipientName);
+        // Générer initiales et couleur (basées sur le prénom réel et la relation)
+        final initials = _generateInitials(recipientName, relation);
         final color = _generateColor(recipientName);
 
         // Charger la dernière liste de cadeaux pour cette personne
@@ -99,8 +99,45 @@ class SearchPageModel {
     }
   }
 
-  /// Génère des initiales à partir d'un nom
-  String _generateInitials(String name) {
+  /// Génère des initiales à partir d'un nom et de la relation
+  String _generateInitials(String name, String relation) {
+    // D'abord, vérifier la relation pour retourner une icône personnalisée
+    final relationLower = relation.toLowerCase();
+
+    // Icônes personnalisées selon la relation
+    if (relationLower.contains('maman') || relationLower.contains('mère') || relationLower.contains('mere')) {
+      return 'M';
+    }
+    if (relationLower.contains('papa') || relationLower.contains('père') || relationLower.contains('pere')) {
+      return 'P';
+    }
+    if (relationLower.contains('amoureux') || relationLower.contains('amoureuse') ||
+        relationLower.contains('conjoint') || relationLower.contains('conjointe') ||
+        relationLower.contains('chéri') || relationLower.contains('chérie') ||
+        relationLower.contains('copain') || relationLower.contains('copine')) {
+      return '❤️';
+    }
+    if (relationLower.contains('frère') || relationLower.contains('frere')) {
+      return 'F';
+    }
+    if (relationLower.contains('sœur') || relationLower.contains('soeur')) {
+      return 'S';
+    }
+    if (relationLower.contains('ami') || relationLower.contains('amie')) {
+      return 'A';
+    }
+    if (relationLower.contains('enfant') || relationLower.contains('fils') || relationLower.contains('fille')) {
+      return 'E';
+    }
+    if (relationLower.contains('grand-père') || relationLower.contains('grand-mere') ||
+        relationLower.contains('grand-mère') || relationLower.contains('grands-parents')) {
+      return 'G';
+    }
+    if (relationLower.contains('collègue') || relationLower.contains('collegue')) {
+      return 'C';
+    }
+
+    // Si pas de relation correspondante, utiliser les initiales du nom
     if (name.isEmpty) return '?';
 
     // Nettoyer le nom (enlever les emojis et caractères spéciaux)

@@ -483,11 +483,11 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
             // Filtres par prix
             SliverToBoxAdapter(child: _buildPriceFilters()),
 
-            // Sections thématiques (seulement pour "Pour toi")
-            if (_model.sections.isNotEmpty) ...[
-              SliverToBoxAdapter(child: _buildSections()),
-              const SliverToBoxAdapter(child: SizedBox(height: 16)),
-            ],
+            // Sections thématiques désactivées - Pinterest uniquement
+            // if (_model.sections.isNotEmpty) ...[
+            //   SliverToBoxAdapter(child: _buildSections()),
+            //   const SliverToBoxAdapter(child: SizedBox(height: 16)),
+            // ],
 
             // Grille Pinterest 2 colonnes
             _buildPinterestGrid(),
@@ -1392,50 +1392,50 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                         ),
                       ),
                     ),
-                  // Bouton coeur avec animation
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => _toggleFavorite(product),
-                        borderRadius: BorderRadius.circular(50),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: isLiked ? Colors.red : Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: isLiked
-                                    ? Colors.red.withOpacity(0.4)
-                                    : Colors.black.withOpacity(0.2),
-                                blurRadius: isLiked ? 16 : 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            isLiked ? Icons.favorite : Icons.favorite_border,
-                            color: isLiked ? Colors.white : const Color(0xFF374151),
-                            size: 20,
-                          ),
-                        )
-                            .animate(
-                              key: ValueKey('heart_$isLiked'),
-                            )
-                            .scale(
-                              begin: const Offset(0.8, 0.8),
-                              end: const Offset(1.0, 1.0),
-                              duration: 200.ms,
-                              curve: Curves.elasticOut,
-                            ),
-                      ),
-                    ),
-                  ),
+                  // Bouton coeur désactivé (uniquement dans la fiche détail)
+                  // Positioned(
+                  //   top: 12,
+                  //   right: 12,
+                  //   child: Material(
+                  //     color: Colors.transparent,
+                  //     child: InkWell(
+                  //       onTap: () => _toggleFavorite(product),
+                  //       borderRadius: BorderRadius.circular(50),
+                  //       child: AnimatedContainer(
+                  //         duration: const Duration(milliseconds: 200),
+                  //         width: 48,
+                  //         height: 48,
+                  //         decoration: BoxDecoration(
+                  //           color: isLiked ? Colors.red : Colors.white,
+                  //           shape: BoxShape.circle,
+                  //           boxShadow: [
+                  //             BoxShadow(
+                  //               color: isLiked
+                  //                   ? Colors.red.withOpacity(0.4)
+                  //                   : Colors.black.withOpacity(0.2),
+                  //               blurRadius: isLiked ? 16 : 12,
+                  //               offset: const Offset(0, 4),
+                  //             ),
+                  //           ],
+                  //         ),
+                  //         child: Icon(
+                  //           isLiked ? Icons.favorite : Icons.favorite_border,
+                  //           color: isLiked ? Colors.white : const Color(0xFF374151),
+                  //           size: 20,
+                  //         ),
+                  //       )
+                  //           .animate(
+                  //             key: ValueKey('heart_$isLiked'),
+                  //           )
+                  //           .scale(
+                  //             begin: const Offset(0.8, 0.8),
+                  //             end: const Offset(1.0, 1.0),
+                  //             duration: 200.ms,
+                  //             curve: Curves.elasticOut,
+                  //           ),
+                  //     ),
+                  //   ),
+                  // ),
                 ],
               ),
             ],
