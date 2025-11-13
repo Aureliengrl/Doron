@@ -11,3 +11,6 @@ ios/Runner/GoogleService-Info.plist
 android/app/google-services.json
 
 assets/environment_values/environment.json
+
+# Node.js
+node_modules/
