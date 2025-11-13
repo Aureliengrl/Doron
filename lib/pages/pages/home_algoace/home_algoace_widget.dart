@@ -1040,8 +1040,7 @@ class _HomeAlgoaceWidgetState extends State<HomeAlgoaceWidget>
                                                                 uid:
                                                                     currentUserReference,
                                                                 platform:
-                                                                    Platforms
-                                                                        .amazon,
+                                                                    "amazon",
                                                                 product:
                                                                     updateProductsStruct(
                                                                   searchProductsItem,
@@ -1209,8 +1208,7 @@ class _HomeAlgoaceWidgetState extends State<HomeAlgoaceWidget>
                                                                         null
                                                                     ? intialiProductListItem
                                                                         .platform
-                                                                    : Platforms
-                                                                        .amazon,
+                                                                    : "amazon",
                                                                 product:
                                                                     updateProductsStruct(
                                                                   intialiProductListItem,
