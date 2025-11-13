@@ -372,6 +372,68 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                   ),
                 ),
               ),
+              // BOUTON ADMIN TEMPORAIRE - Réparer les images
+              Padding(
+                padding: EdgeInsetsDirectional.fromSTEB(20.0, 12.0, 20.0, 0.0),
+                child: InkWell(
+                  splashColor: Colors.transparent,
+                  focusColor: Colors.transparent,
+                  hoverColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                  onTap: () async {
+                    context.go('/admin-products');
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    height: 60.0,
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      border: Border.all(
+                        color: Colors.orange,
+                        width: 2.0,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          blurRadius: 5.0,
+                          color: Color(0x3416202A),
+                          offset: Offset(
+                            0.0,
+                            2.0,
+                          ),
+                        )
+                      ],
+                      borderRadius: BorderRadius.circular(12.0),
+                      shape: BoxShape.rectangle,
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(8.0),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.max,
+                        children: [
+                          Icon(
+                            Icons.build_circle,
+                            color: Colors.orange,
+                            size: 24.0,
+                          ),
+                          const SizedBox(width: 12),
+                          Text(
+                            '🔧 Admin - Réparer les images',
+                            style: FlutterFlowTheme.of(context)
+                                .labelMedium
+                                .override(
+                                  font: GoogleFonts.inter(),
+                                  color: Colors.orange.shade800,
+                                  fontSize: 14.0,
+                                  letterSpacing: 0.0,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
               Padding(
                 padding: EdgeInsetsDirectional.fromSTEB(20.0, 12.0, 20.0, 0.0),
                 child: InkWell(
