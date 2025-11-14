@@ -1,0 +1,2 @@
+# Failed Brands Log
+# Brand | Reason | Timestamp
