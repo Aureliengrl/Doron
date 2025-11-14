@@ -38,14 +38,21 @@ class _OnboardingGiftsResultWidgetState
     });
   }
 
+  String? _returnTo; // Page de retour (ex: /search-page)
+
   /// Parse les paramètres de query de l'URL
   void _parseQueryParameters() {
     final goRouterState = GoRouterState.of(context);
     final personId = goRouterState.uri.queryParameters['personId'];
+    _returnTo = goRouterState.uri.queryParameters['returnTo'];
 
     if (personId != null) {
       _model.setPersonId(personId);
       print('✅ PersonId détecté: $personId');
+    }
+
+    if (_returnTo != null) {
+      print('✅ ReturnTo détecté: $_returnTo');
     }
 
     _loadGifts();
@@ -283,13 +290,25 @@ class _OnboardingGiftsResultWidgetState
         children: [
           Row(
             children: [
-              // Bouton fermer
+              // Bouton retour/fermer
               IconButton(
                 onPressed: () {
-                  context.go('/home-pinterest');
+                  // Si returnTo existe, retourner vers cette page
+                  if (_returnTo != null && _returnTo!.isNotEmpty) {
+                    print('🔙 Retour vers: $_returnTo');
+                    context.go(_returnTo!);
+                  } else {
+                    // Sinon, aller à l'accueil
+                    context.go('/home-pinterest');
+                  }
                 },
-                icon: Icon(Icons.close, color: violetColor),
-                tooltip: 'Fermer',
+                icon: Icon(
+                  _returnTo != null && _returnTo!.isNotEmpty
+                      ? Icons.arrow_back
+                      : Icons.close,
+                  color: violetColor,
+                ),
+                tooltip: _returnTo != null && _returnTo!.isNotEmpty ? 'Retour' : 'Fermer',
               ),
               Icon(Icons.auto_awesome, color: violetColor, size: 32),
               const SizedBox(width: 12),

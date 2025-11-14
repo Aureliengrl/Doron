@@ -570,21 +570,27 @@ class OnboardingAdvancedModel {
 
         // 4. Navigation
         if (context.mounted) {
-          // Si returnTo est spécifié, naviguer vers cette page
-          if (returnTo != null && returnTo.isNotEmpty) {
-            print('🚀 Navigation vers $returnTo');
-            context.go(returnTo);
-          } else {
-            // NOUVELLE LOGIQUE: Rediriger IMMÉDIATEMENT vers la page de génération
-            // avec le personId pour générer les cadeaux personnalisés
-            if (personId != null) {
-              print('🚀 Navigation vers génération avec personId: $personId');
-              context.go('/onboarding-gifts-result?personId=$personId');
+          // TOUJOURS montrer la page cadeaux d'abord
+          if (personId != null) {
+            // Si on a un returnTo, le passer en paramètre pour revenir après
+            final returnParam = (returnTo != null && returnTo.isNotEmpty)
+                ? '&returnTo=${Uri.encodeComponent(returnTo)}'
+                : '';
+
+            // Si c'est le PREMIER onboarding (pas de skipUserQuestions)
+            if (!skipUserQuestions) {
+              // Aller d'abord à l'authentification AVANT de voir les cadeaux
+              print('🚀 Premier onboarding: Navigation vers authentification puis cadeaux');
+              context.go('/authentification?personId=$personId$returnParam');
             } else {
-              // Fallback: si pas de personId (erreur), aller à l'authentification
-              print('⚠️ Pas de personId, navigation vers authentification');
-              context.go('/authentification');
+              // Si c'est un ajout de personne, aller directement aux cadeaux
+              print('🚀 Ajout de personne: Navigation directe vers cadeaux');
+              context.go('/onboarding-gifts-result?personId=$personId$returnParam');
             }
+          } else {
+            // Fallback: si pas de personId (erreur)
+            print('⚠️ Pas de personId, navigation vers authentification');
+            context.go('/authentification');
           }
         }
       } catch (e) {

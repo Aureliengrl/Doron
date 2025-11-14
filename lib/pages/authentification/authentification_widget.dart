@@ -37,6 +37,9 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
 
   final animationsMap = <String, AnimationInfo>{};
 
+  String? _pendingPersonId; // PersonId passé depuis l'onboarding
+  String? _returnTo; // Page de retour après cadeaux
+
   @override
   void initState() {
     super.initState();
@@ -65,6 +68,14 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
 
     _model.passwordTextController ??= TextEditingController();
     _model.passwordFocusNode ??= FocusNode();
+
+    // Récupérer les query params (personId et returnTo)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final uri = GoRouterState.of(context).uri;
+      _pendingPersonId = uri.queryParameters['personId'];
+      _returnTo = uri.queryParameters['returnTo'];
+      print('🔍 Auth: personId=$_pendingPersonId, returnTo=$_returnTo');
+    });
 
     animationsMap.addAll({
       'containerOnPageLoadAnimation': AnimationInfo(
@@ -1492,17 +1503,28 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
 
                                                                             // 4. Vérifier s'il y a une personne en attente de génération
                                                                             try {
-                                                                              final pendingPerson = await FirebaseDataService.getFirstPendingPerson();
+                                                                              // D'abord, vérifier si un personId a été passé en paramètre (premier onboarding)
+                                                                              if (_pendingPersonId != null && _pendingPersonId!.isNotEmpty && context.mounted) {
+                                                                                print('🎯 PersonId depuis onboarding: $_pendingPersonId');
+                                                                                // Ajouter returnTo si présent
+                                                                                final returnParam = (_returnTo != null && _returnTo!.isNotEmpty)
+                                                                                    ? '&returnTo=${Uri.encodeComponent(_returnTo!)}'
+                                                                                    : '';
+                                                                                context.go('/onboarding-gifts-result?personId=$_pendingPersonId$returnParam');
+                                                                              } else {
+                                                                                // Sinon, chercher une personne en attente dans Firebase (ancienne méthode)
+                                                                                final pendingPerson = await FirebaseDataService.getFirstPendingPerson();
 
-                                                                              if (pendingPerson != null && context.mounted) {
-                                                                                // Rediriger vers la page de génération pour cette personne
-                                                                                final personId = pendingPerson['id'] as String;
-                                                                                print('🎯 Redirection vers génération pour personne: $personId');
-                                                                                context.go('/onboarding-gifts-result?personId=$personId');
-                                                                              } else if (context.mounted) {
-                                                                                // Pas de personne en attente, aller à la page d'accueil
-                                                                                print('🏠 Redirection vers page d\'accueil');
-                                                                                context.goNamedAuth('HomePinterest', context.mounted);
+                                                                                if (pendingPerson != null && context.mounted) {
+                                                                                  // Rediriger vers la page de génération pour cette personne
+                                                                                  final personId = pendingPerson['id'] as String;
+                                                                                  print('🎯 Redirection vers génération pour personne: $personId');
+                                                                                  context.go('/onboarding-gifts-result?personId=$personId');
+                                                                                } else if (context.mounted) {
+                                                                                  // Pas de personne en attente, aller à la page d'accueil
+                                                                                  print('🏠 Redirection vers page d\'accueil');
+                                                                                  context.goNamedAuth('HomePinterest', context.mounted);
+                                                                                }
                                                                               }
                                                                             } catch (e) {
                                                                               print('❌ Error checking pending person: $e');
