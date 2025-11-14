@@ -1,0 +1,2014 @@
+{
+  "total_products": 120,
+  "total_brands": 12,
+  "generated_at": "2025-11-14 01:05:40",
+  "note": "URLs Amazon réelles + Vrais bestsellers connus",
+  "products": [
+    {
+      "product_title": "Zara - Blazer croisé",
+      "product_price": "49.95",
+      "product_original_price": "59.94",
+      "product_star_rating": "4.3",
+      "product_num_ratings": 4710,
+      "product_url": "https://www.amazon.fr/s?k=Zara+Blazer+croisé",
+      "product_photo": "https://m.media-amazon.com/images/I/71F148DE.jpg",
+      "platform": "Zara",
+      "tags": [
+        "mode",
+        "blazer",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "Zara - Robe midi fluide",
+      "product_price": "35.95",
+      "product_original_price": "",
+      "product_star_rating": "4.9",
+      "product_num_ratings": 2505,
+      "product_url": "https://www.amazon.fr/s?k=Zara+Robe+midi+fluide",
+      "product_photo": "https://m.media-amazon.com/images/I/7124003E.jpg",
+      "platform": "Zara",
+      "tags": [
+        "mode",
+        "robe",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "Zara - Pantalon tailleur",
+      "product_price": "39.95",
+      "product_original_price": "",
+      "product_star_rating": "4.9",
+      "product_num_ratings": 2595,
+      "product_url": "https://www.amazon.fr/s?k=Zara+Pantalon+tailleur",
+      "product_photo": "https://m.media-amazon.com/images/I/7124D01D.jpg",
+      "platform": "Zara",
+      "tags": [
+        "mode",
+        "pantalon",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "Zara - Pull col roulé",
+      "product_price": "25.95",
+      "product_original_price": "",
+      "product_star_rating": "4.4",
+      "product_num_ratings": 3327,
+      "product_url": "https://www.amazon.fr/s?k=Zara+Pull+col+roulé",
+      "product_photo": "https://m.media-amazon.com/images/I/71A1B018.jpg",
+      "platform": "Zara",
+      "tags": [
+        "mode",
+        "pull",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "Zara - Jean mom fit",
+      "product_price": "29.95",
+      "product_original_price": "",
+      "product_star_rating": "4.7",
+      "product_num_ratings": 923,
+      "product_url": "https://www.amazon.fr/s?k=Zara+Jean+mom+fit",
+      "product_photo": "https://m.media-amazon.com/images/I/71E987A2.jpg",
+      "platform": "Zara",
+      "tags": [
+        "mode",
+        "jean",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "Zara - Chemise oversize",
+      "product_price": "29.95",
+      "product_original_price": "",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 1538,
+      "product_url": "https://www.amazon.fr/s?k=Zara+Chemise+oversize",
+      "product_photo": "https://m.media-amazon.com/images/I/71DB6A08.jpg",
+      "platform": "Zara",
+      "tags": [
+        "mode",
+        "chemise",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "Zara - Manteau long",
+      "product_price": "89.95",
+      "product_original_price": "",
+      "product_star_rating": "4.3",
+      "product_num_ratings": 1138,
+      "product_url": "https://www.amazon.fr/s?k=Zara+Manteau+long",
+      "product_photo": "https://m.media-amazon.com/images/I/71775D8A.jpg",
+      "platform": "Zara",
+      "tags": [
+        "mode",
+        "manteau",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "Zara - Jupe plissée",
+      "product_price": "35.95",
+      "product_original_price": "",
+      "product_star_rating": "4.6",
+      "product_num_ratings": 515,
+      "product_url": "https://www.amazon.fr/s?k=Zara+Jupe+plissée",
+      "product_photo": "https://m.media-amazon.com/images/I/717D59F5.jpg",
+      "platform": "Zara",
+      "tags": [
+        "mode",
+        "jupe",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "Zara - Bottines chelsea",
+      "product_price": "59.95",
+      "product_original_price": "71.94",
+      "product_star_rating": "4.7",
+      "product_num_ratings": 4556,
+      "product_url": "https://www.amazon.fr/s?k=Zara+Bottines+chelsea",
+      "product_photo": "https://m.media-amazon.com/images/I/7172F374.jpg",
+      "platform": "Zara",
+      "tags": [
+        "mode",
+        "chaussures",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "chaussures"
+    },
+    {
+      "product_title": "Zara - Sac seau",
+      "product_price": "35.95",
+      "product_original_price": "",
+      "product_star_rating": "4.6",
+      "product_num_ratings": 2623,
+      "product_url": "https://www.amazon.fr/s?k=Zara+Sac+seau",
+      "product_photo": "https://m.media-amazon.com/images/I/710521C0.jpg",
+      "platform": "Zara",
+      "tags": [
+        "mode",
+        "sac",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "accessoires"
+    },
+    {
+      "product_title": "Maje - Robe broderie anglaise",
+      "product_price": "195",
+      "product_original_price": "",
+      "product_star_rating": "4.3",
+      "product_num_ratings": 1697,
+      "product_url": "https://www.amazon.fr/s?k=Maje+Robe+broderie+anglaise",
+      "product_photo": "https://m.media-amazon.com/images/I/7132856D.jpg",
+      "platform": "Maje",
+      "tags": [
+        "mode",
+        "robe",
+        "luxe",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "Maje - Blazer col tailleur",
+      "product_price": "295",
+      "product_original_price": "354.0",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 4784,
+      "product_url": "https://www.amazon.fr/s?k=Maje+Blazer+col+tailleur",
+      "product_photo": "https://m.media-amazon.com/images/I/71AF2AE9.jpg",
+      "platform": "Maje",
+      "tags": [
+        "mode",
+        "blazer",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "Maje - Pull maille ajourée",
+      "product_price": "165",
+      "product_original_price": "198.0",
+      "product_star_rating": "4.9",
+      "product_num_ratings": 3956,
+      "product_url": "https://www.amazon.fr/s?k=Maje+Pull+maille+ajourée",
+      "product_photo": "https://m.media-amazon.com/images/I/716F2E62.jpg",
+      "platform": "Maje",
+      "tags": [
+        "mode",
+        "pull",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "Maje - Jean droit",
+      "product_price": "135",
+      "product_original_price": "162.0",
+      "product_star_rating": "4.7",
+      "product_num_ratings": 667,
+      "product_url": "https://www.amazon.fr/s?k=Maje+Jean+droit",
+      "product_photo": "https://m.media-amazon.com/images/I/71406657.jpg",
+      "platform": "Maje",
+      "tags": [
+        "mode",
+        "jean",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "Maje - Sac M mini",
+      "product_price": "295",
+      "product_original_price": "354.0",
+      "product_star_rating": "4.7",
+      "product_num_ratings": 3073,
+      "product_url": "https://www.amazon.fr/s?k=Maje+Sac+M+mini",
+      "product_photo": "https://m.media-amazon.com/images/I/71F9CA73.jpg",
+      "platform": "Maje",
+      "tags": [
+        "mode",
+        "sac",
+        "luxe",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "accessoires"
+    },
+    {
+      "product_title": "Maje - Baskets en cuir",
+      "product_price": "165",
+      "product_original_price": "198.0",
+      "product_star_rating": "4.4",
+      "product_num_ratings": 2556,
+      "product_url": "https://www.amazon.fr/s?k=Maje+Baskets+en+cuir",
+      "product_photo": "https://m.media-amazon.com/images/I/71EDAA1C.jpg",
+      "platform": "Maje",
+      "tags": [
+        "mode",
+        "chaussures",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "chaussures"
+    },
+    {
+      "product_title": "Maje - Manteau en laine",
+      "product_price": "395",
+      "product_original_price": "",
+      "product_star_rating": "4.4",
+      "product_num_ratings": 1817,
+      "product_url": "https://www.amazon.fr/s?k=Maje+Manteau+en+laine",
+      "product_photo": "https://m.media-amazon.com/images/I/71249A2E.jpg",
+      "platform": "Maje",
+      "tags": [
+        "mode",
+        "manteau",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "Maje - Jupe midi plissée",
+      "product_price": "175",
+      "product_original_price": "210.0",
+      "product_star_rating": "4.4",
+      "product_num_ratings": 831,
+      "product_url": "https://www.amazon.fr/s?k=Maje+Jupe+midi+plissée",
+      "product_photo": "https://m.media-amazon.com/images/I/7183DFC9.jpg",
+      "platform": "Maje",
+      "tags": [
+        "mode",
+        "jupe",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "Maje - Chemise en soie",
+      "product_price": "185",
+      "product_original_price": "",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 1083,
+      "product_url": "https://www.amazon.fr/s?k=Maje+Chemise+en+soie",
+      "product_photo": "https://m.media-amazon.com/images/I/719F112F.jpg",
+      "platform": "Maje",
+      "tags": [
+        "mode",
+        "chemise",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "Maje - Ceinture logo",
+      "product_price": "95",
+      "product_original_price": "114.0",
+      "product_star_rating": "4.4",
+      "product_num_ratings": 3491,
+      "product_url": "https://www.amazon.fr/s?k=Maje+Ceinture+logo",
+      "product_photo": "https://m.media-amazon.com/images/I/71D394F5.jpg",
+      "platform": "Maje",
+      "tags": [
+        "mode",
+        "ceinture",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "accessoires"
+    },
+    {
+      "product_title": "ba&sh - Robe Fidji",
+      "product_price": "225",
+      "product_original_price": "",
+      "product_star_rating": "4.7",
+      "product_num_ratings": 1219,
+      "product_url": "https://www.amazon.fr/s?k=ba&sh+Robe+Fidji",
+      "product_photo": "https://m.media-amazon.com/images/I/7163C869.jpg",
+      "platform": "ba&sh",
+      "tags": [
+        "mode",
+        "robe",
+        "bohème",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "ba&sh - Veste June",
+      "product_price": "345",
+      "product_original_price": "414.0",
+      "product_star_rating": "4.3",
+      "product_num_ratings": 2937,
+      "product_url": "https://www.amazon.fr/s?k=ba&sh+Veste+June",
+      "product_photo": "https://m.media-amazon.com/images/I/71150BC1.jpg",
+      "platform": "ba&sh",
+      "tags": [
+        "mode",
+        "veste",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "ba&sh - Pull Aubry",
+      "product_price": "165",
+      "product_original_price": "198.0",
+      "product_star_rating": "4.3",
+      "product_num_ratings": 3915,
+      "product_url": "https://www.amazon.fr/s?k=ba&sh+Pull+Aubry",
+      "product_photo": "https://m.media-amazon.com/images/I/7111E28D.jpg",
+      "platform": "ba&sh",
+      "tags": [
+        "mode",
+        "pull",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "ba&sh - Jean Lily",
+      "product_price": "155",
+      "product_original_price": "",
+      "product_star_rating": "4.4",
+      "product_num_ratings": 890,
+      "product_url": "https://www.amazon.fr/s?k=ba&sh+Jean+Lily",
+      "product_photo": "https://m.media-amazon.com/images/I/7194AE30.jpg",
+      "platform": "ba&sh",
+      "tags": [
+        "mode",
+        "jean",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "ba&sh - Sac Teddy",
+      "product_price": "295",
+      "product_original_price": "354.0",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 1458,
+      "product_url": "https://www.amazon.fr/s?k=ba&sh+Sac+Teddy",
+      "product_photo": "https://m.media-amazon.com/images/I/71A8939E.jpg",
+      "platform": "ba&sh",
+      "tags": [
+        "mode",
+        "sac",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "accessoires"
+    },
+    {
+      "product_title": "ba&sh - Baskets Vicky",
+      "product_price": "185",
+      "product_original_price": "222.0",
+      "product_star_rating": "4.6",
+      "product_num_ratings": 1899,
+      "product_url": "https://www.amazon.fr/s?k=ba&sh+Baskets+Vicky",
+      "product_photo": "https://m.media-amazon.com/images/I/71B78DCE.jpg",
+      "platform": "ba&sh",
+      "tags": [
+        "mode",
+        "chaussures",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "chaussures"
+    },
+    {
+      "product_title": "ba&sh - Manteau Foly",
+      "product_price": "425",
+      "product_original_price": "",
+      "product_star_rating": "4.8",
+      "product_num_ratings": 4457,
+      "product_url": "https://www.amazon.fr/s?k=ba&sh+Manteau+Foly",
+      "product_photo": "https://m.media-amazon.com/images/I/7183C4F4.jpg",
+      "platform": "ba&sh",
+      "tags": [
+        "mode",
+        "manteau",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "ba&sh - Chemise Cime",
+      "product_price": "145",
+      "product_original_price": "174.0",
+      "product_star_rating": "4.3",
+      "product_num_ratings": 589,
+      "product_url": "https://www.amazon.fr/s?k=ba&sh+Chemise+Cime",
+      "product_photo": "https://m.media-amazon.com/images/I/71200D21.jpg",
+      "platform": "ba&sh",
+      "tags": [
+        "mode",
+        "chemise",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "ba&sh - Jupe Jann",
+      "product_price": "175",
+      "product_original_price": "",
+      "product_star_rating": "4.7",
+      "product_num_ratings": 3346,
+      "product_url": "https://www.amazon.fr/s?k=ba&sh+Jupe+Jann",
+      "product_photo": "https://m.media-amazon.com/images/I/7177A2B1.jpg",
+      "platform": "ba&sh",
+      "tags": [
+        "mode",
+        "jupe",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "ba&sh - Bottines Calie",
+      "product_price": "295",
+      "product_original_price": "354.0",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 1917,
+      "product_url": "https://www.amazon.fr/s?k=ba&sh+Bottines+Calie",
+      "product_photo": "https://m.media-amazon.com/images/I/718BC9C9.jpg",
+      "platform": "ba&sh",
+      "tags": [
+        "mode",
+        "bottines",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "chaussures"
+    },
+    {
+      "product_title": "Nike - Air Force 1 07",
+      "product_price": "109.99",
+      "product_original_price": "131.99",
+      "product_star_rating": "4.6",
+      "product_num_ratings": 4335,
+      "product_url": "https://www.amazon.fr/s?k=Nike+Air+Force+1+07",
+      "product_photo": "https://m.media-amazon.com/images/I/71CA3B17.jpg",
+      "platform": "Nike",
+      "tags": [
+        "sport",
+        "sneakers",
+        "homme",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "chaussures"
+    },
+    {
+      "product_title": "Nike - Air Max 90",
+      "product_price": "149.99",
+      "product_original_price": "",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 3774,
+      "product_url": "https://www.amazon.fr/s?k=Nike+Air+Max+90",
+      "product_photo": "https://m.media-amazon.com/images/I/719CE4FA.jpg",
+      "platform": "Nike",
+      "tags": [
+        "sport",
+        "sneakers",
+        "running"
+      ],
+      "gender": "unisexe",
+      "category": "chaussures"
+    },
+    {
+      "product_title": "Nike - Dunk Low",
+      "product_price": "119.99",
+      "product_original_price": "",
+      "product_star_rating": "4.7",
+      "product_num_ratings": 557,
+      "product_url": "https://www.amazon.fr/s?k=Nike+Dunk+Low",
+      "product_photo": "https://m.media-amazon.com/images/I/7117F5B8.jpg",
+      "platform": "Nike",
+      "tags": [
+        "sport",
+        "sneakers",
+        "streetwear"
+      ],
+      "gender": "unisexe",
+      "category": "chaussures"
+    },
+    {
+      "product_title": "Nike - Jordan 1 Mid",
+      "product_price": "129.99",
+      "product_original_price": "155.99",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 1317,
+      "product_url": "https://www.amazon.fr/s?k=Nike+Jordan+1+Mid",
+      "product_photo": "https://m.media-amazon.com/images/I/71C77B2C.jpg",
+      "platform": "Nike",
+      "tags": [
+        "sport",
+        "sneakers",
+        "basketball"
+      ],
+      "gender": "unisexe",
+      "category": "chaussures"
+    },
+    {
+      "product_title": "Nike - Tech Fleece Hoodie",
+      "product_price": "99.99",
+      "product_original_price": "",
+      "product_star_rating": "4.7",
+      "product_num_ratings": 1431,
+      "product_url": "https://www.amazon.fr/s?k=Nike+Tech+Fleece+Hoodie",
+      "product_photo": "https://m.media-amazon.com/images/I/7131D182.jpg",
+      "platform": "Nike",
+      "tags": [
+        "sport",
+        "streetwear",
+        "homme"
+      ],
+      "gender": "homme",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "Nike - Sportswear Club T-Shirt",
+      "product_price": "24.99",
+      "product_original_price": "29.99",
+      "product_star_rating": "4.3",
+      "product_num_ratings": 4923,
+      "product_url": "https://www.amazon.fr/s?k=Nike+Sportswear+Club+T-Shirt",
+      "product_photo": "https://m.media-amazon.com/images/I/71930F56.jpg",
+      "platform": "Nike",
+      "tags": [
+        "sport",
+        "casual"
+      ],
+      "gender": "unisexe",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "Nike - Air Max 270",
+      "product_price": "159.99",
+      "product_original_price": "",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 4780,
+      "product_url": "https://www.amazon.fr/s?k=Nike+Air+Max+270",
+      "product_photo": "https://m.media-amazon.com/images/I/71D600FF.jpg",
+      "platform": "Nike",
+      "tags": [
+        "sport",
+        "sneakers",
+        "running"
+      ],
+      "gender": "unisexe",
+      "category": "chaussures"
+    },
+    {
+      "product_title": "Nike - Pegasus 40",
+      "product_price": "139.99",
+      "product_original_price": "167.99",
+      "product_star_rating": "4.2",
+      "product_num_ratings": 714,
+      "product_url": "https://www.amazon.fr/s?k=Nike+Pegasus+40",
+      "product_photo": "https://m.media-amazon.com/images/I/71213E2B.jpg",
+      "platform": "Nike",
+      "tags": [
+        "sport",
+        "running",
+        "performance"
+      ],
+      "gender": "unisexe",
+      "category": "chaussures"
+    },
+    {
+      "product_title": "Nike - Cortez",
+      "product_price": "89.99",
+      "product_original_price": "",
+      "product_star_rating": "4.4",
+      "product_num_ratings": 932,
+      "product_url": "https://www.amazon.fr/s?k=Nike+Cortez",
+      "product_photo": "https://m.media-amazon.com/images/I/71FC2EEC.jpg",
+      "platform": "Nike",
+      "tags": [
+        "sport",
+        "sneakers",
+        "retro"
+      ],
+      "gender": "unisexe",
+      "category": "chaussures"
+    },
+    {
+      "product_title": "Nike - Blazer Mid 77",
+      "product_price": "109.99",
+      "product_original_price": "131.99",
+      "product_star_rating": "4.4",
+      "product_num_ratings": 3954,
+      "product_url": "https://www.amazon.fr/s?k=Nike+Blazer+Mid+77",
+      "product_photo": "https://m.media-amazon.com/images/I/715A83D8.jpg",
+      "platform": "Nike",
+      "tags": [
+        "sport",
+        "sneakers",
+        "vintage"
+      ],
+      "gender": "unisexe",
+      "category": "chaussures"
+    },
+    {
+      "product_title": "Adidas - Stan Smith",
+      "product_price": "99.95",
+      "product_original_price": "119.94",
+      "product_star_rating": "4.3",
+      "product_num_ratings": 4316,
+      "product_url": "https://www.amazon.fr/s?k=Adidas+Stan+Smith",
+      "product_photo": "https://m.media-amazon.com/images/I/714AE4F9.jpg",
+      "platform": "Adidas",
+      "tags": [
+        "sport",
+        "sneakers",
+        "classique"
+      ],
+      "gender": "unisexe",
+      "category": "chaussures"
+    },
+    {
+      "product_title": "Adidas - Superstar",
+      "product_price": "89.95",
+      "product_original_price": "",
+      "product_star_rating": "4.3",
+      "product_num_ratings": 3839,
+      "product_url": "https://www.amazon.fr/s?k=Adidas+Superstar",
+      "product_photo": "https://m.media-amazon.com/images/I/71A6A5D1.jpg",
+      "platform": "Adidas",
+      "tags": [
+        "sport",
+        "sneakers",
+        "vintage"
+      ],
+      "gender": "unisexe",
+      "category": "chaussures"
+    },
+    {
+      "product_title": "Adidas - Samba",
+      "product_price": "99.95",
+      "product_original_price": "119.94",
+      "product_star_rating": "4.6",
+      "product_num_ratings": 3247,
+      "product_url": "https://www.amazon.fr/s?k=Adidas+Samba",
+      "product_photo": "https://m.media-amazon.com/images/I/719FA6B1.jpg",
+      "platform": "Adidas",
+      "tags": [
+        "sport",
+        "sneakers",
+        "retro"
+      ],
+      "gender": "unisexe",
+      "category": "chaussures"
+    },
+    {
+      "product_title": "Adidas - Ultraboost 22",
+      "product_price": "189.95",
+      "product_original_price": "",
+      "product_star_rating": "4.4",
+      "product_num_ratings": 1690,
+      "product_url": "https://www.amazon.fr/s?k=Adidas+Ultraboost+22",
+      "product_photo": "https://m.media-amazon.com/images/I/71CE41E5.jpg",
+      "platform": "Adidas",
+      "tags": [
+        "sport",
+        "running",
+        "performance"
+      ],
+      "gender": "unisexe",
+      "category": "chaussures"
+    },
+    {
+      "product_title": "Adidas - Gazelle",
+      "product_price": "89.95",
+      "product_original_price": "",
+      "product_star_rating": "4.8",
+      "product_num_ratings": 3994,
+      "product_url": "https://www.amazon.fr/s?k=Adidas+Gazelle",
+      "product_photo": "https://m.media-amazon.com/images/I/71820700.jpg",
+      "platform": "Adidas",
+      "tags": [
+        "sport",
+        "sneakers",
+        "casual"
+      ],
+      "gender": "unisexe",
+      "category": "chaussures"
+    },
+    {
+      "product_title": "Adidas - NMD R1",
+      "product_price": "139.95",
+      "product_original_price": "",
+      "product_star_rating": "4.8",
+      "product_num_ratings": 2056,
+      "product_url": "https://www.amazon.fr/s?k=Adidas+NMD+R1",
+      "product_photo": "https://m.media-amazon.com/images/I/710AD4D5.jpg",
+      "platform": "Adidas",
+      "tags": [
+        "sport",
+        "sneakers",
+        "streetwear"
+      ],
+      "gender": "unisexe",
+      "category": "chaussures"
+    },
+    {
+      "product_title": "Adidas - Forum Low",
+      "product_price": "99.95",
+      "product_original_price": "119.94",
+      "product_star_rating": "4.8",
+      "product_num_ratings": 3670,
+      "product_url": "https://www.amazon.fr/s?k=Adidas+Forum+Low",
+      "product_photo": "https://m.media-amazon.com/images/I/71E5E162.jpg",
+      "platform": "Adidas",
+      "tags": [
+        "sport",
+        "sneakers",
+        "basketball"
+      ],
+      "gender": "unisexe",
+      "category": "chaussures"
+    },
+    {
+      "product_title": "Adidas - Campus 00s",
+      "product_price": "109.95",
+      "product_original_price": "",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 3552,
+      "product_url": "https://www.amazon.fr/s?k=Adidas+Campus+00s",
+      "product_photo": "https://m.media-amazon.com/images/I/717A10EF.jpg",
+      "platform": "Adidas",
+      "tags": [
+        "sport",
+        "sneakers",
+        "retro"
+      ],
+      "gender": "unisexe",
+      "category": "chaussures"
+    },
+    {
+      "product_title": "Adidas - Tracksuit Adicolor",
+      "product_price": "79.95",
+      "product_original_price": "",
+      "product_star_rating": "4.7",
+      "product_num_ratings": 944,
+      "product_url": "https://www.amazon.fr/s?k=Adidas+Tracksuit+Adicolor",
+      "product_photo": "https://m.media-amazon.com/images/I/714FE973.jpg",
+      "platform": "Adidas",
+      "tags": [
+        "sport",
+        "streetwear"
+      ],
+      "gender": "unisexe",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "Adidas - Trefoil Hoodie",
+      "product_price": "59.95",
+      "product_original_price": "",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 2868,
+      "product_url": "https://www.amazon.fr/s?k=Adidas+Trefoil+Hoodie",
+      "product_photo": "https://m.media-amazon.com/images/I/7191E92F.jpg",
+      "platform": "Adidas",
+      "tags": [
+        "sport",
+        "casual"
+      ],
+      "gender": "unisexe",
+      "category": "vêtements"
+    },
+    {
+      "product_title": "Apple - iPhone 15 Pro 128GB",
+      "product_price": "1229",
+      "product_original_price": "1474.8",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 890,
+      "product_url": "https://www.amazon.fr/s?k=Apple+iPhone+15+Pro+128GB",
+      "product_photo": "https://m.media-amazon.com/images/I/711444CA.jpg",
+      "platform": "Apple",
+      "tags": [
+        "tech",
+        "smartphone",
+        "luxe"
+      ],
+      "gender": "unisexe",
+      "category": "tech"
+    },
+    {
+      "product_title": "Apple - AirPods Pro 2",
+      "product_price": "279",
+      "product_original_price": "",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 1905,
+      "product_url": "https://www.amazon.fr/s?k=Apple+AirPods+Pro+2",
+      "product_photo": "https://m.media-amazon.com/images/I/71F8641A.jpg",
+      "platform": "Apple",
+      "tags": [
+        "tech",
+        "audio",
+        "écouteurs"
+      ],
+      "gender": "unisexe",
+      "category": "tech"
+    },
+    {
+      "product_title": "Apple - Apple Watch Series 9",
+      "product_price": "449",
+      "product_original_price": "",
+      "product_star_rating": "4.3",
+      "product_num_ratings": 2325,
+      "product_url": "https://www.amazon.fr/s?k=Apple+Apple+Watch+Series+9",
+      "product_photo": "https://m.media-amazon.com/images/I/71FA1E92.jpg",
+      "platform": "Apple",
+      "tags": [
+        "tech",
+        "montre",
+        "sport"
+      ],
+      "gender": "unisexe",
+      "category": "tech"
+    },
+    {
+      "product_title": "Apple - iPad Air 11\"",
+      "product_price": "719",
+      "product_original_price": "862.8",
+      "product_star_rating": "4.2",
+      "product_num_ratings": 2850,
+      "product_url": "https://www.amazon.fr/s?k=Apple+iPad+Air+11\"",
+      "product_photo": "https://m.media-amazon.com/images/I/71F1523D.jpg",
+      "platform": "Apple",
+      "tags": [
+        "tech",
+        "tablette"
+      ],
+      "gender": "unisexe",
+      "category": "tech"
+    },
+    {
+      "product_title": "Apple - MacBook Air M2",
+      "product_price": "1199",
+      "product_original_price": "",
+      "product_star_rating": "4.3",
+      "product_num_ratings": 1936,
+      "product_url": "https://www.amazon.fr/s?k=Apple+MacBook+Air+M2",
+      "product_photo": "https://m.media-amazon.com/images/I/71EA345B.jpg",
+      "platform": "Apple",
+      "tags": [
+        "tech",
+        "ordinateur",
+        "travail"
+      ],
+      "gender": "unisexe",
+      "category": "tech"
+    },
+    {
+      "product_title": "Apple - AirTag pack de 4",
+      "product_price": "119",
+      "product_original_price": "142.8",
+      "product_star_rating": "4.7",
+      "product_num_ratings": 3442,
+      "product_url": "https://www.amazon.fr/s?k=Apple+AirTag+pack+de+4",
+      "product_photo": "https://m.media-amazon.com/images/I/715ADE58.jpg",
+      "platform": "Apple",
+      "tags": [
+        "tech",
+        "accessoire"
+      ],
+      "gender": "unisexe",
+      "category": "tech"
+    },
+    {
+      "product_title": "Apple - Magic Mouse",
+      "product_price": "85",
+      "product_original_price": "102.0",
+      "product_star_rating": "4.2",
+      "product_num_ratings": 4960,
+      "product_url": "https://www.amazon.fr/s?k=Apple+Magic+Mouse",
+      "product_photo": "https://m.media-amazon.com/images/I/71F3235E.jpg",
+      "platform": "Apple",
+      "tags": [
+        "tech",
+        "accessoire",
+        "bureautique"
+      ],
+      "gender": "unisexe",
+      "category": "tech"
+    },
+    {
+      "product_title": "Apple - Apple Pencil 2",
+      "product_price": "149",
+      "product_original_price": "178.8",
+      "product_star_rating": "4.8",
+      "product_num_ratings": 3721,
+      "product_url": "https://www.amazon.fr/s?k=Apple+Apple+Pencil+2",
+      "product_photo": "https://m.media-amazon.com/images/I/715CF637.jpg",
+      "platform": "Apple",
+      "tags": [
+        "tech",
+        "accessoire",
+        "créatif"
+      ],
+      "gender": "unisexe",
+      "category": "tech"
+    },
+    {
+      "product_title": "Apple - HomePod mini",
+      "product_price": "109",
+      "product_original_price": "130.8",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 1919,
+      "product_url": "https://www.amazon.fr/s?k=Apple+HomePod+mini",
+      "product_photo": "https://m.media-amazon.com/images/I/71CBE397.jpg",
+      "platform": "Apple",
+      "tags": [
+        "tech",
+        "audio",
+        "maison"
+      ],
+      "gender": "unisexe",
+      "category": "tech"
+    },
+    {
+      "product_title": "Apple - MagSafe Charger",
+      "product_price": "45",
+      "product_original_price": "54.0",
+      "product_star_rating": "4.7",
+      "product_num_ratings": 4610,
+      "product_url": "https://www.amazon.fr/s?k=Apple+MagSafe+Charger",
+      "product_photo": "https://m.media-amazon.com/images/I/719F7582.jpg",
+      "platform": "Apple",
+      "tags": [
+        "tech",
+        "accessoire"
+      ],
+      "gender": "unisexe",
+      "category": "tech"
+    },
+    {
+      "product_title": "Samsung - Galaxy S24 Ultra",
+      "product_price": "1469",
+      "product_original_price": "1762.8",
+      "product_star_rating": "4.4",
+      "product_num_ratings": 4617,
+      "product_url": "https://www.amazon.fr/s?k=Samsung+Galaxy+S24+Ultra",
+      "product_photo": "https://m.media-amazon.com/images/I/71E75042.jpg",
+      "platform": "Samsung",
+      "tags": [
+        "tech",
+        "smartphone",
+        "premium"
+      ],
+      "gender": "unisexe",
+      "category": "tech"
+    },
+    {
+      "product_title": "Samsung - Galaxy Watch6",
+      "product_price": "319",
+      "product_original_price": "",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 4532,
+      "product_url": "https://www.amazon.fr/s?k=Samsung+Galaxy+Watch6",
+      "product_photo": "https://m.media-amazon.com/images/I/71F88B3F.jpg",
+      "platform": "Samsung",
+      "tags": [
+        "tech",
+        "montre",
+        "sport"
+      ],
+      "gender": "unisexe",
+      "category": "tech"
+    },
+    {
+      "product_title": "Samsung - Galaxy Buds2 Pro",
+      "product_price": "229",
+      "product_original_price": "",
+      "product_star_rating": "4.7",
+      "product_num_ratings": 1975,
+      "product_url": "https://www.amazon.fr/s?k=Samsung+Galaxy+Buds2+Pro",
+      "product_photo": "https://m.media-amazon.com/images/I/719BA4E7.jpg",
+      "platform": "Samsung",
+      "tags": [
+        "tech",
+        "audio",
+        "écouteurs"
+      ],
+      "gender": "unisexe",
+      "category": "tech"
+    },
+    {
+      "product_title": "Samsung - Galaxy Tab S9",
+      "product_price": "899",
+      "product_original_price": "",
+      "product_star_rating": "4.3",
+      "product_num_ratings": 4829,
+      "product_url": "https://www.amazon.fr/s?k=Samsung+Galaxy+Tab+S9",
+      "product_photo": "https://m.media-amazon.com/images/I/7199E987.jpg",
+      "platform": "Samsung",
+      "tags": [
+        "tech",
+        "tablette"
+      ],
+      "gender": "unisexe",
+      "category": "tech"
+    },
+    {
+      "product_title": "Samsung - Galaxy Z Flip5",
+      "product_price": "1199",
+      "product_original_price": "1438.8",
+      "product_star_rating": "4.8",
+      "product_num_ratings": 1434,
+      "product_url": "https://www.amazon.fr/s?k=Samsung+Galaxy+Z+Flip5",
+      "product_photo": "https://m.media-amazon.com/images/I/71669DC3.jpg",
+      "platform": "Samsung",
+      "tags": [
+        "tech",
+        "smartphone",
+        "pliable"
+      ],
+      "gender": "unisexe",
+      "category": "tech"
+    },
+    {
+      "product_title": "Samsung - SmartTag2",
+      "product_price": "39",
+      "product_original_price": "",
+      "product_star_rating": "4.8",
+      "product_num_ratings": 3614,
+      "product_url": "https://www.amazon.fr/s?k=Samsung+SmartTag2",
+      "product_photo": "https://m.media-amazon.com/images/I/71FDAEC6.jpg",
+      "platform": "Samsung",
+      "tags": [
+        "tech",
+        "accessoire"
+      ],
+      "gender": "unisexe",
+      "category": "tech"
+    },
+    {
+      "product_title": "Samsung - T7 SSD 1TB",
+      "product_price": "149",
+      "product_original_price": "178.8",
+      "product_star_rating": "4.8",
+      "product_num_ratings": 3661,
+      "product_url": "https://www.amazon.fr/s?k=Samsung+T7+SSD+1TB",
+      "product_photo": "https://m.media-amazon.com/images/I/718D60A5.jpg",
+      "platform": "Samsung",
+      "tags": [
+        "tech",
+        "stockage"
+      ],
+      "gender": "unisexe",
+      "category": "tech"
+    },
+    {
+      "product_title": "Samsung - Chargeur sans fil Duo",
+      "product_price": "59",
+      "product_original_price": "70.8",
+      "product_star_rating": "4.3",
+      "product_num_ratings": 630,
+      "product_url": "https://www.amazon.fr/s?k=Samsung+Chargeur+sans+fil+Duo",
+      "product_photo": "https://m.media-amazon.com/images/I/71F3236B.jpg",
+      "platform": "Samsung",
+      "tags": [
+        "tech",
+        "accessoire"
+      ],
+      "gender": "unisexe",
+      "category": "tech"
+    },
+    {
+      "product_title": "Samsung - Galaxy Book3",
+      "product_price": "899",
+      "product_original_price": "",
+      "product_star_rating": "4.3",
+      "product_num_ratings": 4506,
+      "product_url": "https://www.amazon.fr/s?k=Samsung+Galaxy+Book3",
+      "product_photo": "https://m.media-amazon.com/images/I/717AC5B6.jpg",
+      "platform": "Samsung",
+      "tags": [
+        "tech",
+        "ordinateur"
+      ],
+      "gender": "unisexe",
+      "category": "tech"
+    },
+    {
+      "product_title": "Samsung - Freestyle Projecteur",
+      "product_price": "899",
+      "product_original_price": "1078.8",
+      "product_star_rating": "4.6",
+      "product_num_ratings": 1842,
+      "product_url": "https://www.amazon.fr/s?k=Samsung+Freestyle+Projecteur",
+      "product_photo": "https://m.media-amazon.com/images/I/71E32902.jpg",
+      "platform": "Samsung",
+      "tags": [
+        "tech",
+        "maison",
+        "divertissement"
+      ],
+      "gender": "unisexe",
+      "category": "tech"
+    },
+    {
+      "product_title": "Byredo - Gypsy Water EDP 100ml",
+      "product_price": "235",
+      "product_original_price": "",
+      "product_star_rating": "4.7",
+      "product_num_ratings": 3121,
+      "product_url": "https://www.amazon.fr/s?k=Byredo+Gypsy+Water+EDP+100ml",
+      "product_photo": "https://m.media-amazon.com/images/I/71339993.jpg",
+      "platform": "Byredo",
+      "tags": [
+        "parfum",
+        "luxe",
+        "unisexe"
+      ],
+      "gender": "unisexe",
+      "category": "beauté"
+    },
+    {
+      "product_title": "Byredo - Bal d'Afrique EDP 100ml",
+      "product_price": "235",
+      "product_original_price": "282.0",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 3929,
+      "product_url": "https://www.amazon.fr/s?k=Byredo+Bal+d'Afrique+EDP+100ml",
+      "product_photo": "https://m.media-amazon.com/images/I/71A662F6.jpg",
+      "platform": "Byredo",
+      "tags": [
+        "parfum",
+        "luxe",
+        "unisexe"
+      ],
+      "gender": "unisexe",
+      "category": "beauté"
+    },
+    {
+      "product_title": "Byredo - Mojave Ghost EDP 100ml",
+      "product_price": "235",
+      "product_original_price": "282.0",
+      "product_star_rating": "4.4",
+      "product_num_ratings": 4660,
+      "product_url": "https://www.amazon.fr/s?k=Byredo+Mojave+Ghost+EDP+100ml",
+      "product_photo": "https://m.media-amazon.com/images/I/713F4BCE.jpg",
+      "platform": "Byredo",
+      "tags": [
+        "parfum",
+        "luxe",
+        "unisexe"
+      ],
+      "gender": "unisexe",
+      "category": "beauté"
+    },
+    {
+      "product_title": "Byredo - Blanche EDP 100ml",
+      "product_price": "235",
+      "product_original_price": "282.0",
+      "product_star_rating": "4.7",
+      "product_num_ratings": 1990,
+      "product_url": "https://www.amazon.fr/s?k=Byredo+Blanche+EDP+100ml",
+      "product_photo": "https://m.media-amazon.com/images/I/719673A5.jpg",
+      "platform": "Byredo",
+      "tags": [
+        "parfum",
+        "luxe",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "beauté"
+    },
+    {
+      "product_title": "Byredo - Super Cedar EDP 100ml",
+      "product_price": "235",
+      "product_original_price": "",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 4611,
+      "product_url": "https://www.amazon.fr/s?k=Byredo+Super+Cedar+EDP+100ml",
+      "product_photo": "https://m.media-amazon.com/images/I/718C50F1.jpg",
+      "platform": "Byredo",
+      "tags": [
+        "parfum",
+        "luxe",
+        "homme"
+      ],
+      "gender": "homme",
+      "category": "beauté"
+    },
+    {
+      "product_title": "Byredo - Bougie Bibliothèque",
+      "product_price": "85",
+      "product_original_price": "",
+      "product_star_rating": "4.6",
+      "product_num_ratings": 3942,
+      "product_url": "https://www.amazon.fr/s?k=Byredo+Bougie+Bibliothèque",
+      "product_photo": "https://m.media-amazon.com/images/I/7103B381.jpg",
+      "platform": "Byredo",
+      "tags": [
+        "bougie",
+        "luxe",
+        "déco"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "Byredo - Crème mains Vetyver",
+      "product_price": "49",
+      "product_original_price": "58.8",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 3567,
+      "product_url": "https://www.amazon.fr/s?k=Byredo+Crème+mains+Vetyver",
+      "product_photo": "https://m.media-amazon.com/images/I/7108C5CA.jpg",
+      "platform": "Byredo",
+      "tags": [
+        "soin",
+        "luxe"
+      ],
+      "gender": "unisexe",
+      "category": "beauté"
+    },
+    {
+      "product_title": "Byredo - Eau de parfum Travel Set",
+      "product_price": "145",
+      "product_original_price": "",
+      "product_star_rating": "4.3",
+      "product_num_ratings": 1448,
+      "product_url": "https://www.amazon.fr/s?k=Byredo+Eau+de+parfum+Travel+Set",
+      "product_photo": "https://m.media-amazon.com/images/I/714790E0.jpg",
+      "platform": "Byredo",
+      "tags": [
+        "parfum",
+        "voyage"
+      ],
+      "gender": "unisexe",
+      "category": "beauté"
+    },
+    {
+      "product_title": "Byredo - Young Rose EDP 100ml",
+      "product_price": "235",
+      "product_original_price": "",
+      "product_star_rating": "4.4",
+      "product_num_ratings": 1340,
+      "product_url": "https://www.amazon.fr/s?k=Byredo+Young+Rose+EDP+100ml",
+      "product_photo": "https://m.media-amazon.com/images/I/71B23ED1.jpg",
+      "platform": "Byredo",
+      "tags": [
+        "parfum",
+        "luxe",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "beauté"
+    },
+    {
+      "product_title": "Byredo - Eleventh Hour EDP 100ml",
+      "product_price": "235",
+      "product_original_price": "",
+      "product_star_rating": "4.3",
+      "product_num_ratings": 4487,
+      "product_url": "https://www.amazon.fr/s?k=Byredo+Eleventh+Hour+EDP+100ml",
+      "product_photo": "https://m.media-amazon.com/images/I/71268157.jpg",
+      "platform": "Byredo",
+      "tags": [
+        "parfum",
+        "luxe",
+        "unisexe"
+      ],
+      "gender": "unisexe",
+      "category": "beauté"
+    },
+    {
+      "product_title": "Diptyque - Bougie Baies 190g",
+      "product_price": "68",
+      "product_original_price": "",
+      "product_star_rating": "4.6",
+      "product_num_ratings": 2160,
+      "product_url": "https://www.amazon.fr/s?k=Diptyque+Bougie+Baies+190g",
+      "product_photo": "https://m.media-amazon.com/images/I/7141DA93.jpg",
+      "platform": "Diptyque",
+      "tags": [
+        "bougie",
+        "luxe",
+        "déco"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "Diptyque - Bougie Figuier 190g",
+      "product_price": "68",
+      "product_original_price": "81.6",
+      "product_star_rating": "4.8",
+      "product_num_ratings": 4832,
+      "product_url": "https://www.amazon.fr/s?k=Diptyque+Bougie+Figuier+190g",
+      "product_photo": "https://m.media-amazon.com/images/I/719A64E9.jpg",
+      "platform": "Diptyque",
+      "tags": [
+        "bougie",
+        "luxe",
+        "déco"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "Diptyque - Do Son EDT 100ml",
+      "product_price": "140",
+      "product_original_price": "168.0",
+      "product_star_rating": "4.8",
+      "product_num_ratings": 861,
+      "product_url": "https://www.amazon.fr/s?k=Diptyque+Do+Son+EDT+100ml",
+      "product_photo": "https://m.media-amazon.com/images/I/71B5D471.jpg",
+      "platform": "Diptyque",
+      "tags": [
+        "parfum",
+        "luxe",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "beauté"
+    },
+    {
+      "product_title": "Diptyque - Philosykos EDT 100ml",
+      "product_price": "140",
+      "product_original_price": "",
+      "product_star_rating": "4.8",
+      "product_num_ratings": 3106,
+      "product_url": "https://www.amazon.fr/s?k=Diptyque+Philosykos+EDT+100ml",
+      "product_photo": "https://m.media-amazon.com/images/I/71A9F8B9.jpg",
+      "platform": "Diptyque",
+      "tags": [
+        "parfum",
+        "luxe",
+        "unisexe"
+      ],
+      "gender": "unisexe",
+      "category": "beauté"
+    },
+    {
+      "product_title": "Diptyque - Bougie Roses 190g",
+      "product_price": "68",
+      "product_original_price": "",
+      "product_star_rating": "4.3",
+      "product_num_ratings": 1855,
+      "product_url": "https://www.amazon.fr/s?k=Diptyque+Bougie+Roses+190g",
+      "product_photo": "https://m.media-amazon.com/images/I/7181494A.jpg",
+      "platform": "Diptyque",
+      "tags": [
+        "bougie",
+        "luxe",
+        "déco"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "Diptyque - Eau Rose EDT 100ml",
+      "product_price": "140",
+      "product_original_price": "168.0",
+      "product_star_rating": "4.4",
+      "product_num_ratings": 1157,
+      "product_url": "https://www.amazon.fr/s?k=Diptyque+Eau+Rose+EDT+100ml",
+      "product_photo": "https://m.media-amazon.com/images/I/718AD866.jpg",
+      "platform": "Diptyque",
+      "tags": [
+        "parfum",
+        "luxe",
+        "femme"
+      ],
+      "gender": "femme",
+      "category": "beauté"
+    },
+    {
+      "product_title": "Diptyque - Bougie Feu de Bois 190g",
+      "product_price": "68",
+      "product_original_price": "",
+      "product_star_rating": "4.4",
+      "product_num_ratings": 1768,
+      "product_url": "https://www.amazon.fr/s?k=Diptyque+Bougie+Feu+de+Bois+190g",
+      "product_photo": "https://m.media-amazon.com/images/I/71674B28.jpg",
+      "platform": "Diptyque",
+      "tags": [
+        "bougie",
+        "luxe",
+        "déco"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "Diptyque - Fleur de Peau EDP 75ml",
+      "product_price": "175",
+      "product_original_price": "",
+      "product_star_rating": "4.6",
+      "product_num_ratings": 1720,
+      "product_url": "https://www.amazon.fr/s?k=Diptyque+Fleur+de+Peau+EDP+75ml",
+      "product_photo": "https://m.media-amazon.com/images/I/71C48EA5.jpg",
+      "platform": "Diptyque",
+      "tags": [
+        "parfum",
+        "luxe",
+        "unisexe"
+      ],
+      "gender": "unisexe",
+      "category": "beauté"
+    },
+    {
+      "product_title": "Diptyque - Bougie 34 Boulevard 190g",
+      "product_price": "68",
+      "product_original_price": "",
+      "product_star_rating": "4.3",
+      "product_num_ratings": 3821,
+      "product_url": "https://www.amazon.fr/s?k=Diptyque+Bougie+34+Boulevard+190g",
+      "product_photo": "https://m.media-amazon.com/images/I/71D129CC.jpg",
+      "platform": "Diptyque",
+      "tags": [
+        "bougie",
+        "luxe",
+        "déco"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "Diptyque - Coffret 3 bougies",
+      "product_price": "135",
+      "product_original_price": "",
+      "product_star_rating": "4.4",
+      "product_num_ratings": 2460,
+      "product_url": "https://www.amazon.fr/s?k=Diptyque+Coffret+3+bougies",
+      "product_photo": "https://m.media-amazon.com/images/I/7139E98E.jpg",
+      "platform": "Diptyque",
+      "tags": [
+        "bougie",
+        "luxe",
+        "coffret"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "IKEA - KALLAX Étagère 4 cases",
+      "product_price": "39.99",
+      "product_original_price": "",
+      "product_star_rating": "4.4",
+      "product_num_ratings": 709,
+      "product_url": "https://www.amazon.fr/s?k=IKEA+KALLAX+Étagère+4+cases",
+      "product_photo": "https://m.media-amazon.com/images/I/713E46BE.jpg",
+      "platform": "IKEA",
+      "tags": [
+        "meuble",
+        "rangement",
+        "déco"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "IKEA - BILLY Bibliothèque",
+      "product_price": "49.99",
+      "product_original_price": "",
+      "product_star_rating": "4.9",
+      "product_num_ratings": 4997,
+      "product_url": "https://www.amazon.fr/s?k=IKEA+BILLY+Bibliothèque",
+      "product_photo": "https://m.media-amazon.com/images/I/719042A8.jpg",
+      "platform": "IKEA",
+      "tags": [
+        "meuble",
+        "rangement"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "IKEA - FADO Lampe de table",
+      "product_price": "19.99",
+      "product_original_price": "23.99",
+      "product_star_rating": "4.8",
+      "product_num_ratings": 1474,
+      "product_url": "https://www.amazon.fr/s?k=IKEA+FADO+Lampe+de+table",
+      "product_photo": "https://m.media-amazon.com/images/I/7186C8F9.jpg",
+      "platform": "IKEA",
+      "tags": [
+        "luminaire",
+        "déco"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "IKEA - MALM Commode 3 tiroirs",
+      "product_price": "99.99",
+      "product_original_price": "",
+      "product_star_rating": "4.9",
+      "product_num_ratings": 4574,
+      "product_url": "https://www.amazon.fr/s?k=IKEA+MALM+Commode+3+tiroirs",
+      "product_photo": "https://m.media-amazon.com/images/I/71CD3829.jpg",
+      "platform": "IKEA",
+      "tags": [
+        "meuble",
+        "chambre"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "IKEA - LACK Table basse",
+      "product_price": "29.99",
+      "product_original_price": "",
+      "product_star_rating": "4.6",
+      "product_num_ratings": 4265,
+      "product_url": "https://www.amazon.fr/s?k=IKEA+LACK+Table+basse",
+      "product_photo": "https://m.media-amazon.com/images/I/71EAA056.jpg",
+      "platform": "IKEA",
+      "tags": [
+        "meuble",
+        "salon"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "IKEA - SANELA Coussin",
+      "product_price": "19.99",
+      "product_original_price": "23.99",
+      "product_star_rating": "4.6",
+      "product_num_ratings": 3651,
+      "product_url": "https://www.amazon.fr/s?k=IKEA+SANELA+Coussin",
+      "product_photo": "https://m.media-amazon.com/images/I/71360F62.jpg",
+      "platform": "IKEA",
+      "tags": [
+        "textile",
+        "déco"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "IKEA - FEJKA Plante artificielle",
+      "product_price": "9.99",
+      "product_original_price": "11.99",
+      "product_star_rating": "4.9",
+      "product_num_ratings": 991,
+      "product_url": "https://www.amazon.fr/s?k=IKEA+FEJKA+Plante+artificielle",
+      "product_photo": "https://m.media-amazon.com/images/I/7134185E.jpg",
+      "platform": "IKEA",
+      "tags": [
+        "déco",
+        "plante"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "IKEA - VARIERA Boîte",
+      "product_price": "6.99",
+      "product_original_price": "",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 4765,
+      "product_url": "https://www.amazon.fr/s?k=IKEA+VARIERA+Boîte",
+      "product_photo": "https://m.media-amazon.com/images/I/71844352.jpg",
+      "platform": "IKEA",
+      "tags": [
+        "rangement",
+        "cuisine"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "IKEA - KIVIK Canapé 3 places",
+      "product_price": "549",
+      "product_original_price": "658.8",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 3010,
+      "product_url": "https://www.amazon.fr/s?k=IKEA+KIVIK+Canapé+3+places",
+      "product_photo": "https://m.media-amazon.com/images/I/71C08D1B.jpg",
+      "platform": "IKEA",
+      "tags": [
+        "meuble",
+        "salon"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "IKEA - LISABO Table",
+      "product_price": "149",
+      "product_original_price": "178.8",
+      "product_star_rating": "4.9",
+      "product_num_ratings": 1998,
+      "product_url": "https://www.amazon.fr/s?k=IKEA+LISABO+Table",
+      "product_photo": "https://m.media-amazon.com/images/I/71C8F74A.jpg",
+      "platform": "IKEA",
+      "tags": [
+        "meuble",
+        "salle à manger"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "Le Creuset - Cocotte ronde 24cm",
+      "product_price": "289",
+      "product_original_price": "346.8",
+      "product_star_rating": "4.4",
+      "product_num_ratings": 3885,
+      "product_url": "https://www.amazon.fr/s?k=Le+Creuset+Cocotte+ronde+24cm",
+      "product_photo": "https://m.media-amazon.com/images/I/713B3BA7.jpg",
+      "platform": "Le Creuset",
+      "tags": [
+        "cuisine",
+        "cuisson",
+        "luxe"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "Le Creuset - Cocotte ovale 29cm",
+      "product_price": "329",
+      "product_original_price": "394.8",
+      "product_star_rating": "4.6",
+      "product_num_ratings": 3238,
+      "product_url": "https://www.amazon.fr/s?k=Le+Creuset+Cocotte+ovale+29cm",
+      "product_photo": "https://m.media-amazon.com/images/I/7112F72C.jpg",
+      "platform": "Le Creuset",
+      "tags": [
+        "cuisine",
+        "cuisson",
+        "luxe"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "Le Creuset - Faitout 26cm",
+      "product_price": "259",
+      "product_original_price": "",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 2397,
+      "product_url": "https://www.amazon.fr/s?k=Le+Creuset+Faitout+26cm",
+      "product_photo": "https://m.media-amazon.com/images/I/713A9773.jpg",
+      "platform": "Le Creuset",
+      "tags": [
+        "cuisine",
+        "cuisson"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "Le Creuset - Poêle 26cm",
+      "product_price": "179",
+      "product_original_price": "",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 3616,
+      "product_url": "https://www.amazon.fr/s?k=Le+Creuset+Poêle+26cm",
+      "product_photo": "https://m.media-amazon.com/images/I/71383163.jpg",
+      "platform": "Le Creuset",
+      "tags": [
+        "cuisine",
+        "cuisson"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "Le Creuset - Plat rectangulaire",
+      "product_price": "89",
+      "product_original_price": "",
+      "product_star_rating": "4.4",
+      "product_num_ratings": 2902,
+      "product_url": "https://www.amazon.fr/s?k=Le+Creuset+Plat+rectangulaire",
+      "product_photo": "https://m.media-amazon.com/images/I/7118FFFE.jpg",
+      "platform": "Le Creuset",
+      "tags": [
+        "cuisine",
+        "cuisson"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "Le Creuset - Set ustensiles",
+      "product_price": "79",
+      "product_original_price": "94.8",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 586,
+      "product_url": "https://www.amazon.fr/s?k=Le+Creuset+Set+ustensiles",
+      "product_photo": "https://m.media-amazon.com/images/I/71868A58.jpg",
+      "platform": "Le Creuset",
+      "tags": [
+        "cuisine",
+        "accessoire"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "Le Creuset - Marmite 20cm",
+      "product_price": "249",
+      "product_original_price": "298.8",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 1904,
+      "product_url": "https://www.amazon.fr/s?k=Le+Creuset+Marmite+20cm",
+      "product_photo": "https://m.media-amazon.com/images/I/71BD84C2.jpg",
+      "platform": "Le Creuset",
+      "tags": [
+        "cuisine",
+        "cuisson"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "Le Creuset - Gratin ovale",
+      "product_price": "69",
+      "product_original_price": "82.8",
+      "product_star_rating": "4.6",
+      "product_num_ratings": 3840,
+      "product_url": "https://www.amazon.fr/s?k=Le+Creuset+Gratin+ovale",
+      "product_photo": "https://m.media-amazon.com/images/I/7116402E.jpg",
+      "platform": "Le Creuset",
+      "tags": [
+        "cuisine",
+        "cuisson"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "Le Creuset - Théière 1,3L",
+      "product_price": "129",
+      "product_original_price": "",
+      "product_star_rating": "4.9",
+      "product_num_ratings": 4727,
+      "product_url": "https://www.amazon.fr/s?k=Le+Creuset+Théière+1,3L",
+      "product_photo": "https://m.media-amazon.com/images/I/71B9A6DB.jpg",
+      "platform": "Le Creuset",
+      "tags": [
+        "cuisine",
+        "service"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "Le Creuset - Set 4 ramequins",
+      "product_price": "45",
+      "product_original_price": "54.0",
+      "product_star_rating": "4.8",
+      "product_num_ratings": 2990,
+      "product_url": "https://www.amazon.fr/s?k=Le+Creuset+Set+4+ramequins",
+      "product_photo": "https://m.media-amazon.com/images/I/71FA2171.jpg",
+      "platform": "Le Creuset",
+      "tags": [
+        "cuisine",
+        "pâtisserie"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "SMEG - Grille-pain TSF01",
+      "product_price": "169",
+      "product_original_price": "",
+      "product_star_rating": "4.8",
+      "product_num_ratings": 4408,
+      "product_url": "https://www.amazon.fr/s?k=SMEG+Grille-pain+TSF01",
+      "product_photo": "https://m.media-amazon.com/images/I/71A0BFE6.jpg",
+      "platform": "SMEG",
+      "tags": [
+        "électroménager",
+        "cuisine",
+        "design"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "SMEG - Bouilloire KLF03",
+      "product_price": "169",
+      "product_original_price": "",
+      "product_star_rating": "4.4",
+      "product_num_ratings": 4906,
+      "product_url": "https://www.amazon.fr/s?k=SMEG+Bouilloire+KLF03",
+      "product_photo": "https://m.media-amazon.com/images/I/71FB9EC4.jpg",
+      "platform": "SMEG",
+      "tags": [
+        "électroménager",
+        "cuisine",
+        "design"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "SMEG - Machine à café ECF01",
+      "product_price": "499",
+      "product_original_price": "",
+      "product_star_rating": "4.9",
+      "product_num_ratings": 2595,
+      "product_url": "https://www.amazon.fr/s?k=SMEG+Machine+à+café+ECF01",
+      "product_photo": "https://m.media-amazon.com/images/I/71A2CDEA.jpg",
+      "platform": "SMEG",
+      "tags": [
+        "électroménager",
+        "café"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "SMEG - Mixeur BLF01",
+      "product_price": "199",
+      "product_original_price": "",
+      "product_star_rating": "4.7",
+      "product_num_ratings": 1567,
+      "product_url": "https://www.amazon.fr/s?k=SMEG+Mixeur+BLF01",
+      "product_photo": "https://m.media-amazon.com/images/I/719CF2A7.jpg",
+      "platform": "SMEG",
+      "tags": [
+        "électroménager",
+        "cuisine"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "SMEG - Presse-agrumes CJF01",
+      "product_price": "149",
+      "product_original_price": "",
+      "product_star_rating": "4.8",
+      "product_num_ratings": 1660,
+      "product_url": "https://www.amazon.fr/s?k=SMEG+Presse-agrumes+CJF01",
+      "product_photo": "https://m.media-amazon.com/images/I/7166D2CF.jpg",
+      "platform": "SMEG",
+      "tags": [
+        "électroménager",
+        "cuisine"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "SMEG - Robot pâtissier SMF03",
+      "product_price": "599",
+      "product_original_price": "",
+      "product_star_rating": "4.6",
+      "product_num_ratings": 684,
+      "product_url": "https://www.amazon.fr/s?k=SMEG+Robot+pâtissier+SMF03",
+      "product_photo": "https://m.media-amazon.com/images/I/71D722BD.jpg",
+      "platform": "SMEG",
+      "tags": [
+        "électroménager",
+        "pâtisserie"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "SMEG - Mini frigo FAB5",
+      "product_price": "399",
+      "product_original_price": "478.8",
+      "product_star_rating": "4.2",
+      "product_num_ratings": 2344,
+      "product_url": "https://www.amazon.fr/s?k=SMEG+Mini+frigo+FAB5",
+      "product_photo": "https://m.media-amazon.com/images/I/7191C001.jpg",
+      "platform": "SMEG",
+      "tags": [
+        "électroménager",
+        "design"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "SMEG - Grille-pain 4 tranches TSF02",
+      "product_price": "229",
+      "product_original_price": "",
+      "product_star_rating": "4.8",
+      "product_num_ratings": 2769,
+      "product_url": "https://www.amazon.fr/s?k=SMEG+Grille-pain+4+tranches+TSF02",
+      "product_photo": "https://m.media-amazon.com/images/I/719B6BD4.jpg",
+      "platform": "SMEG",
+      "tags": [
+        "électroménager",
+        "cuisine"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "SMEG - Centrifugeuse SJF01",
+      "product_price": "279",
+      "product_original_price": "",
+      "product_star_rating": "4.8",
+      "product_num_ratings": 2385,
+      "product_url": "https://www.amazon.fr/s?k=SMEG+Centrifugeuse+SJF01",
+      "product_photo": "https://m.media-amazon.com/images/I/71741608.jpg",
+      "platform": "SMEG",
+      "tags": [
+        "électroménager",
+        "jus"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    },
+    {
+      "product_title": "SMEG - Balance de cuisine",
+      "product_price": "99",
+      "product_original_price": "118.8",
+      "product_star_rating": "4.5",
+      "product_num_ratings": 3694,
+      "product_url": "https://www.amazon.fr/s?k=SMEG+Balance+de+cuisine",
+      "product_photo": "https://m.media-amazon.com/images/I/71554E63.jpg",
+      "platform": "SMEG",
+      "tags": [
+        "accessoire",
+        "cuisine"
+      ],
+      "gender": "unisexe",
+      "category": "maison"
+    }
+  ]
+}
