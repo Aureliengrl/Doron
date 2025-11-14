@@ -171,7 +171,7 @@ class _OpenAiResultBottomSheetWidgetState
                                     await favouritesRecordReference
                                         .set(createFavouritesRecordData(
                                       uid: currentUserReference,
-                                      platform: Platforms.amazon,
+                                      platform: "amazon",
                                       product: updateProductsStruct(
                                         fetchedProductsItem,
                                         clearUnsetFields: false,
@@ -182,7 +182,7 @@ class _OpenAiResultBottomSheetWidgetState
                                         FavouritesRecord.getDocumentFromData(
                                             createFavouritesRecordData(
                                               uid: currentUserReference,
-                                              platform: Platforms.amazon,
+                                              platform: "amazon",
                                               product: updateProductsStruct(
                                                 fetchedProductsItem,
                                                 clearUnsetFields: false,

@@ -7,6 +7,7 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/pages/pages/components/product/product_widget.dart';
+import '/services/firebase_data_service.dart';
 import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:collection/collection.dart';
@@ -199,26 +200,30 @@ class _OpenAiSuggestedGiftsWidgetState
                                                     .firstOrNull!);
                                             safeSetState(() {});
                                           } else {
+                                            // Récupérer le personId du contexte actuel
+                                            final personId = await FirebaseDataService.getCurrentPersonContext();
+
                                             var favouritesRecordReference =
                                                 FavouritesRecord.collection
                                                     .doc();
                                             await favouritesRecordReference
                                                 .set(createFavouritesRecordData(
                                               uid: currentUserReference,
-                                              platform: Platforms.amazon,
+                                              platform: "amazon",
                                               product: updateProductsStruct(
                                                 fetchedProductsItem,
                                                 clearUnsetFields: false,
                                                 create: true,
                                               ),
                                               timeStamp: getCurrentTimestamp,
+                                              personId: personId, // Ajout du personId
                                             ));
                                             _model.newItem = FavouritesRecord
                                                 .getDocumentFromData(
                                                     createFavouritesRecordData(
                                                       uid: currentUserReference,
                                                       platform:
-                                                          Platforms.amazon,
+                                                          "amazon",
                                                       product:
                                                           updateProductsStruct(
                                                         fetchedProductsItem,
@@ -227,6 +232,7 @@ class _OpenAiSuggestedGiftsWidgetState
                                                       ),
                                                       timeStamp:
                                                           getCurrentTimestamp,
+                                                      personId: personId, // Ajout du personId
                                                     ),
                                                     favouritesRecordReference);
                                             _model.addToFavouriteProducts(

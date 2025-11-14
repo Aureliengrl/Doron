@@ -17,3 +17,16 @@ export '/pages/pages/open_ai_chat/preview_chat/preview_chat_widget.dart'
     show PreviewChatWidget;
 export '/pages/pages/forgot_password/forgot_password_widget.dart'
     show ForgotPasswordWidget;
+// New pages
+export '/pages/new_pages/onboarding_advanced/onboarding_advanced_widget.dart'
+    show OnboardingAdvancedWidget;
+export '/pages/new_pages/onboarding_gifts_result/onboarding_gifts_result_widget.dart'
+    show OnboardingGiftsResultWidget;
+export '/pages/new_pages/home_pinterest/home_pinterest_widget.dart'
+    show HomePinterestWidget;
+export '/pages/new_pages/search_page/search_page_widget.dart'
+    show SearchPageWidget;
+export '/pages/new_pages/gift_results/gift_results_widget.dart'
+    show GiftResultsWidget;
+export '/pages/splash_screen/splash_screen_widget.dart'
+    show SplashScreenWidget;

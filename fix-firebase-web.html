@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🔧 Réparer Firebase - Doron</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #f5f5f7;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 { color: #1d1d1f; margin-top: 0; }
+    .status {
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+      font-weight: 500;
+    }
+    .info { background: #e3f2fd; color: #1976d2; }
+    .success { background: #e8f5e9; color: #388e3c; }
+    .error { background: #ffebee; color: #d32f2f; }
+    .warning { background: #fff3e0; color: #f57c00; }
+    button {
+      background: #007aff;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      margin: 10px 0;
+    }
+    button:hover { background: #0051d5; }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .progress {
+      width: 100%;
+      height: 30px;
+      background: #e0e0e0;
+      border-radius: 15px;
+      overflow: hidden;
+      margin: 15px 0;
+    }
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #007aff, #00c6ff);
+      width: 0%;
+      transition: width 0.3s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+    }
+    .log {
+      background: #1d1d1f;
+      color: #00ff00;
+      padding: 15px;
+      border-radius: 8px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      margin: 15px 0;
+      white-space: pre-wrap;
+    }
+    .step {
+      margin: 20px 0;
+      padding: 15px;
+      border-left: 4px solid #007aff;
+      background: #f8f9fa;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 Réparation Firebase - Produits</h1>
+
+    <div class="status info">
+      <strong>📋 Ce que ce script va faire:</strong><br>
+      1. ❌ Supprimer tous les anciens produits (sans tags)<br>
+      2. ✅ Uploader 2201 nouveaux produits (avec tags, categories, popularity)<br>
+      3. ✓ Vérifier que tout fonctionne
+    </div>
+
+    <div class="step">
+      <h3>📱 Instructions</h3>
+      <ol>
+        <li>Clique sur le bouton ci-dessous</li>
+        <li>Attends la fin du processus (2-5 minutes)</li>
+        <li>Vérifie que tous les produits sont bien uploadés</li>
+        <li>Relance ton app et profite des 2201 produits variés!</li>
+      </ol>
+    </div>
+
+    <button id="startBtn" onclick="startFix()">🚀 Démarrer la réparation</button>
+
+    <div class="progress" id="progressContainer" style="display: none;">
+      <div class="progress-bar" id="progressBar">0%</div>
+    </div>
+
+    <div id="status"></div>
+
+    <div class="log" id="log" style="display: none;"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getFirestore, collection, getDocs, writeBatch, doc, deleteDoc, query, limit, getCountFromServer } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+    // Configuration Firebase - Doron App
+    const firebaseConfig = {
+      apiKey: "AIzaSyAl7Jlzgyet26D3zO4pF56BfznA3k3AiTk",
+      authDomain: "doron-b3011.firebaseapp.com",
+      projectId: "doron-b3011",
+      storageBucket: "doron-b3011.firebasestorage.app",
+      messagingSenderId: "1020882932619",
+      appId: "1:1020882932619:web:316e35c7909dc198eed58e"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    let logDiv, statusDiv, progressBar, progressContainer, startBtn;
+
+    window.onload = function() {
+      logDiv = document.getElementById('log');
+      statusDiv = document.getElementById('status');
+      progressBar = document.getElementById('progressBar');
+      progressContainer = document.getElementById('progressContainer');
+      startBtn = document.getElementById('startBtn');
+    };
+
+    function addLog(message, type = 'info') {
+      const timestamp = new Date().toLocaleTimeString();
+      logDiv.textContent += `[${timestamp}] ${message}\n`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+      console.log(message);
+    }
+
+    function setStatus(message, type = 'info') {
+      statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+    }
+
+    function setProgress(percent) {
+      progressBar.style.width = percent + '%';
+      progressBar.textContent = Math.round(percent) + '%';
+    }
+
+    window.startFix = async function() {
+      startBtn.disabled = true;
+      logDiv.style.display = 'block';
+      progressContainer.style.display = 'block';
+      logDiv.textContent = '';
+
+      try {
+        // ÉTAPE 1: Supprimer les anciens produits
+        addLog('🗑️  ÉTAPE 1: Suppression des anciens produits...');
+        setStatus('🗑️  Suppression des anciens produits...', 'warning');
+        setProgress(0);
+
+        let deletedCount = 0;
+        let hasMore = true;
+        let deleteIteration = 0;
+
+        while (hasMore && deleteIteration < 50) { // Max 50 iterations (25000 produits)
+          const q = query(collection(db, 'products'), limit(500));
+          const snapshot = await getDocs(q);
+
+          if (snapshot.empty) {
+            hasMore = false;
+            break;
+          }
+
+          addLog(`   Suppression de ${snapshot.size} produits...`);
+
+          const batch = writeBatch(db);
+          snapshot.docs.forEach((document) => {
+            batch.delete(document.ref);
+          });
+
+          await batch.commit();
+          deletedCount += snapshot.size;
+          deleteIteration++;
+
+          addLog(`   ✅ ${deletedCount} produits supprimés`);
+          setProgress(10 + (deleteIteration * 2)); // 10-20% pour la suppression
+        }
+
+        addLog(`\n✅ Suppression terminée: ${deletedCount} produits supprimés\n`);
+
+        // ÉTAPE 2: Charger les nouveaux produits depuis assets
+        addLog('📖 ÉTAPE 2: Chargement des nouveaux produits...');
+        setStatus('📖 Chargement des produits...', 'info');
+        setProgress(25);
+
+        const response = await fetch('./assets/jsons/fallback_products.json');
+        if (!response.ok) {
+          throw new Error('Impossible de charger fallback_products.json');
+        }
+
+        const products = await response.json();
+        addLog(`✅ ${products.length} produits chargés\n`);
+
+        // Vérifier la structure
+        const sampleProduct = products[0];
+        addLog('📋 Structure vérifiée:');
+        addLog(`   - Champs: ${Object.keys(sampleProduct).join(', ')}`);
+        addLog(`   - Tags: ${sampleProduct.tags ? sampleProduct.tags.length : 0} tags`);
+        addLog(`   - Categories: ${sampleProduct.categories ? sampleProduct.categories.length : 0} categories`);
+
+        if (!sampleProduct.tags || !sampleProduct.categories) {
+          throw new Error('ERREUR: Les produits n\'ont pas de tags/categories!');
+        }
+
+        // ÉTAPE 3: Upload par batch
+        addLog('\n📤 ÉTAPE 3: Upload des nouveaux produits...');
+        setStatus('📤 Upload des produits avec tags...', 'info');
+
+        const batchSize = 500;
+        let uploadedCount = 0;
+        const totalBatches = Math.ceil(products.length / batchSize);
+
+        for (let i = 0; i < products.length; i += batchSize) {
+          const batch = writeBatch(db);
+          const endIndex = Math.min(i + batchSize, products.length);
+          const currentBatch = products.slice(i, endIndex);
+          const batchNum = Math.floor(i / batchSize) + 1;
+
+          addLog(`📦 Batch ${batchNum}/${totalBatches}: Produits ${i + 1} à ${endIndex}...`);
+
+          for (const product of currentBatch) {
+            const docRef = doc(db, 'products', product.id.toString());
+            const data = { ...product };
+            delete data.id;
+
+            // Assurer que les arrays sont présents
+            if (!data.tags) data.tags = [];
+            if (!data.categories) data.categories = [];
+
+            batch.set(docRef, data);
+            uploadedCount++;
+          }
+
+          await batch.commit();
+          addLog(`   ✅ ${currentBatch.length} produits uploadés`);
+
+          // Mise à jour de la progression (25% à 90%)
+          const progress = 25 + ((batchNum / totalBatches) * 65);
+          setProgress(progress);
+        }
+
+        addLog(`\n✅ Upload terminé: ${uploadedCount} produits uploadés\n`);
+
+        // ÉTAPE 4: Vérification finale
+        addLog('🔍 ÉTAPE 4: Vérification finale...');
+        setStatus('🔍 Vérification finale...', 'info');
+        setProgress(95);
+
+        const countSnapshot = await getCountFromServer(collection(db, 'products'));
+        const totalProducts = countSnapshot.data().count;
+        addLog(`✅ Total produits dans Firebase: ${totalProducts}`);
+
+        // Vérifier un produit avec tags
+        const verifyQuery = query(collection(db, 'products'), limit(1));
+        const verifySnapshot = await getDocs(verifyQuery);
+
+        if (!verifySnapshot.empty) {
+          const sampleData = verifySnapshot.docs[0].data();
+          addLog(`✅ Tags présents: ${sampleData.tags ? '✓' : '✗'}`);
+          addLog(`✅ Categories présentes: ${sampleData.categories ? '✓' : '✗'}`);
+          addLog(`✅ Exemple tags: ${sampleData.tags ? sampleData.tags.slice(0, 5).join(', ') : 'N/A'}`);
+        }
+
+        setProgress(100);
+        setStatus(`
+          <strong>🎉 RÉPARATION TERMINÉE!</strong><br><br>
+          ✅ ${totalProducts} produits correctement configurés<br>
+          ✅ Tous les produits ont des tags et categories<br>
+          ✅ Prêt pour une expérience personnalisée!<br><br>
+          📱 <strong>Relance ton app maintenant et profite des produits variés!</strong>
+        `, 'success');
+
+        addLog('\n🎉 SUCCÈS! Tu peux maintenant relancer ton app.');
+
+      } catch (error) {
+        addLog(`\n❌ ERREUR: ${error.message}`);
+        setStatus(`❌ Erreur: ${error.message}`, 'error');
+        console.error('Error:', error);
+        startBtn.disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>
