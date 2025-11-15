@@ -34,7 +34,9 @@ class _OnboardingGiftsResultWidgetState
 
     // Parse le personId depuis les query parameters (sera fait dans didChangeDependencies)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _parseQueryParameters();
+      if (mounted) {
+        _parseQueryParameters();
+      }
     });
   }
 

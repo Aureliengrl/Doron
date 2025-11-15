@@ -369,17 +369,18 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           }
         });
         // Afficher un message d'erreur à l'utilisateur
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '❌ Impossible de modifier les favoris. Vérifiez votre connexion.',
-              style: GoogleFonts.poppins(),
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '❌ Impossible de modifier les favoris. Vérifiez votre connexion.',
+                style: GoogleFonts.poppins(),
+              ),
+              backgroundColor: Colors.red[700],
+              duration: const Duration(seconds: 3),
             ),
-            backgroundColor: Colors.red[700],
-            duration: const Duration(seconds: 3),
-          ),
-        );
-      }
+          );
+        }
     }
   }
 
