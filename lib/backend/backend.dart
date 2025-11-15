@@ -9,6 +9,7 @@ import 'schema/users_record.dart';
 import 'schema/favourites_record.dart';
 import 'schema/q_as_record.dart';
 import 'schema/gift_suggestion_chat_record.dart';
+import 'schema/gifts_record.dart';
 
 export 'dart:async' show StreamSubscription;
 export 'package:cloud_firestore/cloud_firestore.dart' hide Order;
@@ -21,6 +22,7 @@ export 'schema/users_record.dart';
 export 'schema/favourites_record.dart';
 export 'schema/q_as_record.dart';
 export 'schema/gift_suggestion_chat_record.dart';
+export 'schema/gifts_record.dart';
 
 /// Functions to query UsersRecords (as a Stream and as a Future).
 Future<int> queryUsersRecordCount({
@@ -165,6 +167,43 @@ Future<List<GiftSuggestionChatRecord>> queryGiftSuggestionChatRecordOnce({
     queryCollectionOnce(
       GiftSuggestionChatRecord.collection,
       GiftSuggestionChatRecord.fromSnapshot,
+      queryBuilder: queryBuilder,
+      limit: limit,
+      singleRecord: singleRecord,
+    );
+
+/// Functions to query GiftsRecords (as a Stream and as a Future).
+Future<int> queryGiftsRecordCount({
+  Query Function(Query)? queryBuilder,
+  int limit = -1,
+}) =>
+    queryCollectionCount(
+      GiftsRecord.collection,
+      queryBuilder: queryBuilder,
+      limit: limit,
+    );
+
+Stream<List<GiftsRecord>> queryGiftsRecord({
+  Query Function(Query)? queryBuilder,
+  int limit = -1,
+  bool singleRecord = false,
+}) =>
+    queryCollection(
+      GiftsRecord.collection,
+      GiftsRecord.fromSnapshot,
+      queryBuilder: queryBuilder,
+      limit: limit,
+      singleRecord: singleRecord,
+    );
+
+Future<List<GiftsRecord>> queryGiftsRecordOnce({
+  Query Function(Query)? queryBuilder,
+  int limit = -1,
+  bool singleRecord = false,
+}) =>
+    queryCollectionOnce(
+      GiftsRecord.collection,
+      GiftsRecord.fromSnapshot,
       queryBuilder: queryBuilder,
       limit: limit,
       singleRecord: singleRecord,
