@@ -1,0 +1,41 @@
+
+================================================================================
+🚀 REAL PRODUCT SCRAPER - DORON
+Scraping REAL products with REAL images and URLs
+This will take HOURS - validating every single URL
+================================================================================
+
+================================================================================
+🛍️  SCRAPING ZARA (Target: 50-80 products)
+================================================================================
+
+📡 Fetching: https://www.zara.com/fr/fr/homme-nouveautes-l4264.html
+❌ Status code: 403
+
+📡 Fetching: https://www.zara.com/fr/fr/femme-nouveautes-l1418.html
+❌ Status code: 403
+
+📡 Fetching: https://www.zara.com/fr/fr/homme-chemises-l1293.html
+❌ Status code: 403
+
+✅ Scraped 0 REAL Zara products
+
+================================================================================
+🛍️  SCRAPING H&M (Target: 50-80 products)
+================================================================================
+
+📡 Fetching: https://www2.hm.com/fr_fr/homme/produits/voir-tout.html
+❌ Status code: 403
+
+📡 Fetching: https://www2.hm.com/fr_fr/femme/produits/voir-tout.html
+❌ Status code: 403
+
+✅ Scraped 0 REAL H&M products
+
+💾 Saved 0 products to /home/user/Doron/scripts/real_products.json
+📊 Failed URLs: 0
+
+================================================================================
+✅ SCRAPING SESSION COMPLETE
+📊 Total REAL products: 0
+================================================================================
