@@ -42,21 +42,22 @@ class ProductMatchingService {
         }
       }
 
-      // Filtrer par sexe SI disponible (réduit drastiquement le bruit)
-      if (genderFilter != null) {
-        query = query.where('tags', arrayContains: genderFilter);
-        AppLogger.firebase('🎯 Filtrage Firebase par sexe: $genderFilter');
-      }
+      // 🔥 DÉSACTIVER TEMPORAIREMENT LE FILTRE SEXE POUR DEBUG
+      // Le filtre peut être trop restrictif si les tags ne sont pas bons
+      // if (genderFilter != null) {
+      //   query = query.where('tags', arrayContains: genderFilter);
+      //   AppLogger.firebase('🎯 Filtrage Firebase par sexe: $genderFilter');
+      // }
+      AppLogger.warning('⚠️ FILTRE SEXE DÉSACTIVÉ POUR DEBUG - Chargement de TOUS les produits Firebase', 'Matching');
 
-      // Si une catégorie est spécifiée, filtrer aussi
-      if (category != null && category != 'Pour toi' && category != 'all') {
-        // Si déjà un filtre sexe, on ne peut pas faire 2 arrayContains
-        // On va donc charger plus et filtrer côté client
-        if (genderFilter == null) {
-          query = query.where('categories', arrayContains: category.toLowerCase());
-          AppLogger.firebase('🎯 Filtrage Firebase par catégorie: $category');
-        }
-      }
+      // 🔥 DÉSACTIVER AUSSI LE FILTRE CATÉGORIE POUR DEBUG
+      // if (category != null && category != 'Pour toi' && category != 'all') {
+      //   if (genderFilter == null) {
+      //     query = query.where('categories', arrayContains: category.toLowerCase());
+      //     AppLogger.firebase('🎯 Filtrage Firebase par catégorie: $category');
+      //   }
+      // }
+      AppLogger.warning('⚠️ FILTRE CATÉGORIE AUSSI DÉSACTIVÉ - Chargement brut complet', 'Matching');
 
       // Charger 2000 produits (augmenté pour plus de variété)
       var snapshot = await query.limit(2000).get();
@@ -67,6 +68,16 @@ class ProductMatchingService {
       }).toList();
 
       AppLogger.firebase('📦 ${allProducts.length} produits chargés depuis Firebase');
+
+      // 🔍 DEBUG CRITIQUE: Afficher les 3 premiers produits pour vérifier structure
+      if (allProducts.isNotEmpty) {
+        AppLogger.debug('🔍 SAMPLE PRODUIT 1: ${allProducts.first}', 'Matching');
+        if (allProducts.length > 1) {
+          AppLogger.debug('🔍 SAMPLE PRODUIT 2: ${allProducts[1]}', 'Matching');
+        }
+      } else {
+        AppLogger.error('⚠️ COLLECTION GIFTS EST VIDE - Aucun produit trouvé !', 'Matching', null);
+      }
 
       // 🔥 RETRY SANS FILTRE si Firebase retourne 0 (le filtre sexe peut être trop restrictif)
       if (allProducts.isEmpty && genderFilter != null) {
