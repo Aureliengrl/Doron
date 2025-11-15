@@ -26,7 +26,9 @@ class ProductMatchingService {
       print('🏷️ Tags de recherche: $searchTags');
 
       // 🎯 FILTRAGE FIREBASE PAR SEXE (critère le plus discriminant)
-      Query<Map<String, dynamic>> query = _firestore.collection('products');
+      // Utiliser la collection 'gifts' (nouvelle) avec fallback vers 'products' (ancienne)
+      Query<Map<String, dynamic>> query = _firestore.collection('gifts');
+      print('🎁 Chargement depuis collection Firebase: gifts');
 
       final gender = userTags['gender'] ?? userTags['recipientGender'];
       String? genderFilter;
@@ -68,6 +70,19 @@ class ProductMatchingService {
       // 🔥 RETRY SANS FILTRE si Firebase retourne 0 (le filtre sexe peut être trop restrictif)
       if (allProducts.isEmpty && genderFilter != null) {
         print('⚠️ Aucun produit avec filtre sexe, retry SANS filtre...');
+        query = _firestore.collection('gifts');
+        snapshot = await query.limit(2000).get();
+        allProducts = snapshot.docs.map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return data;
+        }).toList();
+        print('📦 ${allProducts.length} produits chargés depuis Firebase gifts SANS filtre');
+      }
+
+      // 🔄 FALLBACK vers collection 'products' si 'gifts' est vide
+      if (allProducts.isEmpty) {
+        print('⚠️ Collection gifts vide, fallback vers products...');
         query = _firestore.collection('products');
         snapshot = await query.limit(2000).get();
         allProducts = snapshot.docs.map((doc) {
@@ -75,7 +90,7 @@ class ProductMatchingService {
           data['id'] = doc.id;
           return data;
         }).toList();
-        print('📦 ${allProducts.length} produits chargés depuis Firebase SANS filtre');
+        print('📦 ${allProducts.length} produits chargés depuis Firebase products (fallback)');
       }
 
       // Filtrer par catégorie côté client si nécessaire
