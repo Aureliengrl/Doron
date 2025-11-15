@@ -59,14 +59,24 @@ class ProductMatchingService {
       AppLogger.warning('⚠️ FILTRE CATÉGORIE AUSSI DÉSACTIVÉ - Chargement brut complet', 'Matching');
 
       // Charger 2000 produits (augmenté pour plus de variété)
-      var snapshot = await query.limit(2000).get();
-      var allProducts = snapshot.docs.map((doc) {
-        final data = doc.data();
-        data['id'] = doc.id;
-        return data;
-      }).toList();
+      AppLogger.info('🔄 Exécution requête Firebase gifts.limit(2000)...', 'Matching');
 
-      AppLogger.firebase('📦 ${allProducts.length} produits chargés depuis Firebase');
+      var snapshot = await query.limit(2000).get();
+      AppLogger.success('✅ Requête Firebase réussie: ${snapshot.docs.length} documents', 'Matching');
+
+      var allProducts = <Map<String, dynamic>>[];
+      for (var doc in snapshot.docs) {
+        try {
+          final data = doc.data();
+          data['id'] = doc.id;
+          allProducts.add(data);
+        } catch (e) {
+          AppLogger.warning('⚠️ Erreur parsing produit ${doc.id}: $e', 'Matching');
+          // Continue avec les autres produits
+        }
+      }
+
+      AppLogger.firebase('📦 ${allProducts.length} produits parsés avec succès depuis Firebase');
 
       // 🔍 DEBUG CRITIQUE: Afficher les 3 premiers produits pour vérifier structure
       if (allProducts.isNotEmpty) {
@@ -116,13 +126,32 @@ class ProductMatchingService {
       AppLogger.success('✅ ${allProducts.length} produits chargés depuis Firebase - AUCUN FALLBACK', 'Matching');
 
       // Scorer et trier les produits par pertinence
-      final scoredProducts = allProducts.map((product) {
-        final score = _calculateMatchScore(product, searchTags, userTags);
-        return {
-          ...product,
-          '_matchScore': score,
-        };
-      }).toList();
+      AppLogger.info('🎯 Début du scoring de ${allProducts.length} produits...', 'Matching');
+      final scoredProducts = <Map<String, dynamic>>[];
+      int scoringErrors = 0;
+
+      for (var product in allProducts) {
+        try {
+          final score = _calculateMatchScore(product, searchTags, userTags);
+          scoredProducts.add({
+            ...product,
+            '_matchScore': score,
+          });
+        } catch (e) {
+          scoringErrors++;
+          AppLogger.warning('⚠️ Erreur scoring produit ${product['id']}: $e', 'Matching');
+          // Ajouter quand même avec score 0 pour ne pas perdre le produit
+          scoredProducts.add({
+            ...product,
+            '_matchScore': 0.0,
+          });
+        }
+      }
+
+      if (scoringErrors > 0) {
+        AppLogger.warning('⚠️ $scoringErrors produits ont eu des erreurs de scoring', 'Matching');
+      }
+      AppLogger.success('✅ Scoring terminé: ${scoredProducts.length} produits', 'Matching');
 
       // 🎯 PAS DE SEUIL MINIMUM - On prend les meilleurs produits peu importe leur score
       // Cela garantit qu'on a toujours des produits variés même si le matching n'est pas parfait
@@ -224,10 +253,24 @@ class ProductMatchingService {
       AppLogger.debug('📊 Répartition catégories: ${categoryCounts.entries.map((e) => '${e.key}: ${e.value}').join(", ")}', 'Matching');
       return selectedProducts;
     } catch (e, stackTrace) {
-      AppLogger.error('❌ ERREUR CRITIQUE lors du matching produits', 'Matching', e);
-      AppLogger.error('StackTrace: $stackTrace', 'Matching', null);
-      // ⛔ PLUS DE FALLBACK - On rethrow pour voir l'erreur
-      rethrow;
+      // ⚠️ ERREUR LORS DU CHARGEMENT - Logger détails complets
+      AppLogger.error('❌ ERREUR lors du matching produits', 'Matching', e);
+      AppLogger.error('Type erreur: ${e.runtimeType}', 'Matching', null);
+      AppLogger.error('Message: ${e.toString()}', 'Matching', null);
+      AppLogger.error('StackTrace complet:', 'Matching', null);
+      AppLogger.error('$stackTrace', 'Matching', null);
+
+      // Vérifier si c'est une erreur Firebase spécifique
+      if (e.toString().contains('permission') || e.toString().contains('Permission')) {
+        AppLogger.error('⚠️ ERREUR PERMISSIONS FIREBASE - Vérifier les Firestore Rules!', 'Matching', null);
+      }
+      if (e.toString().contains('network') || e.toString().contains('Network')) {
+        AppLogger.error('⚠️ ERREUR RÉSEAU - Pas de connexion internet?', 'Matching', null);
+      }
+
+      // Retourner liste vide au lieu de crasher pour que l'app continue
+      AppLogger.warning('Retour liste vide pour éviter crash app', 'Matching');
+      return [];
     }
   }
 
