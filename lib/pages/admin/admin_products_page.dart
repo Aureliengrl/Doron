@@ -45,8 +45,8 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
     _addLog('🗑️  Suppression de tous les produits...');
 
     try {
-      // Compter les produits
-      final countQuery = await _firestore.collection('products').count().get();
+      // Compter les produits (collection gifts)
+      final countQuery = await _firestore.collection('gifts').count().get();
       final totalCount = countQuery.count ?? 0;
 
       if (totalCount == 0) {
@@ -62,9 +62,9 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
       const batchSize = 500;
 
       while (true) {
-        // Récupérer un batch
+        // Récupérer un batch (collection gifts)
         final snapshot = await _firestore
-            .collection('products')
+            .collection('gifts')
             .limit(batchSize)
             .get();
 
@@ -132,7 +132,7 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
         for (var product in currentBatch) {
           try {
             final productMap = product as Map<String, dynamic>;
-            final docRef = _firestore.collection('products').doc(productMap['id'].toString());
+            final docRef = _firestore.collection('gifts').doc(productMap['id'].toString());
 
             // Retirer l'ID du map (il sera dans le document ID)
             final data = Map<String, dynamic>.from(productMap);

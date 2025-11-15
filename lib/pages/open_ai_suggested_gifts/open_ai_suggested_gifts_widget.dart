@@ -175,29 +175,15 @@ class _OpenAiSuggestedGiftsWidgetState
                                             null,
                                         product: fetchedProductsItem,
                                         fvrtCallback: () async {
-                                          if ((_model.favouriteProducts
-                                                      .where((e) =>
-                                                          e.product ==
-                                                          fetchedProductsItem)
-                                                      .toList()
-                                                      .firstOrNull !=
-                                                  null) ==
-                                              true) {
-                                            await _model.favouriteProducts
-                                                .where((e) =>
-                                                    e.product ==
-                                                    fetchedProductsItem)
-                                                .toList()
-                                                .firstOrNull!
-                                                .reference
-                                                .delete();
-                                            _model.removeFromFavouriteProducts(
-                                                _model.favouriteProducts
-                                                    .where((e) =>
-                                                        e.product ==
-                                                        fetchedProductsItem)
-                                                    .toList()
-                                                    .firstOrNull!);
+                                          // Stocker le résultat pour éviter les requêtes multiples
+                                          final existingFavourite = _model.favouriteProducts
+                                              .where((e) => e.product == fetchedProductsItem)
+                                              .toList()
+                                              .firstOrNull;
+
+                                          if (existingFavourite != null) {
+                                            await existingFavourite.reference.delete();
+                                            _model.removeFromFavouriteProducts(existingFavourite);
                                             safeSetState(() {});
                                           } else {
                                             // Récupérer le personId du contexte actuel

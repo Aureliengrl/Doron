@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:doron/components/cached_image.dart';
 import 'package:doron/components/skeleton_loader.dart';
 import '/services/firebase_data_service.dart';
+import '/services/product_url_service.dart';
 import 'voice_results_page_model.dart';
 
 class VoiceResultsPageWidget extends StatefulWidget {
@@ -289,9 +291,17 @@ class _VoiceResultsPageWidgetState extends State<VoiceResultsPageWidget> {
 
   Widget _buildProductCard(Map<String, dynamic> product, BuildContext context) {
     return GestureDetector(
-      onTap: () {
+      onTap: () async {
         // Navigation vers les détails du produit
-        // TODO: Implémenter la navigation vers la page de détails
+        final url = ProductUrlService.generateProductUrl(product);
+        if (url.isNotEmpty) {
+          final uri = Uri.parse(url);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          } else {
+            print('❌ Cannot launch URL: $url');
+          }
+        }
       },
       child: Container(
         decoration: BoxDecoration(
