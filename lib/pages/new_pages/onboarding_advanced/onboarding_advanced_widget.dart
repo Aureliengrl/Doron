@@ -144,14 +144,18 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
                     onTap: () async {
                       // If at step 0 and returnTo exists, go back to that page
                       if (_model.currentStep == 0 && returnTo != null && returnTo.isNotEmpty) {
-                        context.go(returnTo);
+                        if (mounted) {
+                          context.go(returnTo);
+                        }
                         return;
                       }
 
                       // Otherwise, go to previous step
-                      setState(() {
-                        _model.handleBack();
-                      });
+                      if (mounted) {
+                        setState(() {
+                          _model.handleBack();
+                        });
+                      }
                     },
                     borderRadius: BorderRadius.circular(50),
                     child: Container(

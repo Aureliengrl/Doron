@@ -322,6 +322,7 @@ class _OnboardingGiftsResultWidgetState
               // Bouton retour/fermer
               IconButton(
                 onPressed: () {
+                  if (!mounted) return;
                   // Si returnTo existe, retourner vers cette page
                   if (_returnTo != null && _returnTo!.isNotEmpty) {
                     print('🔙 Retour vers: $_returnTo');

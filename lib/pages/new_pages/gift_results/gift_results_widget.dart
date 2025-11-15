@@ -738,10 +738,12 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
                         Expanded(
                           child: ElevatedButton(
                             onPressed: () {
-                              setState(() {
-                                _model.toggleLike(gift['id'] as int);
-                              });
-                              context.pop();
+                              if (mounted) {
+                                setState(() {
+                                  _model.toggleLike(gift['id'] as int);
+                                });
+                                context.pop();
+                              }
                             },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: isLiked

@@ -782,11 +782,13 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                       color: Colors.transparent,
                       child: InkWell(
                         onTap: () {
-                          setState(() {
-                            _model.toggleLike(product['id'] as int);
-                          });
-                          Navigator.pop(context);
-                          _showProductDetail(product);
+                          if (mounted) {
+                            setState(() {
+                              _model.toggleLike(product['id'] as int);
+                            });
+                            Navigator.pop(context);
+                            _showProductDetail(product);
+                          }
                         },
                         borderRadius: BorderRadius.circular(50),
                         child: Container(
