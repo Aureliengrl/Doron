@@ -80,12 +80,32 @@ class _OnboardingGiftsResultWidgetState
         );
 
         if (person.isEmpty) {
-          throw Exception('Personne non trouvée: ${_model.personId}');
+          // Afficher erreur à l'utilisateur au lieu de crasher
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Personne non trouvée. Veuillez réessayer.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            context.pop();
+          }
+          return;
         }
 
         final personTags = person['tags'] as Map<String, dynamic>?;
         if (personTags == null) {
-          throw Exception('Tags de personne manquants');
+          // Afficher erreur à l'utilisateur au lieu de crasher
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Profil incomplet. Veuillez compléter l\'onboarding.'),
+                backgroundColor: Colors.red,
+              ),
+            );
+            context.pop();
+          }
+          return;
         }
 
         _model.setPersonTags(personTags);

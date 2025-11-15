@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '/services/product_matching_service.dart';
 import '/services/firebase_data_service.dart';
 import '/services/product_url_service.dart';
+import '/utils/app_logger.dart';
 
 /// Model pour la page TikTok Inspiration (BÊTA)
 class TikTokInspirationPageModel extends ChangeNotifier {
@@ -42,7 +43,7 @@ class TikTokInspirationPageModel extends ChangeNotifier {
       final seenProductIds = prefs.getStringList('seen_inspiration_product_ids')
           ?.map((s) => int.tryParse(s) ?? 0).toList() ?? [];
 
-      print('🎬 Chargement TikTok Inspiration (exclusion de ${seenProductIds.length} produits déjà vus)');
+      AppLogger.info('🎬 Chargement TikTok Inspiration (exclusion de ${seenProductIds.length} produits déjà vus)', 'TikTok');
 
       // 🎯 Générer les produits via ProductMatchingService
       // Prefetch 30 produits pour un scroll fluide (on en affichera 20 à la fois)
@@ -53,7 +54,12 @@ class TikTokInspirationPageModel extends ChangeNotifier {
       );
 
       if (rawProducts.isEmpty) {
-        throw Exception('Aucun produit disponible. Réessaye plus tard.');
+        _errorMessage = '📦 Pas de nouveaux produits';
+        _errorDetails = 'Tous les produits disponibles ont déjà été vus. Reviens plus tard !';
+        _hasError = true;
+        _isLoading = false;
+        notifyListeners();
+        return;
       }
 
       // Convertir au format TikTok et ajouter URLs intelligentes
@@ -93,9 +99,9 @@ class TikTokInspirationPageModel extends ChangeNotifier {
       _hasError = false;
       notifyListeners();
 
-      print('✅ TikTok Inspiration: ${products.length} produits chargés (Firebase + matching local)');
+      AppLogger.success('TikTok Inspiration: ${products.length} produits chargés (Firebase + matching local)', 'TikTok');
     } catch (e) {
-      print('❌ Erreur chargement TikTok Inspiration: $e');
+      AppLogger.error('Erreur chargement TikTok Inspiration', 'TikTok', e);
 
       // Parser l'erreur pour extraire des détails utiles
       String errorDetails = e.toString();

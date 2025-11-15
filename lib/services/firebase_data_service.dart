@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import '/utils/app_logger.dart';
 
 /// Service pour gérer les données Firebase
 class FirebaseDataService {
@@ -24,14 +25,14 @@ class FirebaseDataService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('local_onboarding_answers', json.encode(answers));
-      print('✅ Onboarding answers saved locally');
+      AppLogger.success('Onboarding answers saved locally', 'Firebase');
     } catch (e) {
-      print('❌ Error saving onboarding locally: $e');
+      AppLogger.error('Error saving onboarding locally', 'Firebase', e);
     }
 
     // Sauvegarder sur Firebase si connecté
     if (!isLoggedIn) {
-      print('⚠️ User not logged in, skipping Firebase save');
+      AppLogger.warning('User not logged in, skipping Firebase save', 'Firebase');
       return;
     }
 
@@ -46,9 +47,9 @@ class FirebaseDataService {
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      print('✅ Onboarding answers saved to Firebase');
+      AppLogger.firebase('Onboarding answers saved to Firebase');
     } catch (e) {
-      print('❌ Error saving onboarding to Firebase: $e');
+      AppLogger.error('Error saving onboarding to Firebase', 'Firebase', e);
     }
   }
 
@@ -65,11 +66,11 @@ class FirebaseDataService {
             .get();
 
         if (doc.exists) {
-          print('✅ Loaded onboarding from Firebase');
+          AppLogger.firebase('Loaded onboarding from Firebase');
           return doc.data()?['answers'] as Map<String, dynamic>?;
         }
       } catch (e) {
-        print('❌ Error loading onboarding from Firebase: $e');
+        AppLogger.error('Error loading onboarding from Firebase', 'Firebase', e);
       }
     }
 
@@ -78,14 +79,14 @@ class FirebaseDataService {
       final prefs = await SharedPreferences.getInstance();
       final localData = prefs.getString('local_onboarding_answers');
       if (localData != null) {
-        print('✅ Loaded onboarding from local storage');
+        AppLogger.success('Loaded onboarding from local storage', 'Firebase');
         return json.decode(localData) as Map<String, dynamic>;
       }
     } catch (e) {
-      print('❌ Error loading onboarding from local storage: $e');
+      AppLogger.error('Error loading onboarding from local storage', 'Firebase', e);
     }
 
-    print('⚠️ No onboarding data found');
+    AppLogger.warning('No onboarding data found', 'Firebase');
     return null;
   }
 
@@ -109,9 +110,9 @@ class FirebaseDataService {
 
       profiles.add(profileWithId);
       await prefs.setString('local_gift_profiles', json.encode(profiles));
-      print('✅ Gift search saved locally: $profileId');
+      AppLogger.success('Gift search saved locally: $profileId', 'Firebase');
     } catch (e) {
-      print('❌ Error saving gift search locally: $e');
+      AppLogger.error('Error saving gift search locally', 'Firebase', e);
     }
 
     // Sauvegarder sur Firebase si connecté (collection giftSearches selon spec)
@@ -126,10 +127,10 @@ class FirebaseDataService {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      print('✅ Gift search saved to Firebase: ${docRef.id}');
+      AppLogger.firebase('Gift search saved to Firebase: ${docRef.id}');
       return docRef.id;
     } catch (e) {
-      print('❌ Error saving gift search to Firebase: $e');
+      AppLogger.error('Error saving gift search to Firebase', 'Firebase', e);
       return null;
     }
   }
@@ -146,7 +147,7 @@ class FirebaseDataService {
             .get();
 
         if (snapshot.docs.isNotEmpty) {
-          print('✅ Loaded ${snapshot.docs.length} gift searches from Firebase');
+          AppLogger.firebase('Loaded ${snapshot.docs.length} gift searches from Firebase');
           return snapshot.docs.map((doc) {
             return {
               'id': doc.id,
@@ -155,7 +156,7 @@ class FirebaseDataService {
           }).toList();
         }
       } catch (e) {
-        print('❌ Error loading gift searches from Firebase: $e');
+        AppLogger.error('Error loading gift searches from Firebase', 'Firebase', e);
       }
     }
 
@@ -167,10 +168,10 @@ class FirebaseDataService {
           .map((e) => e as Map<String, dynamic>)
           .toList();
 
-      print('✅ Loaded ${profiles.length} gift searches from local storage');
+      AppLogger.success('Loaded ${profiles.length} gift searches from local storage', 'Firebase');
       return profiles;
     } catch (e) {
-      print('❌ Error loading gift searches from local storage: $e');
+      AppLogger.error('Error loading gift searches from local storage', 'Firebase', e);
       return [];
     }
   }
@@ -188,9 +189,9 @@ class FirebaseDataService {
           .doc(profileId)
           .update(updates);
 
-      print('✅ Gift search updated: $profileId');
+      AppLogger.firebase('Gift search updated: $profileId');
     } catch (e) {
-      print('❌ Error updating gift search: $e');
+      AppLogger.error('Error updating gift search', 'Firebase', e);
     }
   }
 
@@ -202,13 +203,13 @@ class FirebaseDataService {
       final prefs = await SharedPreferences.getInstance();
       if (personId != null) {
         await prefs.setString('current_person_id', personId);
-        print('✅ Current person context set: $personId');
+        AppLogger.info('Current person context set: $personId', 'Firebase');
       } else {
         await prefs.remove('current_person_id');
-        print('✅ Current person context cleared');
+        AppLogger.info('Current person context cleared', 'Firebase');
       }
     } catch (e) {
-      print('❌ Error setting current person context: $e');
+      AppLogger.error('Error setting current person context', 'Firebase', e);
     }
   }
 
@@ -218,7 +219,7 @@ class FirebaseDataService {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getString('current_person_id');
     } catch (e) {
-      print('❌ Error getting current person context: $e');
+      AppLogger.error('Error getting current person context', 'Firebase', e);
       return null;
     }
   }
@@ -233,9 +234,9 @@ class FirebaseDataService {
           .doc(profileId)
           .delete();
 
-      print('✅ Gift search deleted: $profileId');
+      AppLogger.firebase('Gift search deleted: $profileId');
     } catch (e) {
-      print('❌ Error deleting gift search: $e');
+      AppLogger.error('Error deleting gift search', 'Firebase', e);
     }
   }
 
@@ -260,9 +261,9 @@ class FirebaseDataService {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      print('✅ Gift suggestions saved for search: $searchId');
+      AppLogger.firebase('Gift suggestions saved for search: $searchId');
     } catch (e) {
-      print('❌ Error saving suggestions: $e');
+      AppLogger.error('Error saving suggestions', 'Firebase', e);
     }
   }
 
@@ -283,7 +284,7 @@ class FirebaseDataService {
         return (data?['gifts'] as List?)?.cast<Map<String, dynamic>>();
       }
     } catch (e) {
-      print('❌ Error loading suggestions: $e');
+      AppLogger.error('Error loading suggestions', 'Firebase', e);
     }
     return null;
   }
@@ -305,9 +306,9 @@ class FirebaseDataService {
         'addedAt': FieldValue.serverTimestamp(),
       });
 
-      print('✅ Added to favorites: ${gift['name']}');
+      AppLogger.firebase('Added to favorites: ${gift['name']}');
     } catch (e) {
-      print('❌ Error adding to favorites: $e');
+      AppLogger.error('Error adding to favorites', 'Firebase', e);
     }
   }
 
@@ -323,9 +324,9 @@ class FirebaseDataService {
           .doc(giftId)
           .delete();
 
-      print('✅ Removed from favorites: $giftId');
+      AppLogger.firebase('Removed from favorites: $giftId');
     } catch (e) {
-      print('❌ Error removing from favorites: $e');
+      AppLogger.error('Error removing from favorites', 'Firebase', e);
     }
   }
 
@@ -343,7 +344,7 @@ class FirebaseDataService {
 
       return snapshot.docs.map((doc) => doc.data()).toList();
     } catch (e) {
-      print('❌ Error loading favorites: $e');
+      AppLogger.error('Error loading favorites', 'Firebase', e);
       return [];
     }
   }
@@ -384,10 +385,10 @@ class FirebaseDataService {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      print('✅ Wishlist created: ${docRef.id}');
+      AppLogger.firebase('Wishlist created: ${docRef.id}');
       return docRef.id;
     } catch (e) {
-      print('❌ Error creating wishlist: $e');
+      AppLogger.error('Error creating wishlist', 'Firebase', e);
       return null;
     }
   }
@@ -407,7 +408,7 @@ class FirebaseDataService {
         return {'id': doc.id, ...doc.data()};
       }).toList();
     } catch (e) {
-      print('❌ Error loading wishlists: $e');
+      AppLogger.error('Error loading wishlists', 'Firebase', e);
       return [];
     }
   }
@@ -421,9 +422,9 @@ class FirebaseDataService {
         'giftIds': FieldValue.arrayUnion([giftId]),
       });
 
-      print('✅ Gift added to wishlist');
+      AppLogger.firebase('Gift added to wishlist');
     } catch (e) {
-      print('❌ Error adding to wishlist: $e');
+      AppLogger.error('Error adding to wishlist', 'Firebase', e);
     }
   }
 
@@ -461,7 +462,7 @@ class FirebaseDataService {
         return {'id': doc.id, ...doc.data()};
       }).toList();
     } catch (e) {
-      print('❌ Error loading gifts: $e');
+      AppLogger.error('Error loading gifts', 'Firebase', e);
       return [];
     }
   }
@@ -475,7 +476,7 @@ class FirebaseDataService {
         return {'id': doc.id, ...doc.data() ?? {}};
       }
     } catch (e) {
-      print('❌ Error loading gift: $e');
+      AppLogger.error('Error loading gift', 'Firebase', e);
     }
     return null;
   }
@@ -496,7 +497,7 @@ class FirebaseDataService {
         };
       }
     } catch (e) {
-      print('❌ Error loading translation: $e');
+      AppLogger.error('Error loading translation', 'Firebase', e);
     }
     return null;
   }
@@ -512,10 +513,10 @@ class FirebaseDataService {
         translations[doc.id] = data[languageCode] ?? '';
       }
 
-      print('✅ Loaded ${translations.length} translations for $languageCode');
+      AppLogger.firebase('Loaded ${translations.length} translations for $languageCode');
       return translations;
     } catch (e) {
-      print('❌ Error loading translations: $e');
+      AppLogger.error('Error loading translations', 'Firebase', e);
       return {};
     }
   }
@@ -532,9 +533,9 @@ class FirebaseDataService {
           .doc(currentUserId)
           .set(profile, SetOptions(merge: true));
 
-      print('✅ User profile updated');
+      AppLogger.firebase('User profile updated');
     } catch (e) {
-      print('❌ Error updating user profile: $e');
+      AppLogger.error('Error updating user profile', 'Firebase', e);
     }
   }
 
@@ -550,7 +551,7 @@ class FirebaseDataService {
         return doc.data();
       }
     } catch (e) {
-      print('❌ Error loading user profile: $e');
+      AppLogger.error('Error loading user profile', 'Firebase', e);
     }
     return null;
   }
@@ -577,14 +578,14 @@ class FirebaseDataService {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('local_user_profile_tags', json.encode(tags));
-      print('✅ User profile tags saved locally');
+      AppLogger.success('User profile tags saved locally', 'Firebase');
     } catch (e) {
-      print('❌ Error saving user profile tags locally: $e');
+      AppLogger.error('Error saving user profile tags locally', 'Firebase', e);
     }
 
     // Sauvegarder sur Firebase si connecté
     if (!isLoggedIn) {
-      print('⚠️ User not logged in, skipping Firebase save for profile tags');
+      AppLogger.warning('User not logged in, skipping Firebase save for profile tags', 'Firebase');
       return;
     }
 
@@ -599,9 +600,9 @@ class FirebaseDataService {
         }
       }, SetOptions(merge: true));
 
-      print('✅ User profile tags saved to Firebase');
+      AppLogger.firebase('User profile tags saved to Firebase');
     } catch (e) {
-      print('❌ Error saving user profile tags to Firebase: $e');
+      AppLogger.error('Error saving user profile tags to Firebase', 'Firebase', e);
     }
   }
 
@@ -612,11 +613,11 @@ class FirebaseDataService {
       try {
         final doc = await _firestore.collection('users').doc(currentUserId).get();
         if (doc.exists && doc.data()?['profile']?['tags'] != null) {
-          print('✅ Loaded user profile tags from Firebase');
+          AppLogger.firebase('Loaded user profile tags from Firebase');
           return doc.data()!['profile']['tags'] as Map<String, dynamic>;
         }
       } catch (e) {
-        print('❌ Error loading user profile tags from Firebase: $e');
+        AppLogger.error('Error loading user profile tags from Firebase', 'Firebase', e);
       }
     }
 
@@ -625,11 +626,11 @@ class FirebaseDataService {
       final prefs = await SharedPreferences.getInstance();
       final localData = prefs.getString('local_user_profile_tags');
       if (localData != null) {
-        print('✅ Loaded user profile tags from local storage');
+        AppLogger.success('Loaded user profile tags from local storage', 'Firebase');
         return json.decode(localData) as Map<String, dynamic>;
       }
     } catch (e) {
-      print('❌ Error loading user profile tags locally: $e');
+      AppLogger.error('Error loading user profile tags locally', 'Firebase', e);
     }
 
     return null;
@@ -669,9 +670,9 @@ class FirebaseDataService {
       });
 
       await prefs.setString('local_people', json.encode(people));
-      print('✅ Person created locally: $personId (pending=$isPendingFirstGen)');
+      AppLogger.success('Person created locally: $personId (pending=$isPendingFirstGen)', 'Firebase');
     } catch (e) {
-      print('❌ Error creating person locally: $e');
+      AppLogger.error('Error creating person locally', 'Firebase', e);
     }
 
     // Sauvegarder sur Firebase si connecté
@@ -691,10 +692,10 @@ class FirebaseDataService {
         },
       });
 
-      print('✅ Person created in Firebase: $personId');
+      AppLogger.firebase('Person created in Firebase: $personId');
       return personId;
     } catch (e) {
-      print('❌ Error creating person in Firebase: $e');
+      AppLogger.error('Error creating person in Firebase', 'Firebase', e);
       return personId; // Retourne quand même l'ID local
     }
   }
@@ -712,7 +713,7 @@ class FirebaseDataService {
             .get();
 
         if (snapshot.docs.isNotEmpty) {
-          print('✅ Loaded ${snapshot.docs.length} people from Firebase');
+          AppLogger.firebase('Loaded ${snapshot.docs.length} people from Firebase');
           return snapshot.docs.map((doc) {
             return {
               'id': doc.id,
@@ -721,7 +722,7 @@ class FirebaseDataService {
           }).toList();
         }
       } catch (e) {
-        print('❌ Error loading people from Firebase: $e');
+        AppLogger.error('Error loading people from Firebase', 'Firebase', e);
       }
     }
 
@@ -733,10 +734,10 @@ class FirebaseDataService {
           .map((e) => e as Map<String, dynamic>)
           .toList();
 
-      print('✅ Loaded ${people.length} people from local storage');
+      AppLogger.success('Loaded ${people.length} people from local storage', 'Firebase');
       return people;
     } catch (e) {
-      print('❌ Error loading people locally: $e');
+      AppLogger.error('Error loading people locally', 'Firebase', e);
       return [];
     }
   }
@@ -771,10 +772,10 @@ class FirebaseDataService {
           'isPendingFirstGen': isPending,
         };
         await prefs.setString('local_people', json.encode(people));
-        print('✅ Person pending flag updated locally');
+        AppLogger.success('Person pending flag updated locally', 'Firebase');
       }
     } catch (e) {
-      print('❌ Error updating person pending flag locally: $e');
+      AppLogger.error('Error updating person pending flag locally', 'Firebase', e);
     }
 
     // Mise à jour Firebase si connecté
@@ -790,9 +791,9 @@ class FirebaseDataService {
         'meta.isPendingFirstGen': isPending,
       });
 
-      print('✅ Person pending flag updated in Firebase');
+      AppLogger.firebase('Person pending flag updated in Firebase');
     } catch (e) {
-      print('❌ Error updating person pending flag in Firebase: $e');
+      AppLogger.error('Error updating person pending flag in Firebase', 'Firebase', e);
     }
   }
 
@@ -821,9 +822,9 @@ class FirebaseDataService {
       });
 
       await prefs.setString('local_gift_lists_$personId', json.encode(lists));
-      print('✅ Gift list saved locally for person $personId');
+      AppLogger.success('Gift list saved locally for person $personId', 'Firebase');
     } catch (e) {
-      print('❌ Error saving gift list locally: $e');
+      AppLogger.error('Error saving gift list locally', 'Firebase', e);
     }
 
     // Sauvegarder sur Firebase si connecté
@@ -843,10 +844,10 @@ class FirebaseDataService {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      print('✅ Gift list saved to Firebase for person $personId');
+      AppLogger.firebase('Gift list saved to Firebase for person $personId');
       return listId;
     } catch (e) {
-      print('❌ Error saving gift list to Firebase: $e');
+      AppLogger.error('Error saving gift list to Firebase', 'Firebase', e);
       return listId;
     }
   }
@@ -868,7 +869,7 @@ class FirebaseDataService {
             .get();
 
         if (snapshot.docs.isNotEmpty) {
-          print('✅ Loaded ${snapshot.docs.length} gift lists from Firebase');
+          AppLogger.firebase('Loaded ${snapshot.docs.length} gift lists from Firebase');
           return snapshot.docs.map((doc) {
             return {
               'id': doc.id,
@@ -877,7 +878,7 @@ class FirebaseDataService {
           }).toList();
         }
       } catch (e) {
-        print('❌ Error loading gift lists from Firebase: $e');
+        AppLogger.error('Error loading gift lists from Firebase', 'Firebase', e);
       }
     }
 
@@ -889,10 +890,10 @@ class FirebaseDataService {
           .map((e) => e as Map<String, dynamic>)
           .toList();
 
-      print('✅ Loaded ${lists.length} gift lists from local storage');
+      AppLogger.success('Loaded ${lists.length} gift lists from local storage', 'Firebase');
       return lists;
     } catch (e) {
-      print('❌ Error loading gift lists locally: $e');
+      AppLogger.error('Error loading gift lists locally', 'Firebase', e);
       return [];
     }
   }
@@ -919,9 +920,9 @@ class FirebaseDataService {
         'products': products,
         'createdAt': DateTime.now().toIso8601String(),
       }));
-      print('✅ Home feed saved locally');
+      AppLogger.success('Home feed saved locally', 'Firebase');
     } catch (e) {
-      print('❌ Error saving home feed locally: $e');
+      AppLogger.error('Error saving home feed locally', 'Firebase', e);
     }
 
     // Sauvegarder sur Firebase si connecté
@@ -938,9 +939,9 @@ class FirebaseDataService {
         'createdAt': FieldValue.serverTimestamp(),
       });
 
-      print('✅ Home feed saved to Firebase');
+      AppLogger.firebase('Home feed saved to Firebase');
     } catch (e) {
-      print('❌ Error saving home feed to Firebase: $e');
+      AppLogger.error('Error saving home feed to Firebase', 'Firebase', e);
     }
   }
 
@@ -960,12 +961,12 @@ class FirebaseDataService {
         if (snapshot.docs.isNotEmpty) {
           final products = snapshot.docs.first.data()['products'] as List?;
           if (products != null) {
-            print('✅ Loaded home feed from Firebase');
+            AppLogger.firebase('Loaded home feed from Firebase');
             return products.cast<Map<String, dynamic>>();
           }
         }
       } catch (e) {
-        print('❌ Error loading home feed from Firebase: $e');
+        AppLogger.error('Error loading home feed from Firebase', 'Firebase', e);
       }
     }
 
@@ -977,12 +978,12 @@ class FirebaseDataService {
         final feedData = json.decode(feedJson) as Map<String, dynamic>;
         final products = feedData['products'] as List?;
         if (products != null) {
-          print('✅ Loaded home feed from local storage');
+          AppLogger.success('Loaded home feed from local storage', 'Firebase');
           return products.cast<Map<String, dynamic>>();
         }
       }
     } catch (e) {
-      print('❌ Error loading home feed locally: $e');
+      AppLogger.error('Error loading home feed locally', 'Firebase', e);
     }
 
     return null;

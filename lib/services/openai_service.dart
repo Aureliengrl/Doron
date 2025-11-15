@@ -8,16 +8,15 @@ class OpenAIService {
   static const String _baseUrl = 'https://api.openai.com/v1';
 
   /// Récupère la clé API depuis les variables d'environnement
-  /// Avec fallback pour export GitHub direct
+  /// ⚠️ SÉCURISÉ : La clé doit être définie dans environment_values.dart
   static String get apiKey {
     final envKey = FFDevEnvironmentValues().openAiApiKey;
-    if (envKey.isNotEmpty) return envKey;
-
-    // Fallback pour export GitHub direct (clé en parties pour éviter détection)
-    const part1 = 'sk-proj-W3oSoVdsNFP9B2feILLCEFA5ooGHInShQf3x3ujKRRk1db2sfQZ';
-    const part2 = 'YjacYccVkJ8hssOxLeDyCR2T3BlbkFJyxuETBsWFpOwwpz4gGjH8';
-    const part3 = '_LlzvZaZCrn52UJdub0znfMaD7ofn-L9hUDdAjRHKTeOUxfPJVf4A';
-    return part1 + part2 + part3;
+    if (envKey.isEmpty) {
+      throw Exception(
+        'OpenAI API Key not configured. Please add it to environment_values.dart'
+      );
+    }
+    return envKey;
   }
 
   /// Marques ULTRA-PRIORITAIRES pour FEMMES (à privilégier en premier)

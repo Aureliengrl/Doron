@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'openai_service.dart';
 import 'brand_list.dart';
 import 'product_matching_service.dart';
+import '/utils/app_logger.dart';
 
 /// Service dédié à la génération de cadeaux personnalisés après l'onboarding
 class OpenAIOnboardingService {
@@ -18,15 +19,14 @@ class OpenAIOnboardingService {
   }) async {
     // ⚡ NOUVEAU: Utiliser le matching local au lieu d'OpenAI
     if (_mode == 'matching') {
-      print('');
-      print('═══════════════════════════════════════════════════════════');
-      print('⚡ MATCHING LOCAL - Génération de $count cadeaux personnalisés');
-      print('═══════════════════════════════════════════════════════════');
-      print('📋 TAGS DÉTECTÉS:');
-      print('   • Destinataire: ${userProfile['recipient'] ?? 'N/A'}');
-      print('   • Passions/Hobbies: ${(userProfile['recipientHobbies'] as List?)?.join(', ') ?? 'N/A'}');
-      print('   • Budget: ${userProfile['budget'] ?? 'N/A'}€');
-      print('═══════════════════════════════════════════════════════════');
+      AppLogger.info('═══════════════════════════════════════════════════════════', 'OpenAI');
+      AppLogger.info('⚡ MATCHING LOCAL - Génération de $count cadeaux personnalisés', 'OpenAI');
+      AppLogger.info('═══════════════════════════════════════════════════════════', 'OpenAI');
+      AppLogger.info('📋 TAGS DÉTECTÉS:', 'OpenAI');
+      AppLogger.info('   • Destinataire: ${userProfile['recipient'] ?? 'N/A'}', 'OpenAI');
+      AppLogger.info('   • Passions/Hobbies: ${(userProfile['recipientHobbies'] as List?)?.join(', ') ?? 'N/A'}', 'OpenAI');
+      AppLogger.info('   • Budget: ${userProfile['budget'] ?? 'N/A'}€', 'OpenAI');
+      AppLogger.info('═══════════════════════════════════════════════════════════', 'OpenAI');
 
       try {
         final products = await ProductMatchingService.getPersonalizedProducts(
@@ -34,35 +34,34 @@ class OpenAIOnboardingService {
           count: count,
         );
 
-        print('✅ ${products.length} cadeaux matchés instantanément');
+        AppLogger.success('${products.length} cadeaux matchés instantanément', 'OpenAI');
         return products;
       } catch (e) {
-        print('❌ Erreur matching: $e');
+        AppLogger.error('Erreur matching', 'OpenAI', e);
         return [];
       }
     }
 
     // Mode OpenAI (legacy, lent)
-    print('');
-    print('═══════════════════════════════════════════════════════════');
-    print('🤖 APPEL API CHATGPT - Génération de $count cadeaux personnalisés');
-    print('═══════════════════════════════════════════════════════════');
-    print('📋 TAGS DÉTECTÉS:');
-    print('   • Destinataire: ${userProfile['recipient'] ?? 'N/A'}');
-    print('   • Passions/Hobbies: ${(userProfile['recipientHobbies'] as List?)?.join(', ') ?? 'N/A'}');
-    print('   • Personnalité: ${(userProfile['recipientPersonality'] as List?)?.join(', ') ?? 'N/A'}');
-    print('   • Style: ${userProfile['recipientStyle'] ?? 'N/A'}');
-    print('   • Catégories préférées: ${(userProfile['preferredCategories'] as List?)?.join(', ') ?? 'N/A'}');
-    print('   • Âge: ${userProfile['recipientAge'] ?? 'N/A'}');
-    print('   • Budget: ${userProfile['budget'] ?? 'N/A'}€');
-    print('   • Seed de variation: ${userProfile['_refresh_seed'] ?? 0}');
-    print('═══════════════════════════════════════════════════════════');
+    AppLogger.info('═══════════════════════════════════════════════════════════', 'OpenAI');
+    AppLogger.api('🤖 APPEL API CHATGPT - Génération de $count cadeaux personnalisés');
+    AppLogger.info('═══════════════════════════════════════════════════════════', 'OpenAI');
+    AppLogger.info('📋 TAGS DÉTECTÉS:', 'OpenAI');
+    AppLogger.info('   • Destinataire: ${userProfile['recipient'] ?? 'N/A'}', 'OpenAI');
+    AppLogger.info('   • Passions/Hobbies: ${(userProfile['recipientHobbies'] as List?)?.join(', ') ?? 'N/A'}', 'OpenAI');
+    AppLogger.info('   • Personnalité: ${(userProfile['recipientPersonality'] as List?)?.join(', ') ?? 'N/A'}', 'OpenAI');
+    AppLogger.info('   • Style: ${userProfile['recipientStyle'] ?? 'N/A'}', 'OpenAI');
+    AppLogger.info('   • Catégories préférées: ${(userProfile['preferredCategories'] as List?)?.join(', ') ?? 'N/A'}', 'OpenAI');
+    AppLogger.info('   • Âge: ${userProfile['recipientAge'] ?? 'N/A'}', 'OpenAI');
+    AppLogger.info('   • Budget: ${userProfile['budget'] ?? 'N/A'}€', 'OpenAI');
+    AppLogger.info('   • Seed de variation: ${userProfile['_refresh_seed'] ?? 0}', 'OpenAI');
+    AppLogger.info('═══════════════════════════════════════════════════════════', 'OpenAI');
 
     try {
       final prompt = _buildOnboardingPrompt(userProfile, count);
 
-      print('📤 Envoi de la requête à l\'API OpenAI...');
-      print('🔑 Clé API: ${OpenAIService.apiKey.substring(0, 20)}...');
+      AppLogger.api('📤 Envoi de la requête à l\'API OpenAI...');
+      AppLogger.debug('🔑 Clé API: ${OpenAIService.apiKey.substring(0, 20)}...', 'OpenAI');
 
       final response = await http.post(
         Uri.parse('$_baseUrl/chat/completions'),
@@ -98,23 +97,22 @@ class OpenAIOnboardingService {
         }),
       );
 
-      print('📥 Réponse reçue - Status: ${response.statusCode}');
+      AppLogger.api('📥 Réponse reçue - Status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        print('✅ Succès ! Parsing des données...');
+        AppLogger.success('Succès ! Parsing des données...', 'OpenAI');
         final data = json.decode(response.body);
         final content = data['choices'][0]['message']['content'] as String;
 
-        print('📦 Contenu brut de ChatGPT:');
-        print(content.substring(0, content.length > 500 ? 500 : content.length));
+        AppLogger.debug('📦 Contenu brut de ChatGPT:', 'OpenAI');
+        AppLogger.debug(content.substring(0, content.length > 500 ? 500 : content.length), 'OpenAI');
 
         // Parser le JSON retourné par GPT
         final productsData = json.decode(content);
         final productsList = productsData['products'] as List;
 
-        print('🎁 ${productsList.length} cadeaux générés par ChatGPT !');
-        print('═══════════════════════════════════════════════════════════');
-        print('');
+        AppLogger.success('🎁 ${productsList.length} cadeaux générés par ChatGPT !', 'OpenAI');
+        AppLogger.info('═══════════════════════════════════════════════════════════', 'OpenAI');
 
         return productsList.map((product) {
           return {
@@ -133,18 +131,17 @@ class OpenAIOnboardingService {
           };
         }).toList();
       } else {
-        print('❌ ERREUR API - Status: ${response.statusCode}');
-        print('❌ Réponse complète: ${response.body}');
-        print('═══════════════════════════════════════════════════════════');
-        print('');
-        throw Exception('API OpenAI a retourné le status ${response.statusCode}: ${response.body}');
+        AppLogger.error('ERREUR API - Status: ${response.statusCode}', 'OpenAI');
+        AppLogger.error('Réponse complète: ${response.body}', 'OpenAI');
+        AppLogger.info('═══════════════════════════════════════════════════════════', 'OpenAI');
+        // Retourner une liste vide au lieu de crasher l'app
+        return [];
       }
     } catch (e) {
-      print('❌ EXCEPTION lors de l\'appel API ChatGPT');
-      print('❌ Erreur: $e');
-      print('═══════════════════════════════════════════════════════════');
-      print('');
-      rethrow; // Relancer l'erreur au lieu de retourner fallback
+      AppLogger.error('EXCEPTION lors de l\'appel API ChatGPT', 'OpenAI', e);
+      AppLogger.info('═══════════════════════════════════════════════════════════', 'OpenAI');
+      // Retourner une liste vide au lieu de crasher l'app
+      return [];
     }
   }
 
