@@ -11,3 +11,6 @@ ios/Runner/GoogleService-Info.plist
 android/app/google-services.json
 
 assets/environment_values/environment.json
+firebase-service-account.json
+node_modules/
+scripts/affiliate/__pycache__/

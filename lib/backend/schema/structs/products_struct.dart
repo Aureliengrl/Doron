@@ -18,7 +18,7 @@ class ProductsStruct extends FFFirebaseStruct {
     String? productStarRating,
     String? productPhoto,
     int? productNumRatings,
-    Platforms? platform,
+    String? platform,
     FirestoreUtilData firestoreUtilData = const FirestoreUtilData(),
   })  : _productTitle = productTitle,
         _productPrice = productPrice,
@@ -83,9 +83,9 @@ class ProductsStruct extends FFFirebaseStruct {
   bool hasProductNumRatings() => _productNumRatings != null;
 
   // "platform" field.
-  Platforms? _platform;
-  Platforms? get platform => _platform;
-  set platform(Platforms? val) => _platform = val;
+  String? _platform;
+  String get platform => _platform ?? '';
+  set platform(String? val) => _platform = val;
 
   bool hasPlatform() => _platform != null;
 
@@ -97,9 +97,7 @@ class ProductsStruct extends FFFirebaseStruct {
         productStarRating: data['product_star_rating'] as String?,
         productPhoto: data['product_photo'] as String?,
         productNumRatings: castToType<int>(data['product_num_ratings']),
-        platform: data['platform'] is Platforms
-            ? data['platform']
-            : deserializeEnum<Platforms>(data['platform']),
+        platform: data['platform'] as String?,
       );
 
   static ProductsStruct? maybeFromMap(dynamic data) =>
@@ -113,7 +111,7 @@ class ProductsStruct extends FFFirebaseStruct {
         'product_star_rating': _productStarRating,
         'product_photo': _productPhoto,
         'product_num_ratings': _productNumRatings,
-        'platform': _platform?.serialize(),
+        'platform': _platform,
       }.withoutNulls;
 
   @override
@@ -148,7 +146,7 @@ class ProductsStruct extends FFFirebaseStruct {
         ),
         'platform': serializeParam(
           _platform,
-          ParamType.Enum,
+          ParamType.String,
         ),
       }.withoutNulls;
 
@@ -189,9 +187,9 @@ class ProductsStruct extends FFFirebaseStruct {
           ParamType.int,
           false,
         ),
-        platform: deserializeParam<Platforms>(
+        platform: deserializeParam(
           data['platform'],
-          ParamType.Enum,
+          ParamType.String,
           false,
         ),
       );
@@ -233,7 +231,7 @@ ProductsStruct createProductsStruct({
   String? productStarRating,
   String? productPhoto,
   int? productNumRatings,
-  Platforms? platform,
+  String? platform,
   Map<String, dynamic> fieldValues = const {},
   bool clearUnsetFields = true,
   bool create = false,

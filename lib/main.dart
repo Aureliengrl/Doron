@@ -134,6 +134,7 @@ class _MyAppState extends State<MyApp> {
       supportedLocales: const [
         Locale('fr'),
         Locale('en'),
+        Locale('es'),
       ],
       theme: ThemeData(
         brightness: Brightness.light,
@@ -167,7 +168,7 @@ class NavBarPage extends StatefulWidget {
 
 /// This is the private State class that goes with NavBarPage.
 class _NavBarPageState extends State<NavBarPage> {
-  String _currentPageName = 'HomeAlgoace';
+  String _currentPageName = 'HomePinterest';
   late Widget? _currentPage;
 
   @override
@@ -180,9 +181,9 @@ class _NavBarPageState extends State<NavBarPage> {
   @override
   Widget build(BuildContext context) {
     final tabs = {
-      'HomeAlgoace': HomeAlgoaceWidget(),
-      'ChatHistory': ChatHistoryWidget(),
+      'HomePinterest': HomePinterestWidget(),
       'Favourites': FavouritesWidget(),
+      'SearchPage': SearchPageWidget(),
       'profile': ProfileWidget(),
     };
     final currentIndex = tabs.keys.toList().indexOf(_currentPageName);
@@ -196,20 +197,20 @@ class _NavBarPageState extends State<NavBarPage> {
           _currentPage = null;
           _currentPageName = tabs.keys.toList()[i];
         }),
-        backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
-        selectedItemColor: Color(0xFF0808A5),
-        unselectedItemColor: FlutterFlowTheme.of(context).secondary,
+        backgroundColor: Colors.white,
+        selectedItemColor: Color(0xFF8A2BE2),
+        unselectedItemColor: Color(0xFF9E9E9E),
         showSelectedLabels: false,
         showUnselectedLabels: false,
         type: BottomNavigationBarType.fixed,
         items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(
-              Icons.search,
+              Icons.home_outlined,
               size: 24.0,
             ),
             activeIcon: Icon(
-              Icons.search_sharp,
+              Icons.home,
               size: 24.0,
             ),
             label: FFLocalizations.of(context).getText(
@@ -219,29 +220,29 @@ class _NavBarPageState extends State<NavBarPage> {
           ),
           BottomNavigationBarItem(
             icon: Icon(
-              Icons.card_giftcard_outlined,
+              Icons.favorite_border,
               size: 24.0,
             ),
             activeIcon: Icon(
-              Icons.card_giftcard_outlined,
+              Icons.favorite,
               size: 24.0,
             ),
             label: FFLocalizations.of(context).getText(
-              'jfrmi7vm' /* Home */,
+              'jfrmi7vm' /* Favorites */,
             ),
             tooltip: '',
           ),
           BottomNavigationBarItem(
             icon: Icon(
-              Icons.favorite,
+              Icons.search,
               size: 24.0,
             ),
             activeIcon: Icon(
-              Icons.favorite,
+              Icons.search,
               size: 24.0,
             ),
             label: FFLocalizations.of(context).getText(
-              '8ty3kok9' /* Home */,
+              '8ty3kok9' /* Search */,
             ),
             tooltip: '',
           ),
@@ -251,11 +252,11 @@ class _NavBarPageState extends State<NavBarPage> {
               size: 24.0,
             ),
             activeIcon: Icon(
-              Icons.person_sharp,
+              Icons.person,
               size: 24.0,
             ),
             label: FFLocalizations.of(context).getText(
-              '5m4dt1tl' /* __ */,
+              '5m4dt1tl' /* Profile */,
             ),
             tooltip: '',
           )
