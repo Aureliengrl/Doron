@@ -278,8 +278,13 @@ class GiftResultsModel {
     } else {
       likedGifts.add(giftId);
       // Ajouter aux favoris Firebase
-      final gift = giftResults.firstWhere((g) => g['id'] == giftId);
-      await FirebaseDataService.addToFavorites(gift);
+      final gift = giftResults.firstWhere(
+        (g) => g['id'] == giftId,
+        orElse: () => {}, // Protection si gift non trouvé
+      );
+      if (gift.isNotEmpty) {
+        await FirebaseDataService.addToFavorites(gift);
+      }
     }
   }
 

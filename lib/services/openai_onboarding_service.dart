@@ -157,8 +157,9 @@ class OpenAIOnboardingService {
 
     // Pour chaque tag, ajouter les marques correspondantes
     for (final tag in allTags) {
-      if (BrandList.tagToBrands.containsKey(tag)) {
-        recommendedBrands.addAll(BrandList.tagToBrands[tag]!);
+      final brands = BrandList.tagToBrands[tag];
+      if (brands != null) {
+        recommendedBrands.addAll(brands);
       }
     }
 
@@ -733,8 +734,11 @@ puis explore la liste complète pour diversifier.
       'Galeries Lafayette': 'https://www.galerieslafayette.com',
     };
 
-    if (brand != null && brandMap.containsKey(brand)) {
-      return brandMap[brand]!;
+    if (brand != null) {
+      final url = brandMap[brand];
+      if (url != null) {
+        return url;
+      }
     }
 
     return 'https://www.google.com/search?q=${Uri.encodeComponent(productName ?? 'cadeau')}';

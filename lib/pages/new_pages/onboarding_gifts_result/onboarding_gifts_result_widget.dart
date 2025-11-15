@@ -82,13 +82,18 @@ class _OnboardingGiftsResultWidgetState
         if (person.isEmpty) {
           // Afficher erreur à l'utilisateur au lieu de crasher
           if (mounted) {
+            // IMPORTANT: Montrer SnackBar AVANT de pop pour éviter context invalide
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
+              const SnackBar(
                 content: Text('Personne non trouvée. Veuillez réessayer.'),
                 backgroundColor: Colors.red,
+                duration: Duration(seconds: 2),
               ),
             );
-            context.pop();
+            // Attendre un petit délai puis naviguer
+            Future.delayed(const Duration(milliseconds: 300), () {
+              if (mounted) context.pop();
+            });
           }
           return;
         }
@@ -98,12 +103,16 @@ class _OnboardingGiftsResultWidgetState
           // Afficher erreur à l'utilisateur au lieu de crasher
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
+              const SnackBar(
                 content: Text('Profil incomplet. Veuillez compléter l\'onboarding.'),
                 backgroundColor: Colors.red,
+                duration: Duration(seconds: 2),
               ),
             );
-            context.pop();
+            // Attendre puis naviguer
+            Future.delayed(const Duration(milliseconds: 300), () {
+              if (mounted) context.pop();
+            });
           }
           return;
         }

@@ -745,13 +745,11 @@ class FirebaseDataService {
   /// Charge la première personne avec isPendingFirstGen=true
   static Future<Map<String, dynamic>?> getFirstPendingPerson() async {
     final people = await loadPeople();
-    try {
-      return people.firstWhere(
-        (p) => p['meta']?['isPendingFirstGen'] == true,
-      );
-    } catch (e) {
-      return null; // Aucune personne en attente
-    }
+    final person = people.firstWhere(
+      (p) => p['meta']?['isPendingFirstGen'] == true,
+      orElse: () => {}, // Retourne map vide si non trouvé
+    );
+    return person.isEmpty ? null : person;
   }
 
   /// Met à jour le flag isPendingFirstGen d'une personne

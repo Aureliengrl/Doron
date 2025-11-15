@@ -428,15 +428,17 @@ class ProductMatchingService {
 
   /// Charge les produits depuis le fichier JSON des assets
   static Future<List<Map<String, dynamic>>> _loadFallbackProducts() async {
-    if (_cachedFallbackProducts != null) {
-      return _cachedFallbackProducts!;
+    // Retourner cache si disponible
+    final cached = _cachedFallbackProducts;
+    if (cached != null) {
+      return cached;
     }
 
     try {
       final jsonString = await rootBundle.loadString('assets/jsons/fallback_products.json');
       final List<dynamic> jsonList = json.decode(jsonString);
       _cachedFallbackProducts = jsonList.cast<Map<String, dynamic>>();
-      return _cachedFallbackProducts!;
+      return _cachedFallbackProducts ?? []; // Protection supplémentaire
     } catch (e) {
       AppLogger.error('Erreur chargement assets', 'Matching', e);
       return [];
