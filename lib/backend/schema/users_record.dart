@@ -47,6 +47,41 @@ class UsersRecord extends FirestoreRecord {
   String get phoneNumber => _phoneNumber ?? '';
   bool hasPhoneNumber() => _phoneNumber != null;
 
+  // "onboarding_completed" field.
+  bool? _onboardingCompleted;
+  bool get onboardingCompleted => _onboardingCompleted ?? false;
+  bool hasOnboardingCompleted() => _onboardingCompleted != null;
+
+  // "user_tags" field - tags from onboarding for personalization.
+  List<String>? _userTags;
+  List<String> get userTags => _userTags ?? const [];
+  bool hasUserTags() => _userTags != null;
+
+  // "user_gender" field.
+  String? _userGender;
+  String get userGender => _userGender ?? '';
+  bool hasUserGender() => _userGender != null;
+
+  // "user_age_range" field.
+  String? _userAgeRange;
+  String get userAgeRange => _userAgeRange ?? '';
+  bool hasUserAgeRange() => _userAgeRange != null;
+
+  // "user_interests" field.
+  List<String>? _userInterests;
+  List<String> get userInterests => _userInterests ?? const [];
+  bool hasUserInterests() => _userInterests != null;
+
+  // "user_style" field.
+  String? _userStyle;
+  String get userStyle => _userStyle ?? '';
+  bool hasUserStyle() => _userStyle != null;
+
+  // "user_budget_range" field.
+  String? _userBudgetRange;
+  String get userBudgetRange => _userBudgetRange ?? '';
+  bool hasUserBudgetRange() => _userBudgetRange != null;
+
   void _initializeFields() {
     _email = snapshotData['email'] as String?;
     _displayName = snapshotData['display_name'] as String?;
@@ -54,6 +89,13 @@ class UsersRecord extends FirestoreRecord {
     _uid = snapshotData['uid'] as String?;
     _createdTime = snapshotData['created_time'] as DateTime?;
     _phoneNumber = snapshotData['phone_number'] as String?;
+    _onboardingCompleted = snapshotData['onboarding_completed'] as bool?;
+    _userTags = getDataList(snapshotData['user_tags']);
+    _userGender = snapshotData['user_gender'] as String?;
+    _userAgeRange = snapshotData['user_age_range'] as String?;
+    _userInterests = getDataList(snapshotData['user_interests']);
+    _userStyle = snapshotData['user_style'] as String?;
+    _userBudgetRange = snapshotData['user_budget_range'] as String?;
   }
 
   static CollectionReference get collection =>
@@ -96,6 +138,11 @@ Map<String, dynamic> createUsersRecordData({
   String? uid,
   DateTime? createdTime,
   String? phoneNumber,
+  bool? onboardingCompleted,
+  String? userGender,
+  String? userAgeRange,
+  String? userStyle,
+  String? userBudgetRange,
 }) {
   final firestoreData = mapToFirestore(
     <String, dynamic>{
@@ -105,6 +152,11 @@ Map<String, dynamic> createUsersRecordData({
       'uid': uid,
       'created_time': createdTime,
       'phone_number': phoneNumber,
+      'onboarding_completed': onboardingCompleted,
+      'user_gender': userGender,
+      'user_age_range': userAgeRange,
+      'user_style': userStyle,
+      'user_budget_range': userBudgetRange,
     }.withoutNulls,
   );
 
