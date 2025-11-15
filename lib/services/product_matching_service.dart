@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
+import '/utils/app_logger.dart';
 
 /// Service de matching de produits basé sur les tags
 /// Remplace les appels OpenAI pour des résultats instantanés
@@ -17,18 +18,18 @@ class ProductMatchingService {
     List<dynamic>? excludeProductIds, // Pour refresh intelligent
   }) async {
     try {
-      print('🎯 Matching produits pour tags: ${userTags.keys.join(", ")}');
-      print('📋 User tags complets: $userTags');
-      print('🚫 Exclusion de ${excludeProductIds?.length ?? 0} produits');
+      AppLogger.info('🎯 Matching produits pour tags: ${userTags.keys.join(", ")}', 'Matching');
+      AppLogger.debug('📋 User tags complets: $userTags', 'Matching');
+      AppLogger.info('🚫 Exclusion de ${excludeProductIds?.length ?? 0} produits', 'Matching');
 
       // Convertir les réponses utilisateur en tags de recherche
       final searchTags = _convertUserTagsToSearchTags(userTags);
-      print('🏷️ Tags de recherche: $searchTags');
+      AppLogger.debug('🏷️ Tags de recherche: $searchTags', 'Matching');
 
       // 🎯 FILTRAGE FIREBASE PAR SEXE (critère le plus discriminant)
       // Utiliser la collection 'gifts' (nouvelle) avec fallback vers 'products' (ancienne)
       Query<Map<String, dynamic>> query = _firestore.collection('gifts');
-      print('🎁 Chargement depuis collection Firebase: gifts');
+      AppLogger.firebase('🎁 Chargement depuis collection Firebase: gifts');
 
       final gender = userTags['gender'] ?? userTags['recipientGender'];
       String? genderFilter;
@@ -44,7 +45,7 @@ class ProductMatchingService {
       // Filtrer par sexe SI disponible (réduit drastiquement le bruit)
       if (genderFilter != null) {
         query = query.where('tags', arrayContains: genderFilter);
-        print('🎯 Filtrage Firebase par sexe: $genderFilter');
+        AppLogger.firebase('🎯 Filtrage Firebase par sexe: $genderFilter');
       }
 
       // Si une catégorie est spécifiée, filtrer aussi
@@ -53,7 +54,7 @@ class ProductMatchingService {
         // On va donc charger plus et filtrer côté client
         if (genderFilter == null) {
           query = query.where('categories', arrayContains: category.toLowerCase());
-          print('🎯 Filtrage Firebase par catégorie: $category');
+          AppLogger.firebase('🎯 Filtrage Firebase par catégorie: $category');
         }
       }
 
@@ -65,11 +66,11 @@ class ProductMatchingService {
         return data;
       }).toList();
 
-      print('📦 ${allProducts.length} produits chargés depuis Firebase');
+      AppLogger.firebase('📦 ${allProducts.length} produits chargés depuis Firebase');
 
       // 🔥 RETRY SANS FILTRE si Firebase retourne 0 (le filtre sexe peut être trop restrictif)
       if (allProducts.isEmpty && genderFilter != null) {
-        print('⚠️ Aucun produit avec filtre sexe, retry SANS filtre...');
+        AppLogger.warning('Aucun produit avec filtre sexe, retry SANS filtre...', 'Matching');
         query = _firestore.collection('gifts');
         snapshot = await query.limit(2000).get();
         allProducts = snapshot.docs.map((doc) {
@@ -77,12 +78,12 @@ class ProductMatchingService {
           data['id'] = doc.id;
           return data;
         }).toList();
-        print('📦 ${allProducts.length} produits chargés depuis Firebase gifts SANS filtre');
+        AppLogger.firebase('📦 ${allProducts.length} produits chargés depuis Firebase gifts SANS filtre');
       }
 
       // 🔄 FALLBACK vers collection 'products' si 'gifts' est vide
       if (allProducts.isEmpty) {
-        print('⚠️ Collection gifts vide, fallback vers products...');
+        AppLogger.warning('Collection gifts vide, fallback vers products...', 'Matching');
         query = _firestore.collection('products');
         snapshot = await query.limit(2000).get();
         allProducts = snapshot.docs.map((doc) {
@@ -90,7 +91,7 @@ class ProductMatchingService {
           data['id'] = doc.id;
           return data;
         }).toList();
-        print('📦 ${allProducts.length} produits chargés depuis Firebase products (fallback)');
+        AppLogger.firebase('📦 ${allProducts.length} produits chargés depuis Firebase products (fallback)');
       }
 
       // Filtrer par catégorie côté client si nécessaire
@@ -100,21 +101,21 @@ class ProductMatchingService {
           final categories = (product['categories'] as List?)?.cast<String>() ?? [];
           return categories.any((cat) => cat.toLowerCase() == categoryLower);
         }).toList();
-        print('📦 ${allProducts.length} produits après filtre catégorie côté client');
+        AppLogger.info('📦 ${allProducts.length} produits après filtre catégorie côté client', 'Matching');
       }
 
       if (allProducts.isEmpty) {
-        print('⚠️ Firebase vide, chargement depuis assets (fallback_products.json)...');
+        AppLogger.warning('Firebase vide, chargement depuis assets (fallback_products.json)...', 'Matching');
         allProducts.addAll(await _loadFallbackProducts());
-        print('📦 ${allProducts.length} produits chargés depuis assets/jsons/fallback_products.json');
+        AppLogger.info('📦 ${allProducts.length} produits chargés depuis assets/jsons/fallback_products.json', 'Matching');
       }
 
       if (allProducts.isEmpty) {
-        print('⚠️ Assets vides aussi, utiliser des produits hardcodés (3 produits répétés)');
+        AppLogger.warning('Assets vides aussi, utiliser des produits hardcodés (3 produits répétés)', 'Matching');
         return _getFallbackProducts(count);
       }
 
-      print('✨ SOURCE DES PRODUITS: ${allProducts.length} produits disponibles pour le scoring');
+      AppLogger.info('✨ SOURCE DES PRODUITS: ${allProducts.length} produits disponibles pour le scoring', 'Matching');
 
       // Scorer et trier les produits par pertinence
       final scoredProducts = allProducts.map((product) {
@@ -127,7 +128,7 @@ class ProductMatchingService {
 
       // 🎯 PAS DE SEUIL MINIMUM - On prend les meilleurs produits peu importe leur score
       // Cela garantit qu'on a toujours des produits variés même si le matching n'est pas parfait
-      print('📊 ${scoredProducts.length} produits disponibles pour sélection');
+      AppLogger.info('📊 ${scoredProducts.length} produits disponibles pour sélection', 'Matching');
 
       // Trier par score décroissant pour avoir les meilleurs en premier
       scoredProducts.sort((a, b) => (b['_matchScore'] as double).compareTo(a['_matchScore'] as double));
@@ -149,7 +150,7 @@ class ProductMatchingService {
       final shuffledProducts = [...topProducts, ...middleProducts];
       shuffledProducts.shuffle(random);
 
-      print('🎲 Shuffle effectué: top ${topCount} produits + ${middleProducts.length} produits mélangés');
+      AppLogger.debug('🎲 Shuffle effectué: top ${topCount} produits + ${middleProducts.length} produits mélangés', 'Matching');
 
       // 🎯 DÉDUPLICATION ET DIVERSITÉ DES MARQUES (max 20% d'une même marque)
       final selectedProducts = <Map<String, dynamic>>[];
@@ -163,9 +164,9 @@ class ProductMatchingService {
 
       // ⚠️ DÉSACTIVER TEMPORAIREMENT LE CACHE pour garantir de la variété
       // Le cache peut exclure TOUS les produits disponibles
-      print('🔄 Exclusion désactivée pour garantir variété (${excludedIds.length} produits ignorés)');
-      print('🎯 Max par marque: $maxPerBrand produits (20%)');
-      print('🎯 Max par catégorie: $maxPerCategory produits (30%)');
+      AppLogger.info('🔄 Exclusion désactivée pour garantir variété (${excludedIds.length} produits ignorés)', 'Matching');
+      AppLogger.debug('🎯 Max par marque: $maxPerBrand produits (20%)', 'Matching');
+      AppLogger.debug('🎯 Max par catégorie: $maxPerCategory produits (30%)', 'Matching');
 
       for (var product in shuffledProducts) {
         if (selectedProducts.length >= count) break;
@@ -219,13 +220,13 @@ class ProductMatchingService {
         product.remove('_matchScore');
       }
 
-      print('✅ ${selectedProducts.length} produits matchés et retournés');
-      print('📊 Diversité des marques: ${brandCounts.length} marques différentes');
-      print('📊 Répartition marques: ${brandCounts.entries.map((e) => '${e.key}: ${e.value}').take(10).join(", ")}');
-      print('📊 Répartition catégories: ${categoryCounts.entries.map((e) => '${e.key}: ${e.value}').join(", ")}');
+      AppLogger.success('${selectedProducts.length} produits matchés et retournés', 'Matching');
+      AppLogger.info('📊 Diversité des marques: ${brandCounts.length} marques différentes', 'Matching');
+      AppLogger.debug('📊 Répartition marques: ${brandCounts.entries.map((e) => '${e.key}: ${e.value}').take(10).join(", ")}', 'Matching');
+      AppLogger.debug('📊 Répartition catégories: ${categoryCounts.entries.map((e) => '${e.key}: ${e.value}').join(", ")}', 'Matching');
       return selectedProducts;
     } catch (e) {
-      print('❌ Erreur matching produits: $e');
+      AppLogger.error('Erreur matching produits', 'Matching', e);
       // En cas d'erreur, retourner des produits par défaut
       return _getFallbackProducts(count);
     }
@@ -437,7 +438,7 @@ class ProductMatchingService {
       _cachedFallbackProducts = jsonList.cast<Map<String, dynamic>>();
       return _cachedFallbackProducts!;
     } catch (e) {
-      print('❌ Erreur chargement assets: $e');
+      AppLogger.error('Erreur chargement assets', 'Matching', e);
       return [];
     }
   }
@@ -571,7 +572,7 @@ class ProductMatchingService {
       'filter': {'maxPrice': 50},
     });
 
-    print('✅ ${sections.length} sections générées pour l\'accueil');
+    AppLogger.success('${sections.length} sections générées pour l\'accueil', 'Matching');
     return sections;
   }
 
