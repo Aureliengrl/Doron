@@ -148,11 +148,10 @@ class _OnboardingGiftsResultWidgetState
         return {
           'id': product['id'],
           'name': product['name'] ?? 'Produit',
-          'brand': product['brand'] ?? '',
+          'brand': product['brand'] ?? 'Amazon',
           'price': product['price'] ?? 0,
           'image': product['image'] ?? product['imageUrl'] ?? '',
           'url': ProductUrlService.generateProductUrl(product),
-          'source': product['source'] ?? 'Amazon',
           'categories': product['categories'] ?? [],
           'match': ((product['_matchScore'] ?? 0.0) as double).toInt().clamp(0, 100),
         };
@@ -189,7 +188,7 @@ class _OnboardingGiftsResultWidgetState
 
       // 🎯 AUTO-SAUVEGARDE: Si c'est la première génération après onboarding (isPendingFirstGen=true),
       // sauvegarder automatiquement la liste SANS attendre que l'utilisateur clique "Enregistrer"
-      if (_model.personId != null && gifts.isNotEmpty && !forceRefresh) {
+      if (_model.personId != null && gifts.isNotEmpty) {
         try {
           // Vérifier si la personne a le flag isPendingFirstGen
           final people = await FirebaseDataService.loadPeople();
@@ -200,7 +199,7 @@ class _OnboardingGiftsResultWidgetState
 
           final isPendingFirstGen = person['meta']?['isPendingFirstGen'] == true;
 
-          if (isPendingFirstGen) {
+          if (isPendingFirstGen && !forceRefresh) {
             print('💾 Auto-sauvegarde: première génération détectée (isPendingFirstGen=true)');
 
             // Sauvegarder la liste automatiquement
@@ -219,11 +218,19 @@ class _OnboardingGiftsResultWidgetState
             // Définir le contexte pour que les futurs favoris soient liés à cette personne
             await FirebaseDataService.setCurrentPersonContext(_model.personId!);
             print('✅ Contexte de personne défini: ${_model.personId} (auto-save)');
+          } else if (!isPendingFirstGen) {
+            print('ℹ️ isPendingFirstGen=false, pas d\'auto-sauvegarde');
+          } else if (forceRefresh) {
+            print('ℹ️ forceRefresh=true, pas d\'auto-sauvegarde');
           }
         } catch (e) {
           print('⚠️ Erreur lors de l\'auto-sauvegarde (non-bloquant): $e');
+          print('Stack trace: ${StackTrace.current}');
           // Ne pas bloquer l'affichage si l'auto-save échoue
         }
+      } else {
+        if (_model.personId == null) print('⚠️ personId null, pas d\'auto-sauvegarde');
+        if (gifts.isEmpty) print('⚠️ gifts vide, pas d\'auto-sauvegarde');
       }
     } catch (e) {
       print('❌ Erreur chargement cadeaux: $e');
@@ -661,7 +668,7 @@ class _OnboardingGiftsResultWidgetState
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
-                          gift['source'] ?? 'En ligne',
+                          gift['brand'] ?? 'En ligne',
                           style: GoogleFonts.poppins(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,

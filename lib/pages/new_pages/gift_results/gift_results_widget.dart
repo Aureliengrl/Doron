@@ -429,7 +429,7 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          // Badge source
+                          // Badge marque
                           Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
@@ -440,7 +440,7 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
-                            gift['source'] as String,
+                            gift['brand'] as String,
                             style: GoogleFonts.poppins(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
@@ -668,7 +668,7 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        gift['source'] as String,
+                        gift['brand'] as String,
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -789,7 +789,7 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  'Voir sur ${gift['source']}',
+                                  'Voir sur ${gift['brand']}',
                                   style: GoogleFonts.poppins(
                                     fontSize: 15,
                                     fontWeight: FontWeight.bold,

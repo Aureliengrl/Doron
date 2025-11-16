@@ -137,7 +137,7 @@ class _ProductWidgetState extends State<ProductWidget>
                                   ),
                                   width: 120.0,
                                   height: 120.0,
-                                  fit: BoxFit.fitHeight,
+                                  fit: BoxFit.cover,
                                   cacheWidth: 120,
                                   cacheHeight: 120,
                                 ),
