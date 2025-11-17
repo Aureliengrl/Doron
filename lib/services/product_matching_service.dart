@@ -41,22 +41,34 @@ class ProductMatchingService {
         }
       }
 
-      // 🔥 DÉSACTIVER TEMPORAIREMENT LE FILTRE SEXE POUR DEBUG
-      // Le filtre peut être trop restrictif si les tags ne sont pas bons
-      // if (genderFilter != null) {
-      //   query = query.where('tags', arrayContains: genderFilter);
-      //   AppLogger.firebase('🎯 Filtrage Firebase par sexe: $genderFilter');
-      // }
-      AppLogger.warning('⚠️ FILTRE SEXE DÉSACTIVÉ POUR DEBUG - Chargement de TOUS les produits Firebase', 'Matching');
+      // 🎯 FILTRE PAR SEXE (réactivé)
+      if (genderFilter != null) {
+        query = query.where('tags', arrayContains: genderFilter);
+        AppLogger.firebase('🎯 Filtrage Firebase par sexe: $genderFilter');
+      }
 
-      // 🔥 DÉSACTIVER AUSSI LE FILTRE CATÉGORIE POUR DEBUG
-      // if (category != null && category != 'Pour toi' && category != 'all') {
-      //   if (genderFilter == null) {
-      //     query = query.where('categories', arrayContains: category.toLowerCase());
-      //     AppLogger.firebase('🎯 Filtrage Firebase par catégorie: $category');
-      //   }
-      // }
-      AppLogger.warning('⚠️ FILTRE CATÉGORIE AUSSI DÉSACTIVÉ - Chargement brut complet', 'Matching');
+      // 🎯 FILTRE PAR CATÉGORIE (réactivé avec mapping)
+      if (category != null && category != 'Pour toi' && category != 'all') {
+        // Mapping des catégories UI vers catégories Firebase
+        final categoryMapping = {
+          'mode': ['mode', 'vetements'],
+          'beaute': ['beaute', 'maquillage', 'parfums'],
+          'chaussures': ['chaussures'],
+          'accessoires': ['accessoires'],
+          'sport': ['sport'],
+          'maison': ['maison'],
+        };
+
+        // Si pas de filtre sexe, on peut filtrer par catégorie directement dans Firebase
+        if (genderFilter == null && categoryMapping.containsKey(category.toLowerCase())) {
+          // Prendre la première catégorie du mapping
+          final fbCategory = categoryMapping[category.toLowerCase()]!.first;
+          query = query.where('categories', arrayContains: fbCategory);
+          AppLogger.firebase('🎯 Filtrage Firebase par catégorie: $category -> $fbCategory');
+        } else {
+          AppLogger.info('🎯 Filtrage catégorie $category sera fait en post-traitement (filtre sexe actif)', 'Matching');
+        }
+      }
 
       // Charger 2000 produits (augmenté pour plus de variété)
       AppLogger.info('🔄 Exécution requête Firebase gifts.limit(2000)...', 'Matching');
@@ -124,6 +136,27 @@ class ProductMatchingService {
       }
 
       AppLogger.success('✅ ${allProducts.length} produits chargés depuis Firebase - AUCUN FALLBACK', 'Matching');
+
+      // 🎯 POST-FILTRAGE PAR CATÉGORIE si nécessaire
+      if (category != null && category != 'Pour toi' && category != 'all' && genderFilter != null) {
+        final categoryMapping = {
+          'mode': ['mode', 'vetements'],
+          'beaute': ['beaute', 'maquillage', 'parfums'],
+          'chaussures': ['chaussures'],
+          'accessoires': ['accessoires'],
+          'sport': ['sport'],
+          'maison': ['maison'],
+        };
+
+        if (categoryMapping.containsKey(category.toLowerCase())) {
+          final fbCategories = categoryMapping[category.toLowerCase()]!;
+          allProducts = allProducts.where((product) {
+            final categories = (product['categories'] as List?)?.cast<String>() ?? [];
+            return categories.any((cat) => fbCategories.contains(cat.toLowerCase()));
+          }).toList();
+          AppLogger.info('🎯 Post-filtrage catégorie: ${allProducts.length} produits restants pour $category', 'Matching');
+        }
+      }
 
       // Scorer et trier les produits par pertinence
       AppLogger.info('🎯 Début du scoring de ${allProducts.length} produits...', 'Matching');
@@ -247,11 +280,14 @@ class ProductMatchingService {
         product.remove('_matchScore');
       }
 
-      AppLogger.success('${selectedProducts.length} produits matchés et retournés', 'Matching');
+      // 🎨 RÉORGANISER pour éviter les produits similaires côte à côte
+      final reorderedProducts = _reorderForVisualDiversity(selectedProducts);
+
+      AppLogger.success('${reorderedProducts.length} produits matchés et retournés (avec réorganisation)', 'Matching');
       AppLogger.info('📊 Diversité des marques: ${brandCounts.length} marques différentes', 'Matching');
       AppLogger.debug('📊 Répartition marques: ${brandCounts.entries.map((e) => '${e.key}: ${e.value}').take(10).join(", ")}', 'Matching');
       AppLogger.debug('📊 Répartition catégories: ${categoryCounts.entries.map((e) => '${e.key}: ${e.value}').join(", ")}', 'Matching');
-      return selectedProducts;
+      return reorderedProducts;
     } catch (e, stackTrace) {
       // ⚠️ ERREUR LORS DU CHARGEMENT - Logger détails complets
       AppLogger.error('❌ ERREUR lors du matching produits', 'Matching', e);
@@ -272,6 +308,103 @@ class ProductMatchingService {
       AppLogger.warning('Retour liste vide pour éviter crash app', 'Matching');
       return [];
     }
+  }
+
+  /// Réorganise les produits pour maximiser la diversité visuelle
+  /// Évite d'avoir plusieurs produits de la même catégorie côte à côte
+  static List<Map<String, dynamic>> _reorderForVisualDiversity(List<Map<String, dynamic>> products) {
+    if (products.length <= 2) return products; // Pas besoin de réorganiser si peu de produits
+
+    AppLogger.info('🎨 Réorganisation de ${products.length} produits pour diversité visuelle', 'Matching');
+
+    // Grouper les produits par catégorie principale
+    final Map<String, List<Map<String, dynamic>>> categoryGroups = {};
+
+    for (var product in products) {
+      final categories = (product['categories'] as List?)?.cast<String>() ?? [];
+      final mainCategory = categories.isNotEmpty ? categories.first : 'Autre';
+
+      if (!categoryGroups.containsKey(mainCategory)) {
+        categoryGroups[mainCategory] = [];
+      }
+      categoryGroups[mainCategory]!.add(product);
+    }
+
+    AppLogger.debug('📂 ${categoryGroups.length} catégories différentes: ${categoryGroups.keys.join(", ")}', 'Matching');
+
+    // Si une seule catégorie, pas besoin de réorganiser
+    if (categoryGroups.length == 1) {
+      AppLogger.debug('Une seule catégorie, pas de réorganisation nécessaire', 'Matching');
+      return products;
+    }
+
+    // Créer une liste réorganisée en alternant les catégories
+    final List<Map<String, dynamic>> reordered = [];
+    final List<String> categoryKeys = categoryGroups.keys.toList();
+    int categoryIndex = 0;
+
+    // Continuer tant qu'il reste des produits
+    while (reordered.length < products.length) {
+      bool addedProduct = false;
+
+      // Essayer d'ajouter un produit de la catégorie courante
+      for (int i = 0; i < categoryKeys.length; i++) {
+        final categoryKey = categoryKeys[categoryIndex % categoryKeys.length];
+        final categoryProducts = categoryGroups[categoryKey]!;
+
+        if (categoryProducts.isNotEmpty) {
+          // Vérifier si le dernier produit ajouté est de la même catégorie
+          if (reordered.isNotEmpty) {
+            final lastProduct = reordered.last;
+            final lastCategories = (lastProduct['categories'] as List?)?.cast<String>() ?? [];
+            final lastCategory = lastCategories.isNotEmpty ? lastCategories.first : 'Autre';
+
+            // Si la catégorie est la même, essayer la suivante
+            if (lastCategory == categoryKey && categoryGroups.length > 1) {
+              categoryIndex++;
+              continue;
+            }
+          }
+
+          // Ajouter le produit
+          reordered.add(categoryProducts.removeAt(0));
+          addedProduct = true;
+          categoryIndex++;
+          break;
+        }
+
+        categoryIndex++;
+      }
+
+      // Si aucun produit n'a été ajouté dans cette itération, forcer l'ajout
+      if (!addedProduct) {
+        for (var categoryProducts in categoryGroups.values) {
+          if (categoryProducts.isNotEmpty) {
+            reordered.add(categoryProducts.removeAt(0));
+            break;
+          }
+        }
+      }
+    }
+
+    AppLogger.success('✅ ${reordered.length} produits réorganisés avec diversité maximale', 'Matching');
+
+    // Vérifier la diversité (compter les produits consécutifs de même catégorie)
+    int consecutiveSameCategory = 0;
+    for (int i = 1; i < reordered.length; i++) {
+      final prevCategories = (reordered[i-1]['categories'] as List?)?.cast<String>() ?? [];
+      final currCategories = (reordered[i]['categories'] as List?)?.cast<String>() ?? [];
+      final prevCategory = prevCategories.isNotEmpty ? prevCategories.first : 'Autre';
+      final currCategory = currCategories.isNotEmpty ? currCategories.first : 'Autre';
+
+      if (prevCategory == currCategory) {
+        consecutiveSameCategory++;
+      }
+    }
+
+    AppLogger.debug('📊 Produits consécutifs de même catégorie: $consecutiveSameCategory/${reordered.length - 1}', 'Matching');
+
+    return reordered;
   }
 
   /// Convertit les tags utilisateur en tags de recherche

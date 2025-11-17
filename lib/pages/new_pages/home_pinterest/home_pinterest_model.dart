@@ -25,12 +25,12 @@ class HomePinterestModel {
 
   final List<Map<String, String>> categories = [
     {'id': 'all', 'name': 'Pour toi', 'emoji': '✨'},
-    {'id': 'trending', 'name': 'Tendances', 'emoji': '🔥'},
-    {'id': 'tech', 'name': 'Tech', 'emoji': '📱'},
-    {'id': 'fashion', 'name': 'Mode', 'emoji': '👗'},
-    {'id': 'home', 'name': 'Maison', 'emoji': '🏠'},
-    {'id': 'beauty', 'name': 'Beauté', 'emoji': '💄'},
-    {'id': 'food', 'name': 'Food', 'emoji': '🍷'},
+    {'id': 'mode', 'name': 'Mode', 'emoji': '👗'},
+    {'id': 'beaute', 'name': 'Beauté', 'emoji': '💄'},
+    {'id': 'chaussures', 'name': 'Chaussures', 'emoji': '👟'},
+    {'id': 'accessoires', 'name': 'Accessoires', 'emoji': '👜'},
+    {'id': 'sport', 'name': 'Sport', 'emoji': '⚽'},
+    {'id': 'maison', 'name': 'Maison', 'emoji': '🏠'},
   ];
 
   final List<Map<String, dynamic>> priceFilters = [
