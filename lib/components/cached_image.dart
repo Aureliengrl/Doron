@@ -80,12 +80,39 @@ class CachedImage extends StatelessWidget {
     return Container(
       width: width,
       height: height,
-      color: Colors.grey[200],
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Colors.grey[100]!,
+            Colors.grey[200]!,
+          ],
+        ),
+        borderRadius: borderRadius ?? BorderRadius.zero,
+      ),
       child: Center(
-        child: Icon(
-          Icons.card_giftcard,
-          size: width != null && width! < 100 ? 30 : 50,
-          color: Colors.grey[400],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.image_not_supported_outlined,
+              size: width != null && width! < 100 ? 40 : 60,
+              color: Colors.grey[400],
+            ),
+            if (width == null || width! >= 100) ...[
+              const SizedBox(height: 8),
+              Text(
+                'Image non disponible',
+                style: TextStyle(
+                  color: Colors.grey[500],
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ],
         ),
       ),
     );
