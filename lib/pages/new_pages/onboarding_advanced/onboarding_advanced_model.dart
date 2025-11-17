@@ -490,7 +490,7 @@ class OnboardingAdvancedModel {
         (fieldValue is! double || fieldValue > 0);
   }
 
-  void handleNext(List<Map<String, dynamic>> steps, BuildContext context, {bool skipUserQuestions = false, String? returnTo}) async {
+  void handleNext(List<Map<String, dynamic>> steps, BuildContext context, {bool skipUserQuestions = false, String? returnTo, bool onlyUserQuestions = false}) async {
     final currentStepData = steps[currentStep];
 
     // ==================== NOUVELLE ARCHITECTURE ====================
@@ -511,6 +511,33 @@ class OnboardingAdvancedModel {
         print('✅ Étape A terminée: Tags utilisateur sauvegardés');
       } catch (e) {
         print('❌ Erreur sauvegarde tags utilisateur: $e');
+      }
+
+      // 🎯 CAS SPÉCIAL: Si onlyUserQuestions=true, on s'arrête ici
+      // L'utilisateur modifie juste son profil depuis les paramètres
+      if (onlyUserQuestions) {
+        print('✅ Modification profil utilisateur terminée (onlyUserQuestions=true)');
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Profil mis à jour avec succès !'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+
+        // Retourner à la page d'origine
+        await Future.delayed(const Duration(milliseconds: 500));
+        if (context.mounted) {
+          if (returnTo != null && returnTo.isNotEmpty) {
+            context.go(returnTo);
+          } else {
+            context.go('/home-pinterest');
+          }
+        }
+        return; // Arrêter ici, ne pas créer de personne
       }
     }
     // =================================================================

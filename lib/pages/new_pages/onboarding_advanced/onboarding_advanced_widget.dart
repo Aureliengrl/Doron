@@ -745,7 +745,7 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
           onPressed: canProceed
               ? () {
                   setState(() {
-                    _model.handleNext(steps, context, skipUserQuestions: skipUserQuestions, returnTo: returnTo);
+                    _model.handleNext(steps, context, skipUserQuestions: skipUserQuestions, returnTo: returnTo, onlyUserQuestions: onlyUserQuestions);
                   });
                 }
               : null,
