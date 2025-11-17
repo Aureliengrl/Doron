@@ -41,22 +41,19 @@ class ProductMatchingService {
         }
       }
 
-      // 🔥 DÉSACTIVER TEMPORAIREMENT LE FILTRE SEXE POUR DEBUG
-      // Le filtre peut être trop restrictif si les tags ne sont pas bons
-      // if (genderFilter != null) {
-      //   query = query.where('tags', arrayContains: genderFilter);
-      //   AppLogger.firebase('🎯 Filtrage Firebase par sexe: $genderFilter');
-      // }
-      AppLogger.warning('⚠️ FILTRE SEXE DÉSACTIVÉ POUR DEBUG - Chargement de TOUS les produits Firebase', 'Matching');
+      // ✅ FILTRE SEXE RÉACTIVÉ pour éviter produits beauté fille pour père
+      if (genderFilter != null) {
+        query = query.where('tags', arrayContains: genderFilter);
+        AppLogger.firebase('🎯 Filtrage Firebase par sexe: $genderFilter');
+      }
 
-      // 🔥 DÉSACTIVER AUSSI LE FILTRE CATÉGORIE POUR DEBUG
-      // if (category != null && category != 'Pour toi' && category != 'all') {
-      //   if (genderFilter == null) {
-      //     query = query.where('categories', arrayContains: category.toLowerCase());
-      //     AppLogger.firebase('🎯 Filtrage Firebase par catégorie: $category');
-      //   }
-      // }
-      AppLogger.warning('⚠️ FILTRE CATÉGORIE AUSSI DÉSACTIVÉ - Chargement brut complet', 'Matching');
+      // ✅ FILTRE CATÉGORIE RÉACTIVÉ pour meilleure pertinence
+      if (category != null && category != 'Pour toi' && category != 'all') {
+        if (genderFilter == null) {
+          query = query.where('categories', arrayContains: category.toLowerCase());
+          AppLogger.firebase('🎯 Filtrage Firebase par catégorie: $category');
+        }
+      }
 
       // Charger 2000 produits (augmenté pour plus de variété)
       AppLogger.info('🔄 Exécution requête Firebase gifts.limit(2000)...', 'Matching');
@@ -189,9 +186,8 @@ class ProductMatchingService {
       final seenProductNames = <String>{}; // Déduplication par nom normalisé
       final excludedIds = excludeProductIds?.toSet() ?? {};
 
-      // ⚠️ DÉSACTIVER TEMPORAIREMENT LE CACHE pour garantir de la variété
-      // Le cache peut exclure TOUS les produits disponibles
-      AppLogger.info('🔄 Exclusion désactivée pour garantir variété (${excludedIds.length} produits ignorés)', 'Matching');
+      // ✅ EXCLUSION RÉACTIVÉE pour éviter de revoir les mêmes produits
+      AppLogger.info('🎯 Exclusion de ${excludedIds.length} produits déjà vus', 'Matching');
       AppLogger.debug('🎯 Max par marque: $maxPerBrand produits (20%)', 'Matching');
       AppLogger.debug('🎯 Max par catégorie: $maxPerCategory produits (30%)', 'Matching');
 
@@ -207,10 +203,10 @@ class ProductMatchingService {
         final categories = (product['categories'] as List?)?.cast<String>() ?? [];
         final mainCategory = categories.isNotEmpty ? categories.first : 'Autre';
 
-        // 1️⃣ Vérifier exclusion (DÉSACTIVÉ pour garantir variété)
-        // if (excludedIds.contains(productId)) {
-        //   continue;
-        // }
+        // 1️⃣ Vérifier exclusion des produits déjà vus
+        if (excludedIds.contains(productId)) {
+          continue;
+        }
 
         // 2️⃣ Vérifier dédupli par ID
         if (seenProductIds.contains(productId)) {
@@ -241,6 +237,37 @@ class ProductMatchingService {
         brandCounts[brand] = currentBrandCount + 1;
         categoryCounts[mainCategory] = currentCategoryCount + 1;
       }
+
+      // 🎨 MÉLANGE INTELLIGENT FINAL pour éviter produits similaires côte à côte
+      // Séparer par catégorie et entremêler
+      final productsByCategory = <String, List<Map<String, dynamic>>>{};
+      for (var product in selectedProducts) {
+        final categories = (product['categories'] as List?)?.cast<String>() ?? [];
+        final mainCategory = categories.isNotEmpty ? categories.first : 'Autre';
+        productsByCategory.putIfAbsent(mainCategory, () => []).add(product);
+      }
+
+      // Reconstruire la liste en alternant les catégories
+      final diversifiedProducts = <Map<String, dynamic>>[];
+      final categoryKeys = productsByCategory.keys.toList();
+      int maxIterations = selectedProducts.length;
+      int iteration = 0;
+
+      while (diversifiedProducts.length < selectedProducts.length && iteration < maxIterations) {
+        for (var category in categoryKeys) {
+          final products = productsByCategory[category]!;
+          if (products.isNotEmpty) {
+            diversifiedProducts.add(products.removeAt(0));
+            if (diversifiedProducts.length >= selectedProducts.length) break;
+          }
+        }
+        iteration++;
+      }
+
+      // Remplacer la liste sélectionnée par la version diversifiée
+      selectedProducts
+        ..clear()
+        ..addAll(diversifiedProducts);
 
       // Retirer le score de matching avant de retourner
       for (var product in selectedProducts) {
