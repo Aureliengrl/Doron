@@ -723,6 +723,7 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
     final isLastStep = _model.currentStep == steps.length - 1;
     final skipUserQuestions = GoRouterState.of(context).uri.queryParameters['skipUserQuestions'] == 'true';
     final returnTo = GoRouterState.of(context).uri.queryParameters['returnTo'];
+    final onlyUserQuestions = GoRouterState.of(context).uri.queryParameters['onlyUserQuestions'] == 'true';
 
     return Positioned(
       bottom: 0,
