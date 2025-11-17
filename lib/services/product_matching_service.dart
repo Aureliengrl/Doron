@@ -230,6 +230,15 @@ class ProductMatchingService {
           continue; // Skip, trop de produits de cette catégorie
         }
 
+        // 6️⃣ Vérifier correspondance sexe (CRITIQUE pour éviter leggings fille pour papa)
+        if (genderFilter != null) {
+          final productTags = (product['tags'] as List?)?.cast<String>() ?? [];
+          if (!productTags.contains(genderFilter)) {
+            // Ce produit n'a pas le bon tag de sexe, on le skip
+            continue;
+          }
+        }
+
         // ✅ Ajouter le produit
         selectedProducts.add(product);
         seenProductIds.add(productId);

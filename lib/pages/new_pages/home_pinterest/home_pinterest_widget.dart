@@ -1582,7 +1582,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        product['source'] as String? ?? product['brand'] as String? ?? 'Amazon',
+                        product['brand'] as String? ?? product['source'] as String? ?? 'Amazon',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -1659,7 +1659,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              'Voir sur ${product['source']}',
+                              'Voir sur ${product['brand'] ?? product['source'] ?? 'Amazon'}',
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,

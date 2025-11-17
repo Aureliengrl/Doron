@@ -664,7 +664,7 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        product['name'] as String,
+                        product['name'] as String? ?? 'Produit',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.poppins(
@@ -676,7 +676,7 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        product['description'] as String,
+                        product['brand'] as String? ?? 'Amazon',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.poppins(
@@ -706,7 +706,7 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              product['source'] as String,
+                              product['brand'] as String? ?? product['source'] as String? ?? 'Amazon',
                               style: GoogleFonts.poppins(
                                 fontSize: 11,
                                 color: const Color(0xFF9CA3AF),
@@ -826,7 +826,7 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
-                        product['source'] as String,
+                        product['brand'] as String? ?? product['source'] as String? ?? 'Amazon',
                         style: GoogleFonts.poppins(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -836,7 +836,7 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      product['name'] as String,
+                      product['name'] as String? ?? 'Produit',
                       style: GoogleFonts.poppins(
                         fontSize: 22,
                         fontWeight: FontWeight.bold,
@@ -844,7 +844,7 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                     ),
                     const SizedBox(height: 16),
                     Text(
-                      '${product['price']}€',
+                      '${product['price'] ?? 0}€',
                       style: GoogleFonts.poppins(
                         fontSize: 32,
                         fontWeight: FontWeight.bold,
@@ -852,14 +852,15 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Text(
-                      product['description'] as String,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: const Color(0xFF6B7280),
-                        height: 1.6,
+                    if (product['brand'] != null && (product['brand'] as String).isNotEmpty)
+                      Text(
+                        'Par ${product['brand']}',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: const Color(0xFF6B7280),
+                          height: 1.6,
+                        ),
                       ),
-                    ),
                     const SizedBox(height: 20),
                     SizedBox(
                       width: double.infinity,
@@ -887,7 +888,7 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              'Voir sur ${product['source']}',
+                              'Voir sur ${product['brand'] ?? product['source'] ?? 'Amazon'}',
                               style: GoogleFonts.poppins(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
