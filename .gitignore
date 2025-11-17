@@ -11,3 +11,10 @@ ios/Runner/GoogleService-Info.plist
 android/app/google-services.json
 
 assets/environment_values/environment.json
+
+# Scraping - fichiers sensibles et logs
+scraping/firebase_credentials.json
+scraping/scraping_strict_log.txt
+scraping/cleanup_log.txt
+scraping/__pycache__/
+scraping/*.pyc
