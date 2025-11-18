@@ -474,7 +474,16 @@ class _TikTokInspirationPageWidgetState
   Widget _buildProductCard(Map<String, dynamic> product) {
     final productId = product['id'] as int;
     final isLiked = _likedProducts.contains(productId);
-    final photos = [product['image'] as String? ?? ''];
+    final imageUrl = product['image'] as String? ?? '';
+
+    // 🐛 DEBUG: Afficher les infos du produit
+    print('🎬 TikTok _buildProductCard:');
+    print('   Product: ${product['name']}');
+    print('   Image URL: ${imageUrl.isEmpty ? "VIDE ❌" : imageUrl.substring(0, imageUrl.length > 60 ? 60 : imageUrl.length)}');
+    print('   Brand: ${product['brand']}');
+    print('   Price: ${product['price']}€');
+
+    final photos = [imageUrl];
 
     return GestureDetector(
       onDoubleTap: () async {
