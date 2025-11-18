@@ -1355,7 +1355,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                 children: [
                   ProductImage(
                     imageUrl: product['image'] as String? ?? '',
-                    height: 280,
+                    height: 200,
                     borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(24),
                       topRight: Radius.circular(24),
@@ -1392,51 +1392,92 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                         ),
                       ),
                     ),
-                  // Bouton coeur désactivé (uniquement dans la fiche détail)
-                  // Positioned(
-                  //   top: 12,
-                  //   right: 12,
-                  //   child: Material(
-                  //     color: Colors.transparent,
-                  //     child: InkWell(
-                  //       onTap: () => _toggleFavorite(product),
-                  //       borderRadius: BorderRadius.circular(50),
-                  //       child: AnimatedContainer(
-                  //         duration: const Duration(milliseconds: 200),
-                  //         width: 48,
-                  //         height: 48,
-                  //         decoration: BoxDecoration(
-                  //           color: isLiked ? Colors.red : Colors.white,
-                  //           shape: BoxShape.circle,
-                  //           boxShadow: [
-                  //             BoxShadow(
-                  //               color: isLiked
-                  //                   ? Colors.red.withOpacity(0.4)
-                  //                   : Colors.black.withOpacity(0.2),
-                  //               blurRadius: isLiked ? 16 : 12,
-                  //               offset: const Offset(0, 4),
-                  //             ),
-                  //           ],
-                  //         ),
-                  //         child: Icon(
-                  //           isLiked ? Icons.favorite : Icons.favorite_border,
-                  //           color: isLiked ? Colors.white : const Color(0xFF374151),
-                  //           size: 20,
-                  //         ),
-                  //       )
-                  //           .animate(
-                  //             key: ValueKey('heart_$isLiked'),
-                  //           )
-                  //           .scale(
-                  //             begin: const Offset(0.8, 0.8),
-                  //             end: const Offset(1.0, 1.0),
-                  //             duration: 200.ms,
-                  //             curve: Curves.elasticOut,
-                  //           ),
-                  //     ),
-                  //   ),
-                  // ),
+                  // Bouton coeur en haut à droite
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => _toggleFavorite(product),
+                        borderRadius: BorderRadius.circular(50),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: isLiked ? Colors.red : Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.15),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            isLiked ? Icons.favorite : Icons.favorite_border,
+                            color: isLiked ? Colors.white : const Color(0xFF374151),
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ],
+              ),
+              // Info produit en bas
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      product['name'] as String? ?? 'Produit',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.poppins(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF111827),
+                        height: 1.3,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${product['price'] ?? 0}€',
+                          style: GoogleFonts.poppins(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: violetColor,
+                          ),
+                        ),
+                        if (product['brand'] != null && product['brand'] != '')
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF3F4F6),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              product['brand'] as String,
+                              style: GoogleFonts.poppins(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF6B7280),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

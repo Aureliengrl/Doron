@@ -68,7 +68,124 @@ class ProductMatchingService {
         return _getFallbackProducts(count);
       }
 
-      print('✨ SOURCE DES PRODUITS: ${allProducts.length} produits disponibles pour le scoring');
+      print('✨ SOURCE DES PRODUITS: ${allProducts.length} produits disponibles AVANT filtrage strict');
+
+      // ============= FILTRAGE STRICT PAR GENRE =============
+      // Si l'utilisateur a un genre, FILTRER STRICTEMENT les produits
+      final gender = userTags['gender'] ?? userTags['recipientGender'];
+      if (gender != null) {
+        final genderStr = gender.toString().toLowerCase();
+        String targetGender = '';
+
+        if (genderStr.contains('homme') || genderStr.contains('male')) {
+          targetGender = 'homme';
+        } else if (genderStr.contains('femme') || genderStr.contains('female')) {
+          targetGender = 'femme';
+        }
+
+        if (targetGender.isNotEmpty) {
+          final beforeFilter = allProducts.length;
+          allProducts = allProducts.where((product) {
+            final productTags = (product['tags'] as List?)?.cast<String>() ?? [];
+            final productCategories = (product['categories'] as List?)?.cast<String>() ?? [];
+            final allProductTags = {...productTags, ...productCategories}.map((t) => t.toLowerCase()).toSet();
+            final productGender = product['gender']?.toString().toLowerCase() ?? '';
+
+            // Accepter les produits qui correspondent au genre OU qui sont unisexes
+            return allProductTags.contains(targetGender) ||
+                   allProductTags.contains('unisexe') ||
+                   productGender == targetGender ||
+                   productGender == 'unisexe' ||
+                   productGender.isEmpty; // Produits sans genre spécifié = unisexe par défaut
+          }).toList();
+
+          print('🚹🚺 FILTRE GENRE ($targetGender): $beforeFilter → ${allProducts.length} produits');
+        }
+      }
+
+      // ============= FILTRAGE STRICT PAR TYPE DE CADEAU =============
+      // Si l'utilisateur a spécifié des types de cadeaux privilégiés, FILTRER STRICTEMENT
+      final giftTypes = userTags['giftTypes'];
+      if (giftTypes != null) {
+        final typesList = giftTypes is List ? giftTypes : [giftTypes];
+        if (typesList.isNotEmpty) {
+          final beforeFilter = allProducts.length;
+
+          // Normaliser les types de cadeaux recherchés
+          final normalizedGiftTypes = typesList
+              .map((t) => _normalizeTag(t.toString()))
+              .toSet();
+
+          allProducts = allProducts.where((product) {
+            final productTags = (product['tags'] as List?)?.cast<String>() ?? [];
+            final productCategories = (product['categories'] as List?)?.cast<String>() ?? [];
+            final productCategory = product['category']?.toString() ?? '';
+            final allProductTags = {
+              ...productTags.map((t) => _normalizeTag(t)),
+              ...productCategories.map((t) => _normalizeTag(t)),
+              if (productCategory.isNotEmpty) _normalizeTag(productCategory),
+            };
+
+            // Vérifier si le produit correspond à AU MOINS UN type de cadeau recherché
+            return normalizedGiftTypes.any((giftType) =>
+              allProductTags.contains(giftType) ||
+              allProductTags.any((tag) => tag.contains(giftType) || giftType.contains(tag))
+            );
+          }).toList();
+
+          print('🎁 FILTRE TYPE CADEAU (${typesList.join(", ")}): $beforeFilter → ${allProducts.length} produits');
+        }
+      }
+
+      // ============= FILTRAGE PAR CATÉGORIE (pour Pinterest) =============
+      // Si une catégorie spécifique est demandée (ex: "Mode", "High Tech")
+      if (category != null && category.isNotEmpty) {
+        final beforeFilter = allProducts.length;
+        final normalizedCategory = _normalizeTag(category);
+
+        allProducts = allProducts.where((product) {
+          final productTags = (product['tags'] as List?)?.cast<String>() ?? [];
+          final productCategories = (product['categories'] as List?)?.cast<String>() ?? [];
+          final productCategory = product['category']?.toString() ?? '';
+          final allProductTags = {
+            ...productTags.map((t) => _normalizeTag(t)),
+            ...productCategories.map((t) => _normalizeTag(t)),
+            if (productCategory.isNotEmpty) _normalizeTag(productCategory),
+          };
+
+          return allProductTags.contains(normalizedCategory) ||
+                 allProductTags.any((tag) => tag.contains(normalizedCategory) || normalizedCategory.contains(tag));
+        }).toList();
+
+        print('📂 FILTRE CATÉGORIE ($category): $beforeFilter → ${allProducts.length} produits');
+      }
+
+      // Vérifier qu'il reste des produits après filtrage
+      if (allProducts.isEmpty) {
+        print('⚠️ AUCUN produit après filtrage strict ! Relâchement des contraintes...');
+        // Recharger SANS les filtres stricts pour éviter une page vide
+        var snapshot2 = await _firestore.collection('products').limit(3000).get();
+        allProducts = snapshot2.docs.map((doc) {
+          final data = doc.data();
+          return {
+            'id': doc.id,
+            'name': data['product_title'] ?? data['name'] ?? 'Produit',
+            'brand': data['platform'] ?? data['brand'] ?? '',
+            'price': data['product_price'] ?? data['price'] ?? 0,
+            'image': data['product_photo'] ?? data['image'] ?? data['imageUrl'] ?? '',
+            'imageUrl': data['product_photo'] ?? data['image'] ?? data['imageUrl'] ?? '',
+            'url': data['product_url'] ?? data['url'] ?? '',
+            'source': data['platform'] ?? data['source'] ?? 'Amazon',
+            'categories': data['categories'] ?? data['tags'] ?? [],
+            'tags': data['tags'] ?? [],
+            'gender': data['gender'] ?? 'unisexe',
+            'category': data['category'] ?? '',
+            ...data,
+          };
+        }).toList();
+      }
+
+      print('✨ APRÈS FILTRES STRICTS: ${allProducts.length} produits disponibles pour le scoring');
 
       // Scorer et trier les produits par pertinence
       final scoredProducts = allProducts.map((product) {
@@ -269,7 +386,7 @@ class ProductMatchingService {
   }
 
   /// Calcule le score de matching entre un produit et les tags recherchés
-  /// Priorise SEXE et ÂGE (critères principaux pour personnalisation)
+  /// Priorise SEXE, ÂGE et TYPE DE CADEAU (critères principaux pour personnalisation)
   static double _calculateMatchScore(
     Map<String, dynamic> product,
     Set<String> searchTags,
@@ -282,7 +399,7 @@ class ProductMatchingService {
     final productCategories = (product['categories'] as List?)?.cast<String>() ?? [];
     final allProductTags = {...productTags, ...productCategories};
 
-    // 🎯 PRIORITÉ 1: SEXE (poids très fort - 40 points max)
+    // 🎯 PRIORITÉ 1: SEXE (poids très fort - 50 points max)
     final gender = userTags['gender'] ?? userTags['recipientGender'];
     if (gender != null) {
       final genderStr = gender.toString().toLowerCase();
@@ -295,16 +412,16 @@ class ProductMatchingService {
       }
 
       if (genderMatch) {
-        score += 40.0; // Bonus énorme pour match sexe
+        score += 50.0; // Bonus énorme pour match sexe exact
       }
 
       // Bonus pour produits unisexes (plus faible)
       if (allProductTags.any((tag) => tag.toLowerCase() == 'unisexe')) {
-        score += 15.0;
+        score += 20.0;
       }
     }
 
-    // 🎯 PRIORITÉ 2: ÂGE (poids très fort - 35 points max)
+    // 🎯 PRIORITÉ 2: ÂGE avec préférences catégorielles (poids très fort - 45 points max)
     final age = userTags['age'] ?? userTags['recipientAge'];
     if (age != null) {
       final ageInt = age is int ? age : int.tryParse(age.toString()) ?? 25;
@@ -322,14 +439,45 @@ class ProductMatchingService {
 
       // Match exact de la tranche d'âge
       if (allProductTags.any((tag) => tag.toLowerCase() == ageGroup)) {
-        score += 35.0; // Bonus énorme pour match âge
+        score += 45.0; // Bonus énorme pour match âge exact
+      }
+
+      // 🎨 BONUS SPÉCIFIQUE PAR ÂGE - Préférences catégorielles
+      // 18-25 ans → Plus de mode, tech, gaming
+      if (ageInt >= 18 && ageInt < 26) {
+        if (allProductTags.any((tag) => ['fashion', 'mode', 'vetement', 'style'].contains(_normalizeTag(tag)))) {
+          score += 30.0; // Énorme bonus mode pour 18-25 ans
+        }
+        if (allProductTags.any((tag) => ['tech', 'gaming', 'hightech'].contains(_normalizeTag(tag)))) {
+          score += 25.0; // Gros bonus tech/gaming pour jeunes
+        }
+      }
+      // 26-35 ans → Tech, sport, maison, voyages
+      else if (ageInt >= 26 && ageInt < 36) {
+        if (allProductTags.any((tag) => ['tech', 'sport', 'home', 'travel', 'voyage'].contains(_normalizeTag(tag)))) {
+          score += 20.0;
+        }
+      }
+      // 36-50 ans → Maison, cuisine, bien-être, mode classique
+      else if (ageInt >= 36 && ageInt < 51) {
+        if (allProductTags.any((tag) => ['home', 'cooking', 'wellness', 'beauty'].contains(_normalizeTag(tag)))) {
+          score += 20.0;
+        }
+      }
+      // 50+ ans → Bien-être, maison, jardinage, livres
+      else if (ageInt >= 51) {
+        if (allProductTags.any((tag) => ['wellness', 'home', 'book', 'jardin'].contains(_normalizeTag(tag)))) {
+          score += 20.0;
+        }
       }
     }
 
-    // 🎯 CRITÈRE 3: Centres d'intérêt / Hobbies (20 points max)
+    // 🎯 CRITÈRE 3: Centres d'intérêt / Hobbies / Passions (35 points max)
     final interests = userTags['interests'] ?? userTags['hobbies'] ?? userTags['recipientHobbies'];
     if (interests != null) {
       final interestsList = interests is List ? interests : [interests];
+      int matchCount = 0;
+
       for (var interest in interestsList) {
         final normalizedInterest = _normalizeTag(interest.toString());
         // Vérifier match exact ou partiel avec tags normalisés
@@ -340,8 +488,15 @@ class ProductMatchingService {
                  normalizedInterest.contains(normalizedTag);
         });
         if (hasMatch) {
-          score += 20.0;
-          break; // Un seul bonus par produit pour éviter surpondération
+          matchCount++;
+          // Premier match = 35 points, deuxième = 15 points, troisième+ = 5 points
+          if (matchCount == 1) {
+            score += 35.0; // Bonus énorme pour le premier intérêt matché
+          } else if (matchCount == 2) {
+            score += 15.0; // Bonus moyen pour un deuxième intérêt
+          } else if (matchCount <= 4) {
+            score += 5.0; // Petit bonus pour intérêts supplémentaires
+          }
         }
       }
     }
