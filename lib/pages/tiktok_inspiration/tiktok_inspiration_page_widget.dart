@@ -29,6 +29,7 @@ class TikTokInspirationPageWidget extends StatefulWidget {
 class _TikTokInspirationPageWidgetState
     extends State<TikTokInspirationPageWidget> {
   late TikTokInspirationPageModel _model;
+  late PageController _pageController;
 
   final Color violetColor = const Color(0xFF8A2BE2);
 
@@ -36,6 +37,7 @@ class _TikTokInspirationPageWidgetState
   void initState() {
     super.initState();
     _model = TikTokInspirationPageModel();
+    _pageController = PageController();
 
     // Effacer le contexte de personne
     FirebaseDataService.setCurrentPersonContext(null);
@@ -45,6 +47,7 @@ class _TikTokInspirationPageWidgetState
 
   @override
   void dispose() {
+    _pageController.dispose();
     _model.dispose();
     super.dispose();
   }
@@ -129,493 +132,45 @@ class _TikTokInspirationPageWidgetState
     return ChangeNotifierProvider.value(
       value: _model,
       child: Scaffold(
-        backgroundColor: Colors.white,
-        body: SafeArea(
-          child: Consumer<TikTokInspirationPageModel>(
-            builder: (context, model, child) {
-              return CustomScrollView(
-                slivers: [
-                  // Header avec titre et bouton retour
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: Row(
-                        children: [
-                          // Bouton retour
-                          Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              onTap: () => Navigator.pop(context),
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[100],
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Icon(
-                                  Icons.arrow_back,
-                                  color: const Color(0xFF374151),
-                                  size: 24,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          // Titre
-                          Expanded(
-                            child: Text(
-                              'Mode Inspiration',
-                              style: GoogleFonts.poppins(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF1F2937),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+        backgroundColor: Colors.black,
+        body: Consumer<TikTokInspirationPageModel>(
+          builder: (context, model, child) {
+            // État de chargement
+            if (model.isLoading) {
+              return _buildLoadingState();
+            }
 
-                  // État de chargement
-                  if (model.isLoading) _buildLoadingState(),
+            // État d'erreur
+            if (model.hasError) {
+              return _buildErrorState(model);
+            }
 
-                  // État d'erreur
-                  if (model.hasError && !model.isLoading)
-                    _buildErrorState(model),
+            // Aucun produit
+            if (model.products.isEmpty) {
+              return _buildEmptyState();
+            }
 
-                  // Aucun produit
-                  if (model.products.isEmpty &&
-                      !model.isLoading &&
-                      !model.hasError)
-                    _buildEmptyState(),
-
-                  // Grille Pinterest
-                  if (model.products.isNotEmpty &&
-                      !model.isLoading &&
-                      !model.hasError)
-                    _buildPinterestGrid(model),
-
-                  // Padding en bas
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: 40),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoadingState() {
-    return SliverPadding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
-      sliver: SliverToBoxAdapter(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(
-                color: violetColor,
-                strokeWidth: 3,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Chargement des inspirations...',
-                style: GoogleFonts.poppins(
-                  color: const Color(0xFF6B7280),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
+            // PageView vertical plein écran
+            return Stack(
+              children: [
+                PageView.builder(
+                  controller: _pageController,
+                  scrollDirection: Axis.vertical,
+                  itemCount: model.products.length,
+                  onPageChanged: (index) {
+                    model.setCurrentProductIndex(index);
+                  },
+                  itemBuilder: (context, index) {
+                    final product = model.products[index];
+                    return _buildFullscreenProductCard(product);
+                  },
                 ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
-  Widget _buildErrorState(TikTokInspirationPageModel model) {
-    return SliverToBoxAdapter(
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Icône d'erreur
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  color: Colors.red[50],
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.error_outline,
-                  size: 50,
-                  color: Colors.red[400],
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Titre de l'erreur
-              Text(
-                model.errorMessage,
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.red[700],
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-
-              // Détails de l'erreur
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.red[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.red[200]!, width: 1),
-                ),
-                child: Text(
-                  model.errorDetails,
-                  style: GoogleFonts.poppins(
-                    fontSize: 13,
-                    color: Colors.red[900],
-                    height: 1.5,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(height: 20),
-
-              // Bouton réessayer
-              ElevatedButton.icon(
-                onPressed: () {
-                  _model.loadProducts();
-                },
-                icon: const Icon(Icons.refresh, color: Colors.white),
-                label: Text(
-                  'Réessayer',
-                  style: GoogleFonts.poppins(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red[600],
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return SliverToBoxAdapter(
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(40),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.card_giftcard,
-                size: 80,
-                color: Colors.grey[300],
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'Aucune inspiration pour le moment',
-                style: GoogleFonts.poppins(
-                  color: const Color(0xFF6B7280),
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Tire vers le bas pour rafraîchir',
-                style: GoogleFonts.poppins(
-                  color: const Color(0xFF9CA3AF),
-                  fontSize: 14,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPinterestGrid(TikTokInspirationPageModel model) {
-    // Séparer en 2 colonnes
-    final column1 = model.products
-        .where((p) => model.products.indexOf(p) % 2 == 0)
-        .toList();
-    final column2 = model.products
-        .where((p) => model.products.indexOf(p) % 2 != 0)
-        .toList();
-
-    return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-      sliver: SliverToBoxAdapter(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Colonne 1
-            Expanded(
-              child: Column(
-                children: column1.map((product) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8, bottom: 16),
-                    child: _buildProductCard(product),
-                  );
-                }).toList(),
-              ),
-            ),
-            // Colonne 2 (décalée)
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 32),
-                child: Column(
-                  children: column2.map((product) {
-                    return Padding(
-                      padding: const EdgeInsets.only(left: 8, bottom: 16),
-                      child: _buildProductCard(product),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProductCard(Map<String, dynamic> product) {
-    final isLiked = _model.likedProductTitles.contains(product['name'] ?? '');
-    final productIndex = _model.products.indexOf(product);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          // Haptic feedback
-          HapticFeedback.lightImpact();
-          _showProductDetail(product);
-        },
-        borderRadius: BorderRadius.circular(24),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: Colors.transparent,
-              width: 2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Image avec bouton coeur et badge catégorie
-              Expanded(
-                child: Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(24),
-                        topRight: Radius.circular(24),
-                      ),
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: double.infinity,
-                        child: ProductImage(
-                          imageUrl: product['image'] as String? ?? '',
-                          height: double.infinity,
-                          borderRadius: BorderRadius.zero,
-                        ),
-                      ),
-                    ),
-                    // Badge catégorie en haut à gauche
-                    if (product['category'] != null && product['category'] != '')
-                      Positioned(
-                        top: 12,
-                        left: 12,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: violetColor.withOpacity(0.95),
-                            borderRadius: BorderRadius.circular(12),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: Text(
-                            _getCategoryEmoji(product['category'] as String),
-                            style: GoogleFonts.poppins(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-
-              // Info produit (brand + name + price)
-              Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Brand
-                    Text(
-                      product['brand'] as String? ?? '',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: const Color(0xFF9CA3AF),
-                        fontWeight: FontWeight.w500,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    // Name
-                    Text(
-                      product['name'] as String? ?? '',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF1F2937),
-                        height: 1.3,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 6),
-                    // Price
-                    Text(
-                      '${product['price']}€',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: violetColor,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    )
-        .animate()
-        .fadeIn(
-          delay: Duration(milliseconds: 50 * productIndex),
-          duration: 400.ms,
-        )
-        .slideY(
-          begin: 0.2,
-          end: 0,
-          delay: Duration(milliseconds: 50 * productIndex),
-          duration: 400.ms,
-          curve: Curves.easeOut,
-        );
-  }
-
-  String _getCategoryEmoji(String category) {
-    final categoryLower = category.toLowerCase();
-    if (categoryLower.contains('tech')) return '📱 Tech';
-    if (categoryLower.contains('mode') || categoryLower.contains('vêtement')) {
-      return '👗 Mode';
-    }
-    if (categoryLower.contains('beauté') || categoryLower.contains('cosmétique')) {
-      return '💄 Beauté';
-    }
-    if (categoryLower.contains('maison') || categoryLower.contains('déco')) {
-      return '🏠 Maison';
-    }
-    if (categoryLower.contains('sport')) return '⚽ Sport';
-    if (categoryLower.contains('livre')) return '📚 Livres';
-    if (categoryLower.contains('jouet') || categoryLower.contains('jeu')) {
-      return '🎮 Jeux';
-    }
-    return category;
-  }
-
-  void _showProductDetail(Map<String, dynamic> product) {
-    final isLiked = _model.likedProductTitles.contains(product['name'] ?? '');
-
-    showDialog(
-      context: context,
-      barrierColor: Colors.black.withOpacity(0.7),
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(16),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 500),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 60,
-                offset: const Offset(0, 20),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Image avec boutons
-              Stack(
-                children: [
-                  ProductImage(
-                    imageUrl: product['image'] as String? ?? '',
-                    height: 350,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24),
-                    ),
-                  ),
-                  // Bouton fermer
-                  Positioned(
+                // Bouton retour en haut à gauche
+                SafeArea(
+                  child: Positioned(
                     top: 16,
-                    right: 16,
+                    left: 16,
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
@@ -625,166 +180,407 @@ class _TikTokInspirationPageWidgetState
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: Colors.black.withOpacity(0.5),
                             shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.3),
+                              width: 1,
+                            ),
                           ),
                           child: const Icon(
-                            Icons.close,
-                            color: Color(0xFF374151),
+                            Icons.arrow_back,
+                            color: Colors.white,
                             size: 24,
                           ),
                         ),
                       ),
                     ),
                   ),
-                  // Bouton coeur
-                  Positioned(
-                    top: 16,
-                    left: 16,
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => _toggleFavorite(product),
-                        borderRadius: BorderRadius.circular(50),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: 48,
-                          height: 48,
+                ),
+
+                // Indicateur de progression sur le côté droit
+                SafeArea(
+                  child: Positioned(
+                    right: 12,
+                    top: 100,
+                    bottom: 100,
+                    child: Container(
+                      width: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                      child: FractionallySizedBox(
+                        alignment: Alignment.topCenter,
+                        heightFactor: (model.currentProductIndex + 1) / model.products.length,
+                        child: Container(
                           decoration: BoxDecoration(
-                            color: isLiked ? Colors.red : Colors.white,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: isLiked
-                                    ? Colors.red.withOpacity(0.4)
-                                    : Colors.black.withOpacity(0.2),
-                                blurRadius: isLiked ? 16 : 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                            gradient: const LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Color(0xFFEC4899),
+                                Color(0xFF8A2BE2),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(2),
                           ),
-                          child: Icon(
-                            isLiked ? Icons.favorite : Icons.favorite_border,
-                            color: isLiked ? Colors.white : const Color(0xFF374151),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            color: violetColor,
+            strokeWidth: 3,
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Chargement des inspirations...',
+            style: GoogleFonts.poppins(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(TikTokInspirationPageModel model) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Icône d'erreur
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.red[900]?.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.error_outline,
+                size: 50,
+                color: Colors.red[300],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Titre de l'erreur
+            Text(
+              model.errorMessage,
+              style: GoogleFonts.poppins(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+
+            // Détails de l'erreur
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.black.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red[300]!.withOpacity(0.3), width: 1),
+              ),
+              child: Text(
+                model.errorDetails,
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: Colors.white.withOpacity(0.9),
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Bouton réessayer
+            ElevatedButton.icon(
+              onPressed: () {
+                _model.loadProducts();
+              },
+              icon: const Icon(Icons.refresh, color: Colors.white),
+              label: Text(
+                'Réessayer',
+                style: GoogleFonts.poppins(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: violetColor,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.card_giftcard,
+              size: 80,
+              color: Colors.grey[600],
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Aucune inspiration pour le moment',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Tire vers le bas pour rafraîchir',
+              style: GoogleFonts.poppins(
+                color: Colors.grey[400],
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFullscreenProductCard(Map<String, dynamic> product) {
+    final isLiked = _model.likedProductTitles.contains(product['name'] ?? '');
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Image en plein écran
+        ProductImage(
+          imageUrl: product['image'] as String? ?? '',
+          height: double.infinity,
+          borderRadius: BorderRadius.zero,
+        ),
+
+        // Gradient overlay en bas pour rendre le texte lisible
+        Positioned.fill(
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.transparent,
+                  Colors.transparent,
+                  Colors.black.withOpacity(0.8),
+                ],
+                stops: const [0.0, 0.6, 1.0],
+              ),
+            ),
+          ),
+        ),
+
+        // Info produit en bas
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Marque
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: violetColor.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      product['brand'] as String? ?? '',
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Nom du produit
+                  Text(
+                    product['name'] as String? ?? '',
+                    style: GoogleFonts.poppins(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      height: 1.2,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Prix
+                  Text(
+                    '${product['price']}€',
+                    style: GoogleFonts.poppins(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Bouton Voir le produit
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final url = product['url'] as String? ?? '';
+                        if (url.isNotEmpty) {
+                          try {
+                            final uri = Uri.parse(url);
+                            await launchUrl(
+                              uri,
+                              mode: LaunchMode.externalApplication,
+                            );
+                          } catch (e) {
+                            print('❌ Erreur ouverture URL: $e');
+                          }
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: violetColor,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 8,
+                        shadowColor: violetColor.withOpacity(0.6),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Voir le produit',
+                            style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          const Icon(
+                            Icons.open_in_new,
+                            color: Colors.white,
                             size: 20,
                           ),
-                        )
-                            .animate(
-                              key: ValueKey('heart_$isLiked'),
-                            )
-                            .scale(
-                              begin: const Offset(0.8, 0.8),
-                              end: const Offset(1.0, 1.0),
-                              duration: 200.ms,
-                              curve: Curves.elasticOut,
-                            ),
+                        ],
                       ),
                     ),
                   ),
                 ],
               ),
-
-              // Info produit
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Brand
-                    Text(
-                      product['brand'] as String? ?? '',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        color: const Color(0xFF9CA3AF),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-
-                    // Name
-                    Text(
-                      product['name'] as String? ?? '',
-                      style: GoogleFonts.poppins(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1F2937),
-                        height: 1.3,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Price
-                    Text(
-                      '${product['price']}€',
-                      style: GoogleFonts.poppins(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: violetColor,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Bouton voir le produit
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          final url = product['url'] as String? ?? '';
-                          if (url.isNotEmpty) {
-                            try {
-                              final uri = Uri.parse(url);
-                              await launchUrl(
-                                uri,
-                                mode: LaunchMode.externalApplication,
-                              );
-                            } catch (e) {
-                              print('❌ Erreur ouverture URL: $e');
-                            }
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: violetColor,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 4,
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              'Voir le produit',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            const Icon(
-                              Icons.open_in_new,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            ),
           ),
         ),
-      ),
+
+        // Bouton coeur à droite
+        SafeArea(
+          child: Positioned(
+            right: 20,
+            bottom: 200,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  _toggleFavorite(product);
+                },
+                borderRadius: BorderRadius.circular(50),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: isLiked
+                        ? Colors.red
+                        : Colors.black.withOpacity(0.5),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 2,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: isLiked
+                            ? Colors.red.withOpacity(0.5)
+                            : Colors.black.withOpacity(0.3),
+                        blurRadius: isLiked ? 20 : 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    isLiked ? Icons.favorite : Icons.favorite_border,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                )
+                    .animate(
+                      key: ValueKey('heart_$isLiked'),
+                    )
+                    .scale(
+                      begin: const Offset(0.8, 0.8),
+                      end: const Offset(1.0, 1.0),
+                      duration: 200.ms,
+                      curve: Curves.elasticOut,
+                    ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
+
 }
