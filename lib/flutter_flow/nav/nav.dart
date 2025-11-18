@@ -24,6 +24,7 @@ import '/pages/voice_assistant/voice_listening_page_widget.dart';
 import '/pages/voice_assistant/voice_analysis_page_widget.dart';
 import '/pages/voice_assistant/voice_results_page_widget.dart';
 import '/pages/tiktok_inspiration/tiktok_inspiration_page_widget.dart';
+import '/pages/admin/admin_products_page.dart';
 
 export 'package:go_router/go_router.dart';
 export 'serialization_util.dart';
@@ -328,6 +329,12 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: TikTokInspirationPageWidget.routeName,
           path: TikTokInspirationPageWidget.routePath,
           builder: (context, params) => TikTokInspirationPageWidget(),
+        ),
+        // Admin Products Page
+        FFRoute(
+          name: AdminProductsPage.routeName,
+          path: AdminProductsPage.routePath,
+          builder: (context, params) => AdminProductsPage(),
         ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
