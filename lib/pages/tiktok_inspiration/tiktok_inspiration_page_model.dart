@@ -16,6 +16,9 @@ class TikTokInspirationPageModel extends ChangeNotifier {
   int _currentProductIndex = 0;
   int _currentPhotoIndex = 0;
 
+  // Liked products (pour l'affichage du coeur)
+  Set<String> likedProductTitles = {};
+
   // Getters
   List<Map<String, dynamic>> get products => _products;
   bool get isLoading => _isLoading;
