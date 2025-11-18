@@ -1351,16 +1351,24 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Image avec bouton coeur et badge catégorie
-              Stack(
-                children: [
-                  ProductImage(
-                    imageUrl: product['image'] as String? ?? '',
-                    height: 280,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24),
+              Expanded(
+                child: Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(24),
+                        topRight: Radius.circular(24),
+                      ),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: double.infinity,
+                        child: ProductImage(
+                          imageUrl: product['image'] as String? ?? '',
+                          height: double.infinity,
+                          borderRadius: BorderRadius.zero,
+                        ),
+                      ),
                     ),
-                  ),
                   // Badge catégorie en haut à gauche
                   if (product['category'] != null && product['category'] != '')
                     Positioned(
