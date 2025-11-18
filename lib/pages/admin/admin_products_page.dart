@@ -183,6 +183,148 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
     }
   }
 
+  /// NETTOIE la base en supprimant SEULEMENT les produits incomplets
+  Future<void> _cleanIncompleteProducts() async {
+    setState(() {
+      _isLoading = true;
+      _logs.clear();
+      _progress = 0;
+      _total = 0;
+    });
+
+    _addLog('🧹 NETTOYAGE DE LA BASE');
+    _addLog('Suppression des produits incomplets...');
+
+    try {
+      // Récupérer TOUS les produits
+      final snapshot = await _firestore.collection('gifts').get();
+      final totalCount = snapshot.docs.length;
+
+      if (totalCount == 0) {
+        _addLog('✅ Aucun produit dans la base');
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      _addLog('📊 Total de produits: $totalCount');
+      _addLog('🔍 Analyse en cours...');
+
+      setState(() => _total = totalCount);
+
+      List<DocumentReference> toDelete = [];
+      int completeCount = 0;
+
+      // Analyser chaque produit
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+
+        // Vérifier si le produit est complet
+        final name = data['name'] ?? data['product_title'] ?? '';
+        final brand = data['brand'] ?? '';
+        final price = data['price'] ?? 0;
+        final image = data['image'] ?? data['product_photo'] ?? '';
+        final url = data['url'] ?? data['product_url'] ?? '';
+
+        bool isIncomplete = false;
+        List<String> issues = [];
+
+        // Nom invalide
+        if (name.toString().trim().isEmpty ||
+            name == 'Juste une petite vérification' ||
+            name == 'Invalid URL' ||
+            name == 'www.backmarket.fr') {
+          issues.add('nom');
+          isIncomplete = true;
+        }
+
+        // Marque invalide
+        if (brand.toString().trim().isEmpty || brand == 'Unknown') {
+          issues.add('marque');
+          isIncomplete = true;
+        }
+
+        // Prix invalide
+        if (price == 0 || price == null) {
+          issues.add('prix');
+          isIncomplete = true;
+        }
+
+        // Image manquante
+        if (image.toString().trim().isEmpty || image == 'N/A') {
+          issues.add('image');
+          isIncomplete = true;
+        }
+
+        // URL manquante
+        if (url.toString().trim().isEmpty) {
+          issues.add('url');
+          isIncomplete = true;
+        }
+
+        if (isIncomplete) {
+          toDelete.add(doc.reference);
+          _addLog('❌ [${doc.id}] $name (manque: ${issues.join(', ')})');
+        } else {
+          completeCount++;
+          _addLog('✅ [${doc.id}] $name');
+        }
+      }
+
+      final incompleteCount = toDelete.length;
+
+      _addLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      _addLog('📊 RÉSUMÉ');
+      _addLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      _addLog('Total:        $totalCount');
+      _addLog('✅ Complets:  $completeCount (${(completeCount/totalCount*100).toStringAsFixed(1)}%)');
+      _addLog('❌ Incomplets: $incompleteCount (${(incompleteCount/totalCount*100).toStringAsFixed(1)}%)');
+      _addLog('');
+
+      if (incompleteCount == 0) {
+        _addLog('✨ Ta base est déjà propre!');
+        setState(() => _isLoading = false);
+        return;
+      }
+
+      _addLog('🗑️  Suppression des $incompleteCount produits incomplets...');
+
+      // Supprimer par batch de 500
+      const batchSize = 500;
+      int deletedCount = 0;
+
+      for (int i = 0; i < toDelete.length; i += batchSize) {
+        final batch = _firestore.batch();
+        final endIndex = (i + batchSize < toDelete.length) ? i + batchSize : toDelete.length;
+
+        for (int j = i; j < endIndex; j++) {
+          batch.delete(toDelete[j]);
+        }
+
+        await batch.commit();
+        deletedCount = endIndex;
+
+        setState(() => _progress = deletedCount);
+        _addLog('✅ $deletedCount/$incompleteCount supprimés...');
+
+        if (deletedCount < incompleteCount) {
+          await Future.delayed(const Duration(milliseconds: 200));
+        }
+      }
+
+      _addLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      _addLog('✅ NETTOYAGE TERMINÉ!');
+      _addLog('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      _addLog('Supprimés:  $deletedCount');
+      _addLog('Restants:   $completeCount');
+      _addLog('');
+      _addLog('✨ Ta base est maintenant propre!');
+    } catch (e) {
+      _addLog('❌ Erreur: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   /// Supprime ET re-upload (option recommandée)
   Future<void> _deleteAndReupload() async {
     await _deleteAllProducts();
@@ -254,6 +396,17 @@ class _AdminProductsPageState extends State<AdminProductsPage> {
               label: const Text('📤 Uploader les nouveaux produits'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+              ),
+            ),
+            const SizedBox(height: 12),
+            ElevatedButton.icon(
+              onPressed: _isLoading ? null : _cleanIncompleteProducts,
+              icon: const Icon(Icons.cleaning_services),
+              label: const Text('🧹 Nettoyer produits incomplets'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
