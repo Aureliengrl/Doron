@@ -25,69 +25,38 @@ class ProductMatchingService {
       final searchTags = _convertUserTagsToSearchTags(userTags);
       print('🏷️ Tags de recherche: $searchTags');
 
-      // 🎯 FILTRAGE FIREBASE PAR SEXE (critère le plus discriminant)
+      // ✅ CHARGEMENT SIMPLE SANS FILTRES RESTRICTIFS
+      // On charge TOUS les produits et on filtre côté client
       Query<Map<String, dynamic>> query = _firestore.collection('products');
 
-      final gender = userTags['gender'] ?? userTags['recipientGender'];
-      String? genderFilter;
-      if (gender != null) {
-        final genderStr = gender.toString().toLowerCase();
-        if (genderStr.contains('homme') || genderStr.contains('male')) {
-          genderFilter = 'homme';
-        } else if (genderStr.contains('femme') || genderStr.contains('female')) {
-          genderFilter = 'femme';
-        }
-      }
-
-      // Filtrer par sexe SI disponible (réduit drastiquement le bruit)
-      if (genderFilter != null) {
-        query = query.where('tags', arrayContains: genderFilter);
-        print('🎯 Filtrage Firebase par sexe: $genderFilter');
-      }
-
-      // Si une catégorie est spécifiée, filtrer aussi
-      if (category != null && category != 'Pour toi' && category != 'all') {
-        // Si déjà un filtre sexe, on ne peut pas faire 2 arrayContains
-        // On va donc charger plus et filtrer côté client
-        if (genderFilter == null) {
-          query = query.where('categories', arrayContains: category.toLowerCase());
-          print('🎯 Filtrage Firebase par catégorie: $category');
-        }
-      }
-
-      // Charger 2000 produits (augmenté pour plus de variété)
-      var snapshot = await query.limit(2000).get();
+      // Charger TOUS les produits (sans filtres restrictifs)
+      print('📦 Chargement de TOUS les produits Firebase...');
+      var snapshot = await query.limit(3000).get();
       var allProducts = snapshot.docs.map((doc) {
         final data = doc.data();
-        data['id'] = doc.id;
-        return data;
+
+        // ✅ NORMALISER les champs Firebase vers le format attendu
+        return {
+          'id': doc.id,
+          'name': data['product_title'] ?? data['name'] ?? 'Produit',
+          'brand': data['platform'] ?? data['brand'] ?? '',
+          'price': data['product_price'] ?? data['price'] ?? 0,
+          'image': data['product_photo'] ?? data['image'] ?? data['imageUrl'] ?? '',
+          'imageUrl': data['product_photo'] ?? data['image'] ?? data['imageUrl'] ?? '',
+          'url': data['product_url'] ?? data['url'] ?? '',
+          'source': data['platform'] ?? data['source'] ?? 'Amazon',
+          'categories': data['categories'] ?? data['tags'] ?? [],
+          'tags': data['tags'] ?? [],
+          'gender': data['gender'] ?? 'unisexe',
+          'category': data['category'] ?? '',
+          // Garder aussi les champs originaux au cas où
+          ...data,
+        };
       }).toList();
 
-      print('📦 ${allProducts.length} produits chargés depuis Firebase');
+      print('📦 ${allProducts.length} produits chargés depuis Firebase (normalisés)');
 
-      // 🔥 RETRY SANS FILTRE si Firebase retourne 0 (le filtre sexe peut être trop restrictif)
-      if (allProducts.isEmpty && genderFilter != null) {
-        print('⚠️ Aucun produit avec filtre sexe, retry SANS filtre...');
-        query = _firestore.collection('products');
-        snapshot = await query.limit(2000).get();
-        allProducts = snapshot.docs.map((doc) {
-          final data = doc.data();
-          data['id'] = doc.id;
-          return data;
-        }).toList();
-        print('📦 ${allProducts.length} produits chargés depuis Firebase SANS filtre');
-      }
-
-      // Filtrer par catégorie côté client si nécessaire
-      if (category != null && category != 'Pour toi' && category != 'all' && genderFilter != null) {
-        final categoryLower = category.toLowerCase();
-        allProducts = allProducts.where((product) {
-          final categories = (product['categories'] as List?)?.cast<String>() ?? [];
-          return categories.any((cat) => cat.toLowerCase() == categoryLower);
-        }).toList();
-        print('📦 ${allProducts.length} produits après filtre catégorie côté client');
-      }
-
+      // Si Firebase est vide, charger depuis fallback
       if (allProducts.isEmpty) {
         print('⚠️ Firebase vide, chargement depuis assets (fallback_products.json)...');
         allProducts.addAll(await _loadFallbackProducts());
