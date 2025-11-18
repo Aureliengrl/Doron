@@ -111,7 +111,7 @@ class ProductImage extends StatelessWidget {
       imageUrl: imageUrl,
       height: height,
       width: double.infinity,
-      fit: BoxFit.cover,
+      fit: BoxFit.contain, // ✅ CONTAIN pour garder les proportions
       borderRadius: borderRadius,
       placeholderColor: Colors.grey[100],
     );
