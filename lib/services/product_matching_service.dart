@@ -122,6 +122,40 @@ class ProductMatchingService {
 
       AppLogger.success('✅ ${allProducts.length} produits chargés depuis Firebase - AUCUN FALLBACK', 'Matching');
 
+      // ============= FILTRAGE STRICT PAR TYPE DE CADEAU =============
+      // Si l'utilisateur a spécifié des types de cadeaux privilégiés, FILTRER STRICTEMENT
+      final giftTypes = userTags['giftTypes'];
+      if (giftTypes != null) {
+        final typesList = giftTypes is List ? giftTypes : [giftTypes];
+        if (typesList.isNotEmpty) {
+          final beforeFilter = allProducts.length;
+
+          // Normaliser les types de cadeaux recherchés
+          final normalizedGiftTypes = typesList
+              .map((t) => _normalizeTag(t.toString()))
+              .toSet();
+
+          allProducts = allProducts.where((product) {
+            final productTags = (product['tags'] as List?)?.cast<String>() ?? [];
+            final productCategories = (product['categories'] as List?)?.cast<String>() ?? [];
+            final productCategory = product['category']?.toString() ?? '';
+            final allProductTags = {
+              ...productTags.map((t) => _normalizeTag(t)),
+              ...productCategories.map((t) => _normalizeTag(t)),
+              if (productCategory.isNotEmpty) _normalizeTag(productCategory),
+            };
+
+            // Vérifier si le produit correspond à AU MOINS UN type de cadeau recherché
+            return normalizedGiftTypes.any((giftType) =>
+              allProductTags.contains(giftType) ||
+              allProductTags.any((tag) => tag.contains(giftType) || giftType.contains(tag))
+            );
+          }).toList();
+
+          AppLogger.firebase('🎁 FILTRE TYPE CADEAU (${typesList.join(", ")}): $beforeFilter → ${allProducts.length} produits');
+        }
+      }
+
       // Scorer et trier les produits par pertinence
       AppLogger.info('🎯 Début du scoring de ${allProducts.length} produits...', 'Matching');
       final scoredProducts = <Map<String, dynamic>>[];
@@ -429,7 +463,7 @@ class ProductMatchingService {
       }
     }
 
-    // 🎯 PRIORITÉ 2: ÂGE (poids très fort - 35 points max)
+    // 🎯 PRIORITÉ 2: ÂGE avec préférences catégorielles (poids très fort - 45 points max)
     final age = userTags['age'] ?? userTags['recipientAge'];
     if (age != null) {
       final ageInt = age is int ? age : int.tryParse(age.toString()) ?? 25;
@@ -447,14 +481,45 @@ class ProductMatchingService {
 
       // Match exact de la tranche d'âge
       if (allProductTags.any((tag) => tag.toLowerCase() == ageGroup)) {
-        score += 35.0; // Bonus énorme pour match âge
+        score += 45.0; // Bonus énorme pour match âge exact
+      }
+
+      // 🎨 BONUS SPÉCIFIQUE PAR ÂGE - Préférences catégorielles
+      // 18-25 ans → Plus de mode, tech, gaming
+      if (ageInt >= 18 && ageInt < 26) {
+        if (allProductTags.any((tag) => ['fashion', 'mode', 'vetement', 'style'].contains(_normalizeTag(tag)))) {
+          score += 30.0; // Énorme bonus mode pour 18-25 ans
+        }
+        if (allProductTags.any((tag) => ['tech', 'gaming', 'hightech'].contains(_normalizeTag(tag)))) {
+          score += 25.0; // Gros bonus tech/gaming pour jeunes
+        }
+      }
+      // 26-35 ans → Tech, sport, maison, voyages
+      else if (ageInt >= 26 && ageInt < 36) {
+        if (allProductTags.any((tag) => ['tech', 'sport', 'home', 'travel', 'voyage'].contains(_normalizeTag(tag)))) {
+          score += 20.0;
+        }
+      }
+      // 36-50 ans → Maison, cuisine, bien-être, mode classique
+      else if (ageInt >= 36 && ageInt < 51) {
+        if (allProductTags.any((tag) => ['home', 'cooking', 'wellness', 'beauty'].contains(_normalizeTag(tag)))) {
+          score += 20.0;
+        }
+      }
+      // 50+ ans → Bien-être, maison, jardinage, livres
+      else if (ageInt >= 51) {
+        if (allProductTags.any((tag) => ['wellness', 'home', 'book', 'jardin'].contains(_normalizeTag(tag)))) {
+          score += 20.0;
+        }
       }
     }
 
-    // 🎯 CRITÈRE 3: Centres d'intérêt / Hobbies (20 points max)
+    // 🎯 CRITÈRE 3: Centres d'intérêt / Hobbies / Passions (35 points max)
     final interests = userTags['interests'] ?? userTags['hobbies'] ?? userTags['recipientHobbies'];
     if (interests != null) {
       final interestsList = interests is List ? interests : [interests];
+      int matchCount = 0;
+
       for (var interest in interestsList) {
         final normalizedInterest = _normalizeTag(interest.toString());
         // Vérifier match exact ou partiel avec tags normalisés
@@ -465,8 +530,15 @@ class ProductMatchingService {
                  normalizedInterest.contains(normalizedTag);
         });
         if (hasMatch) {
-          score += 20.0;
-          break; // Un seul bonus par produit pour éviter surpondération
+          matchCount++;
+          // Premier match = 35 points, deuxième = 15 points, troisième+ = 5 points
+          if (matchCount == 1) {
+            score += 35.0; // Bonus énorme pour le premier intérêt matché
+          } else if (matchCount == 2) {
+            score += 15.0; // Bonus moyen pour un deuxième intérêt
+          } else if (matchCount <= 4) {
+            score += 5.0; // Petit bonus pour intérêts supplémentaires
+          }
         }
       }
     }
