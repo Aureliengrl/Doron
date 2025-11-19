@@ -524,61 +524,6 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                   ),
                 ),
               ),
-              // Bouton Admin - Nettoyer produits incomplets
-              Padding(
-                padding: EdgeInsetsDirectional.fromSTEB(20.0, 12.0, 20.0, 0.0),
-                child: InkWell(
-                  splashColor: Colors.transparent,
-                  focusColor: Colors.transparent,
-                  hoverColor: Colors.transparent,
-                  highlightColor: Colors.transparent,
-                  onTap: () async {
-                    context.pushNamed('AdminProducts');
-                  },
-                  child: Container(
-                    width: double.infinity,
-                    height: 60.0,
-                    decoration: BoxDecoration(
-                      color: Color(0xFFFF9800), // Orange
-                      boxShadow: [
-                        BoxShadow(
-                          blurRadius: 5.0,
-                          color: Color(0xFFFF9800).withOpacity(0.3),
-                          offset: Offset(0.0, 2.0),
-                        )
-                      ],
-                      borderRadius: BorderRadius.circular(12.0),
-                      shape: BoxShape.rectangle,
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.all(8.0),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.max,
-                        children: [
-                          Icon(
-                            Icons.cleaning_services,
-                            color: Colors.white,
-                            size: 24.0,
-                          ),
-                          SizedBox(width: 12.0),
-                          Text(
-                            '🧹 Admin - Nettoyer produits',
-                            style: FlutterFlowTheme.of(context)
-                                .titleSmall
-                                .override(
-                                  font: GoogleFonts.interTight(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  letterSpacing: 0.0,
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
               Padding(
                 padding: EdgeInsetsDirectional.fromSTEB(20.0, 12.0, 20.0, 0.0),
                 child: InkWell(
