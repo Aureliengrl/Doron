@@ -119,7 +119,7 @@ class CachedImage extends StatelessWidget {
   }
 }
 
-/// Widget optimisé spécifiquement pour les cartes produits
+/// Widget optimisé spécifiquement pour les cartes produits (Pinterest)
 class ProductImage extends StatelessWidget {
   final String imageUrl;
   final double height;
@@ -138,9 +138,35 @@ class ProductImage extends StatelessWidget {
       imageUrl: imageUrl,
       height: height,
       width: double.infinity,
-      fit: BoxFit.contain, // ✅ CONTAIN pour garder les proportions sans étirement
+      fit: BoxFit.contain, // ✅ CONTAIN pour garder les proportions sans étirement (Pinterest)
       borderRadius: borderRadius,
       placeholderColor: Colors.grey[100],
+    );
+  }
+}
+
+/// Widget optimisé pour le mode Inspirations (plein écran)
+class FullscreenProductImage extends StatelessWidget {
+  final String imageUrl;
+  final double height;
+  final BorderRadius? borderRadius;
+
+  const FullscreenProductImage({
+    super.key,
+    required this.imageUrl,
+    this.height = double.infinity,
+    this.borderRadius,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return CachedImage(
+      imageUrl: imageUrl,
+      height: height,
+      width: double.infinity,
+      fit: BoxFit.cover, // ✅ COVER pour remplir l'écran (Inspirations TikTok)
+      borderRadius: borderRadius,
+      placeholderColor: Colors.grey[900],
     );
   }
 }

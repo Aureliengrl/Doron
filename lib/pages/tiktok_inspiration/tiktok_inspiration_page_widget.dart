@@ -388,7 +388,7 @@ class _TikTokInspirationPageWidgetState
       fit: StackFit.expand,
       children: [
         // Image en plein écran
-        ProductImage(
+        FullscreenProductImage(
           imageUrl: product['image'] as String? ?? '',
           height: double.infinity,
           borderRadius: BorderRadius.zero,
