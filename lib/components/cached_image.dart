@@ -138,7 +138,7 @@ class ProductImage extends StatelessWidget {
       imageUrl: imageUrl,
       height: height,
       width: double.infinity,
-      fit: BoxFit.contain, // ✅ CONTAIN pour garder les proportions sans étirement (Pinterest)
+      fit: BoxFit.cover, // ✅ COVER pour remplir les cadres sans bandes blanches ni étirement
       borderRadius: borderRadius,
       placeholderColor: Colors.grey[100],
     );

@@ -31,6 +31,7 @@ class TikTokInspirationPageModel extends ChangeNotifier {
   /// Charge les produits via ProductMatchingService (Firebase-first)
   /// Précharge 20 produits pour l'expérience TikTok avec scroll vertical
   Future<void> loadProducts() async {
+    print('🎬 TikTok Inspiration: Début loadProducts()');
     _isLoading = true;
     _hasError = false;
     _errorMessage = '';
@@ -39,7 +40,9 @@ class TikTokInspirationPageModel extends ChangeNotifier {
 
     try {
       // Charger les tags du profil utilisateur
+      print('🏷️ TikTok Inspiration: Chargement des tags utilisateur...');
       final userProfileTags = await FirebaseDataService.loadUserProfileTags();
+      print('🏷️ TikTok Inspiration: Tags chargés: $userProfileTags');
 
       // Charger les IDs des produits déjà vus
       final prefs = await SharedPreferences.getInstance();
@@ -50,14 +53,18 @@ class TikTokInspirationPageModel extends ChangeNotifier {
 
       // 🎯 Générer les produits via ProductMatchingService
       // Prefetch 30 produits pour un scroll fluide (on en affichera 20 à la fois)
+      print('🔄 TikTok Inspiration: Appel ProductMatchingService (mode discovery)...');
       final rawProducts = await ProductMatchingService.getPersonalizedProducts(
         userTags: userProfileTags ?? {},
         count: 30,
         excludeProductIds: seenProductIds,
-        strictFiltering: false, // Mode SOUPLE pour Inspirations (variété et découverte)
+        filteringMode: "discovery", // Mode DISCOVERY: Très souple, variété maximale
       );
 
+      print('✅ TikTok Inspiration: ProductMatchingService retourné ${rawProducts.length} produits');
+
       if (rawProducts.isEmpty) {
+        print('⚠️ TikTok Inspiration: Aucun produit retourné');
         _errorMessage = '📦 Pas de nouveaux produits';
         _errorDetails = 'Tous les produits disponibles ont déjà été vus. Reviens plus tard !';
         _hasError = true;

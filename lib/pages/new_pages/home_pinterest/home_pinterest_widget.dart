@@ -148,7 +148,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
         count: HomePinterestModel.productsPerPage,
         category: _model.activeCategory != 'Pour toi' ? _model.activeCategory : null,
         excludeProductIds: seenProductIds,
-        strictFiltering: false, // Mode SOUPLE pour la page d'accueil (variété)
+        filteringMode: "home", // Mode HOME: Strict sur sexe (basé sur soi-même)
       );
 
       print('✅ ProductMatchingService a retourné ${rawProducts.length} produits');
@@ -245,7 +245,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
         count: HomePinterestModel.productsPerPage,
         category: _model.activeCategory != 'Pour toi' ? _model.activeCategory : null,
         excludeProductIds: seenProductIds,
-        strictFiltering: false, // Mode SOUPLE pour la page d'accueil (variété)
+        filteringMode: "home", // Mode HOME: Strict sur sexe (basé sur soi-même)
       );
 
       // Convertir au format attendu et ajouter URLs intelligentes

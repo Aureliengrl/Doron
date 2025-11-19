@@ -10,16 +10,21 @@ class ProductMatchingService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   /// Génère des produits personnalisés en matchant les tags utilisateur avec la base de produits
+  ///
+  /// Mode de filtrage:
+  /// - "home": Page d'accueil - Strict sur SEXE uniquement (basé sur soi), souple sur le reste
+  /// - "person": Recherche personne - Modéré sur tout (scoring uniquement pour cadeaux innovants)
+  /// - "discovery": Mode Inspirations - Très souple, variété maximale
   static Future<List<Map<String, dynamic>>> getPersonalizedProducts({
     required Map<String, dynamic> userTags,
     int count = 50,
     String? category,
     List<dynamic>? excludeProductIds, // Pour refresh intelligent
-    bool strictFiltering = false, // false = page accueil (souple), true = recherche personne (strict)
+    String filteringMode = "discovery", // "home", "person", "discovery"
   }) async {
     try {
       AppLogger.info('🎯 Matching produits pour tags: ${userTags.keys.join(", ")}', 'Matching');
-      AppLogger.info('🔒 Mode filtrage: ${strictFiltering ? "STRICT (recherche personne)" : "SOUPLE (page accueil)"}', 'Matching');
+      AppLogger.info('🔒 Mode filtrage: $filteringMode', 'Matching');
       AppLogger.debug('📋 User tags complets: $userTags', 'Matching');
       AppLogger.info('🚫 Exclusion de ${excludeProductIds?.length ?? 0} produits', 'Matching');
 
@@ -42,20 +47,20 @@ class ProductMatchingService {
         }
       }
 
-      // ⚙️ FILTRAGE PAR SEXE - Seulement en mode STRICT (recherche personne)
-      if (strictFiltering && genderFilter != null) {
+      // ⚙️ FILTRAGE PAR SEXE
+      // - MODE HOME: Filtre strict par sexe (basé sur soi-même)
+      // - MODE PERSON: Pas de filtre Firebase (scoring favorise mais permet innovation)
+      // - MODE DISCOVERY: Pas de filtre Firebase (variété maximale)
+      if (filteringMode == "home" && genderFilter != null) {
         query = query.where('tags', arrayContains: genderFilter);
-        AppLogger.firebase('🔒 STRICT - Filtrage Firebase par sexe: $genderFilter');
+        AppLogger.firebase('🏠 HOME - Filtrage Firebase STRICT par sexe: $genderFilter');
       } else if (genderFilter != null) {
-        AppLogger.info('🌐 SOUPLE - Pas de filtre sexe Firebase, on charge tout (scoring favorisera $genderFilter)', 'Matching');
+        AppLogger.info('🌐 ${filteringMode.toUpperCase()} - Pas de filtre sexe Firebase, scoring favorisera $genderFilter', 'Matching');
       }
 
-      // ⚙️ FILTRAGE PAR CATÉGORIE - Seulement en mode STRICT
-      if (strictFiltering && category != null && category != 'Pour toi' && category != 'all') {
-        if (genderFilter == null) {
-          query = query.where('categories', arrayContains: category.toLowerCase());
-          AppLogger.firebase('🔒 STRICT - Filtrage Firebase par catégorie: $category');
-        }
+      // ⚙️ FILTRAGE PAR CATÉGORIE - Jamais en mode HOME ou PERSON (seulement scoring)
+      if (category != null && category != 'Pour toi' && category != 'all') {
+        AppLogger.info('📁 Catégorie demandée: $category (scoring uniquement, pas de filtre Firebase)', 'Matching');
       }
 
       // Charger 2000 produits (augmenté pour plus de variété)
@@ -125,41 +130,13 @@ class ProductMatchingService {
 
       AppLogger.success('✅ ${allProducts.length} produits chargés depuis Firebase - AUCUN FALLBACK', 'Matching');
 
-      // ============= FILTRAGE STRICT PAR TYPE DE CADEAU =============
-      // Si l'utilisateur a spécifié des types de cadeaux privilégiés, FILTRER STRICTEMENT SEULEMENT EN MODE STRICT
+      // ============= FILTRAGE PAR TYPE DE CADEAU =============
+      // JAMAIS de filtrage strict sur les types de cadeaux - seulement scoring
+      // Cela permet d'avoir des cadeaux innovants même en mode PERSON
       final giftTypes = userTags['giftTypes'];
-      if (strictFiltering && giftTypes != null) {
+      if (giftTypes != null) {
         final typesList = giftTypes is List ? giftTypes : [giftTypes];
-        if (typesList.isNotEmpty) {
-          final beforeFilter = allProducts.length;
-
-          // Normaliser les types de cadeaux recherchés
-          final normalizedGiftTypes = typesList
-              .map((t) => _normalizeTag(t.toString()))
-              .toSet();
-
-          allProducts = allProducts.where((product) {
-            final productTags = (product['tags'] as List?)?.cast<String>() ?? [];
-            final productCategories = (product['categories'] as List?)?.cast<String>() ?? [];
-            final productCategory = product['category']?.toString() ?? '';
-            final allProductTags = {
-              ...productTags.map((t) => _normalizeTag(t)),
-              ...productCategories.map((t) => _normalizeTag(t)),
-              if (productCategory.isNotEmpty) _normalizeTag(productCategory),
-            };
-
-            // Vérifier si le produit correspond à AU MOINS UN type de cadeau recherché
-            return normalizedGiftTypes.any((giftType) =>
-              allProductTags.contains(giftType) ||
-              allProductTags.any((tag) => tag.contains(giftType) || giftType.contains(tag))
-            );
-          }).toList();
-
-          AppLogger.firebase('🔒 STRICT - FILTRE TYPE CADEAU (${typesList.join(", ")}): $beforeFilter → ${allProducts.length} produits');
-        }
-      } else if (giftTypes != null) {
-        final typesList = giftTypes is List ? giftTypes : [giftTypes];
-        AppLogger.info('🌐 SOUPLE - Pas de filtre type cadeau Firebase, on charge tout (scoring favorisera ${typesList.join(", ")})', 'Matching');
+        AppLogger.info('🎁 Types de cadeaux demandés: ${typesList.join(", ")} (scoring favorisera ces types)', 'Matching');
       }
 
       // Scorer et trier les produits par pertinence
@@ -270,13 +247,13 @@ class ProductMatchingService {
           continue; // Skip, trop de produits de cette catégorie
         }
 
-        // 6️⃣ Vérifier correspondance sexe - SEULEMENT EN MODE STRICT
-        // En mode SOUPLE (page accueil), on laisse passer pour plus de variété (scoring favorisera le bon sexe)
-        // En mode STRICT (recherche personne), on filtre strictement pour éviter des erreurs (ex: leggings fille pour papa)
-        if (strictFiltering && genderFilter != null) {
+        // 6️⃣ Vérifier correspondance sexe - SEULEMENT EN MODE HOME
+        // En mode HOME (page accueil), filtre strict pour cadeaux adaptés à SOI-MÊME
+        // En mode PERSON/DISCOVERY, on laisse passer pour innovation et variété (scoring favorisera)
+        if (filteringMode == "home" && genderFilter != null) {
           final productTags = (product['tags'] as List?)?.cast<String>() ?? [];
           if (!productTags.contains(genderFilter)) {
-            // Ce produit n'a pas le bon tag de sexe, on le skip en mode strict
+            // Ce produit n'a pas le bon tag de sexe, on le skip en mode HOME
             continue;
           }
         }
