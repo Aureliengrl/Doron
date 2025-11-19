@@ -102,9 +102,16 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
       // Charger les tags utilisateur depuis Firebase (nouvelle architecture)
       final userProfileTags = await FirebaseDataService.loadUserProfileTags();
 
+      print('🏷️ User profile tags: $userProfileTags');
+
       // Extraire et stocker le prénom
       final firstName = userProfileTags?['firstName'] as String? ?? '';
       _model.setFirstName(firstName);
+
+      // ✅ TOUJOURS utiliser les tags, même vides (ProductMatchingService gère ça)
+      final tagsToUse = userProfileTags ?? {};
+
+      print('📋 Tags utilisés pour matching: $tagsToUse');
 
       // Charger les sections thématiques (seulement pour "Pour toi")
       if (_model.activeCategory == 'Pour toi' && userProfileTags != null) {
@@ -135,12 +142,15 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
       print('📋 ${seenProductIds.length} produits déjà vus dans la catégorie ${_model.activeCategory}');
 
       // 🎯 Générer les produits via ProductMatchingService (Firebase-first)
+      print('🔄 Appel ProductMatchingService avec ${tagsToUse.length} tags...');
       final rawProducts = await ProductMatchingService.getPersonalizedProducts(
-        userTags: userProfileTags ?? {},
+        userTags: tagsToUse,
         count: HomePinterestModel.productsPerPage,
         category: _model.activeCategory != 'Pour toi' ? _model.activeCategory : null,
         excludeProductIds: seenProductIds,
       );
+
+      print('✅ ProductMatchingService a retourné ${rawProducts.length} produits');
 
       // Convertir au format attendu et ajouter URLs intelligentes
       final products = rawProducts.map((product) {
@@ -156,6 +166,8 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           'match': ((product['_matchScore'] ?? 0.0) as double).toInt().clamp(0, 100),
         };
       }).toList();
+
+      print('📦 ${products.length} produits convertis pour affichage');
 
       // Sauvegarder les nouveaux IDs dans le cache
       final newSeenIds = <String>[...seenProductIds.map((id) => id.toString())];
