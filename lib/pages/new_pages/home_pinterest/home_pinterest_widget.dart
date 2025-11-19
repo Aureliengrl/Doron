@@ -1350,58 +1350,24 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Image
+              // Image seule, sans badge
               AspectRatio(
-                aspectRatio: 0.65,)
-                child: Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(24),
-                        topRight: Radius.circular(24),
-                      ),
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: double.infinity,
-                        child: ProductImage(
-                          imageUrl: product['image'] as String? ?? '',
-                          height: double.infinity,
-                          borderRadius: BorderRadius.zero,
-                        ),
-                      ),
+                aspectRatio: 0.65,
+                child: ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: double.infinity,
+                    child: ProductImage(
+                      imageUrl: product['image'] as String? ?? '',
+                      height: double.infinity,
+                      borderRadius: BorderRadius.zero,
                     ),
-                  // Badge catégorie en haut à gauche
-                  if (product['category'] != null && product['category'] != '')
-                    Positioned(
-                      top: 12,
-                      left: 12,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: violetColor.withOpacity(0.95),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 8,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          _getCategoryEmoji(product['category'] as String),
-                          style: GoogleFonts.poppins(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+                  ),
+                ),
               ),
             ],
           ),
