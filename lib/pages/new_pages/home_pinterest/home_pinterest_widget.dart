@@ -1350,9 +1350,9 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Image avec bouton coeur et badge catégorie
+              // Image
               AspectRatio(
-                aspectRatio: 0.65,
+                aspectRatio: 0.65,)
                 child: Stack(
                   children: [
                     ClipRRect(
