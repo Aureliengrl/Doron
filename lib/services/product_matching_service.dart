@@ -15,9 +15,11 @@ class ProductMatchingService {
     int count = 50,
     String? category,
     List<dynamic>? excludeProductIds, // Pour refresh intelligent
+    bool strictFiltering = false, // false = page accueil (souple), true = recherche personne (strict)
   }) async {
     try {
       AppLogger.info('🎯 Matching produits pour tags: ${userTags.keys.join(", ")}', 'Matching');
+      AppLogger.info('🔒 Mode filtrage: ${strictFiltering ? "STRICT (recherche personne)" : "SOUPLE (page accueil)"}', 'Matching');
       AppLogger.debug('📋 User tags complets: $userTags', 'Matching');
       AppLogger.info('🚫 Exclusion de ${excludeProductIds?.length ?? 0} produits', 'Matching');
 
@@ -25,8 +27,7 @@ class ProductMatchingService {
       final searchTags = _convertUserTagsToSearchTags(userTags);
       AppLogger.debug('🏷️ Tags de recherche: $searchTags', 'Matching');
 
-      // 🎯 FILTRAGE FIREBASE PAR SEXE (critère le plus discriminant)
-      // Utiliser la collection 'gifts' (nouvelle) avec fallback vers 'products' (ancienne)
+      // 🎯 FILTRAGE FIREBASE - Différent selon le mode
       Query<Map<String, dynamic>> query = _firestore.collection('gifts');
       AppLogger.firebase('🎁 Chargement depuis collection Firebase: gifts');
 
@@ -41,17 +42,19 @@ class ProductMatchingService {
         }
       }
 
-      // ✅ FILTRE SEXE RÉACTIVÉ pour éviter produits beauté fille pour père
-      if (genderFilter != null) {
+      // ⚙️ FILTRAGE PAR SEXE - Seulement en mode STRICT (recherche personne)
+      if (strictFiltering && genderFilter != null) {
         query = query.where('tags', arrayContains: genderFilter);
-        AppLogger.firebase('🎯 Filtrage Firebase par sexe: $genderFilter');
+        AppLogger.firebase('🔒 STRICT - Filtrage Firebase par sexe: $genderFilter');
+      } else if (genderFilter != null) {
+        AppLogger.info('🌐 SOUPLE - Pas de filtre sexe Firebase, on charge tout (scoring favorisera $genderFilter)', 'Matching');
       }
 
-      // ✅ FILTRE CATÉGORIE RÉACTIVÉ pour meilleure pertinence
-      if (category != null && category != 'Pour toi' && category != 'all') {
+      // ⚙️ FILTRAGE PAR CATÉGORIE - Seulement en mode STRICT
+      if (strictFiltering && category != null && category != 'Pour toi' && category != 'all') {
         if (genderFilter == null) {
           query = query.where('categories', arrayContains: category.toLowerCase());
-          AppLogger.firebase('🎯 Filtrage Firebase par catégorie: $category');
+          AppLogger.firebase('🔒 STRICT - Filtrage Firebase par catégorie: $category');
         }
       }
 
@@ -123,9 +126,9 @@ class ProductMatchingService {
       AppLogger.success('✅ ${allProducts.length} produits chargés depuis Firebase - AUCUN FALLBACK', 'Matching');
 
       // ============= FILTRAGE STRICT PAR TYPE DE CADEAU =============
-      // Si l'utilisateur a spécifié des types de cadeaux privilégiés, FILTRER STRICTEMENT
+      // Si l'utilisateur a spécifié des types de cadeaux privilégiés, FILTRER STRICTEMENT SEULEMENT EN MODE STRICT
       final giftTypes = userTags['giftTypes'];
-      if (giftTypes != null) {
+      if (strictFiltering && giftTypes != null) {
         final typesList = giftTypes is List ? giftTypes : [giftTypes];
         if (typesList.isNotEmpty) {
           final beforeFilter = allProducts.length;
@@ -152,8 +155,11 @@ class ProductMatchingService {
             );
           }).toList();
 
-          AppLogger.firebase('🎁 FILTRE TYPE CADEAU (${typesList.join(", ")}): $beforeFilter → ${allProducts.length} produits');
+          AppLogger.firebase('🔒 STRICT - FILTRE TYPE CADEAU (${typesList.join(", ")}): $beforeFilter → ${allProducts.length} produits');
         }
+      } else if (giftTypes != null) {
+        final typesList = giftTypes is List ? giftTypes : [giftTypes];
+        AppLogger.info('🌐 SOUPLE - Pas de filtre type cadeau Firebase, on charge tout (scoring favorisera ${typesList.join(", ")})', 'Matching');
       }
 
       // Scorer et trier les produits par pertinence
@@ -264,11 +270,13 @@ class ProductMatchingService {
           continue; // Skip, trop de produits de cette catégorie
         }
 
-        // 6️⃣ Vérifier correspondance sexe (CRITIQUE pour éviter leggings fille pour papa)
-        if (genderFilter != null) {
+        // 6️⃣ Vérifier correspondance sexe - SEULEMENT EN MODE STRICT
+        // En mode SOUPLE (page accueil), on laisse passer pour plus de variété (scoring favorisera le bon sexe)
+        // En mode STRICT (recherche personne), on filtre strictement pour éviter des erreurs (ex: leggings fille pour papa)
+        if (strictFiltering && genderFilter != null) {
           final productTags = (product['tags'] as List?)?.cast<String>() ?? [];
           if (!productTags.contains(genderFilter)) {
-            // Ce produit n'a pas le bon tag de sexe, on le skip
+            // Ce produit n'a pas le bon tag de sexe, on le skip en mode strict
             continue;
           }
         }

@@ -54,6 +54,7 @@ class TikTokInspirationPageModel extends ChangeNotifier {
         userTags: userProfileTags ?? {},
         count: 30,
         excludeProductIds: seenProductIds,
+        strictFiltering: false, // Mode SOUPLE pour Inspirations (variété et découverte)
       );
 
       if (rawProducts.isEmpty) {

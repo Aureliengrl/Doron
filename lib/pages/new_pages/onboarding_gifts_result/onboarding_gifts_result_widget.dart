@@ -141,6 +141,7 @@ class _OnboardingGiftsResultWidgetState
         userTags: profileForGeneration ?? {},
         count: 50,
         excludeProductIds: forceRefresh ? seenProductIds : null,
+        strictFiltering: true, // Mode STRICT pour recherche personne (filtrage précis)
       );
 
       // Convertir les produits au format attendu et ajouter les URLs intelligentes
