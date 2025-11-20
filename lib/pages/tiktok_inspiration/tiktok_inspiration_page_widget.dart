@@ -43,7 +43,35 @@ class _TikTokInspirationPageWidgetState
     // Effacer le contexte de personne
     FirebaseDataService.setCurrentPersonContext(null);
 
+    // Charger les favoris existants pour pré-remplir les coeurs
+    _loadExistingFavorites();
+
     _model.loadProducts();
+  }
+
+  /// Charge les favoris existants pour afficher les coeurs correctement
+  Future<void> _loadExistingFavorites() async {
+    try {
+      final favorites = await queryFavouritesRecordOnce(
+        queryBuilder: (favoritesRecord) => favoritesRecord
+            .where('uid', isEqualTo: currentUserReference)
+            .where('personId', isNull: true),
+      );
+
+      setState(() {
+        _model.likedProductTitles.clear();
+        for (var fav in favorites) {
+          final productTitle = fav.product.productTitle;
+          if (productTitle.isNotEmpty) {
+            _model.likedProductTitles.add(productTitle);
+          }
+        }
+      });
+
+      print('✅ ${_model.likedProductTitles.length} favoris existants chargés');
+    } catch (e) {
+      print('⚠️ Erreur chargement favoris existants: $e');
+    }
   }
 
   @override

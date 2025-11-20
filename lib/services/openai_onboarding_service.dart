@@ -32,6 +32,7 @@ class OpenAIOnboardingService {
         final products = await ProductMatchingService.getPersonalizedProducts(
           userTags: userProfile,
           count: count,
+          filteringMode: "person", // Mode PERSON: modéré, permet innovation
         );
 
         AppLogger.success('${products.length} cadeaux matchés instantanément', 'OpenAI');

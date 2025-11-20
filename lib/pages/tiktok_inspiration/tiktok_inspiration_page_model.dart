@@ -49,6 +49,7 @@ class TikTokInspirationPageModel extends ChangeNotifier {
       final tagsToUse = userProfileTags ?? {
         'interests': ['découverte', 'variété'],
         'style': 'Moderne',
+        'gender': 'Non spécifié', // Ajout pour éviter les problèmes de filtrage
       };
 
       print('🎯 TikTok Inspiration: Tags utilisés pour matching: $tagsToUse');

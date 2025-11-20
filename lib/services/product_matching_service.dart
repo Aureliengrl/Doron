@@ -198,7 +198,12 @@ class ProductMatchingService {
 
       for (var product in allProducts) {
         try {
-          final score = _calculateMatchScore(product, searchTags, userTags);
+          final score = _calculateMatchScore(
+            product,
+            searchTags,
+            userTags,
+            filteringMode: filteringMode,
+          );
           scoredProducts.add({
             ...product,
             '_matchScore': score,
@@ -556,9 +561,9 @@ class ProductMatchingService {
   /// Calcule le score de matching selon le NOUVEAU SYSTÈME DE TAGS OFFICIEL
   ///
   /// LOGIQUE STRICTE (correspondance exacte REQUISE - sinon exclusion):
-  /// - Genre (gender_*)
-  /// - Catégorie principale (cat_*)
-  /// - Tranche de prix (budget_*)
+  /// - Genre (gender_*) - SAUF en mode discovery
+  /// - Catégorie principale (cat_*) - SAUF en mode discovery
+  /// - Tranche de prix (budget_*) - SAUF en mode discovery
   ///
   /// LOGIQUE SOUPLE (scoring partiel - augmente score si match):
   /// - Styles (style_*)
@@ -568,8 +573,9 @@ class ProductMatchingService {
   static double _calculateMatchScore(
     Map<String, dynamic> product,
     Set<String> searchTags,
-    Map<String, dynamic> userTags,
-  ) {
+    Map<String, dynamic> userTags, {
+    String filteringMode = "home",
+  }) {
     double score = 0.0;
 
     // Extraire TOUS les tags du produit (tags + categories)
@@ -577,13 +583,16 @@ class ProductMatchingService {
     final productCategories = (product['categories'] as List?)?.cast<String>() ?? [];
     final allProductTags = {...productTags, ...productCategories}.map((t) => t.toLowerCase()).toSet();
 
-    print('🔍 Scoring produit "${product['name']}": ${allProductTags.length} tags');
+    print('🔍 Scoring produit "${product['name']}" (mode: $filteringMode): ${allProductTags.length} tags');
+
+    // En mode DISCOVERY, on est très souple : pas d'exclusion stricte
+    final isDiscoveryMode = filteringMode == "discovery";
 
     // ========================================================================
-    // RÈGLES STRICTES - EXCLUSION SI PAS DE MATCH
+    // RÈGLES STRICTES - EXCLUSION SI PAS DE MATCH (SAUF MODE DISCOVERY)
     // ========================================================================
 
-    // 🔒 1. GENRE (STRICT - 100 points ou EXCLUSION)
+    // 🔒 1. GENRE (STRICT en home/person, SOUPLE en discovery)
     final userGenderTags = searchTags.where((t) => t.startsWith('gender_')).toList();
     if (userGenderTags.isNotEmpty) {
       final userGender = userGenderTags.first;
@@ -602,20 +611,27 @@ class ProductMatchingService {
         print('✅ Produit mixte accepté: +70 points');
         score += 70.0;
       } else {
-        // Genre ne correspond PAS => EXCLUSION TOTALE
-        print('❌ GENRE NE CORRESPOND PAS: $userGender ≠ ${productGenderTags.join(", ")} => EXCLUSION');
-        return -10000.0; // Score négatif énorme = exclusion garantie
+        // Genre ne correspond PAS
+        if (isDiscoveryMode) {
+          // En mode discovery, on pénalise mais on n'exclut PAS
+          print('⚠️ GENRE NE CORRESPOND PAS (discovery mode): $userGender ≠ ${productGenderTags.join(", ")} => Pénalité -30');
+          score -= 30.0;
+        } else {
+          // En mode home/person, EXCLUSION
+          print('❌ GENRE NE CORRESPOND PAS: $userGender ≠ ${productGenderTags.join(", ")} => EXCLUSION');
+          return -10000.0;
+        }
       }
     }
 
-    // 🔒 2. CATÉGORIE PRINCIPALE (STRICT - 80 points ou EXCLUSION)
+    // 🔒 2. CATÉGORIE PRINCIPALE (STRICT en home/person, SOUPLE en discovery)
     final userCategoryTags = searchTags.where((t) => t.startsWith('cat_')).toList();
     if (userCategoryTags.isNotEmpty) {
-      final userCategory = userCategoryTags.first; // Une seule catégorie normalement
+      final userCategory = userCategoryTags.first;
       final productCategoryTags = allProductTags.where((t) => t.startsWith('cat_')).toList();
 
       if (productCategoryTags.isEmpty) {
-        // Produit sans catégorie => petite pénalité mais pas d'exclusion
+        // Produit sans catégorie => petite pénalité
         print('⚠️ Produit sans catégorie définie: +20');
         score += 20.0;
       } else if (productCategoryTags.contains(userCategory.toLowerCase())) {
@@ -623,13 +639,20 @@ class ProductMatchingService {
         print('✅ CATÉGORIE MATCH: $userCategory = +80 points');
         score += 80.0;
       } else {
-        // Catégorie ne correspond PAS => EXCLUSION TOTALE
-        print('❌ CATÉGORIE NE CORRESPOND PAS: $userCategory ≠ ${productCategoryTags.join(", ")} => EXCLUSION');
-        return -10000.0;
+        // Catégorie ne correspond PAS
+        if (isDiscoveryMode) {
+          // En mode discovery, on pénalise mais on n'exclut PAS
+          print('⚠️ CATÉGORIE NE CORRESPOND PAS (discovery mode): $userCategory ≠ ${productCategoryTags.join(", ")} => Pénalité -20');
+          score -= 20.0;
+        } else {
+          // En mode home/person, EXCLUSION
+          print('❌ CATÉGORIE NE CORRESPOND PAS: $userCategory ≠ ${productCategoryTags.join(", ")} => EXCLUSION');
+          return -10000.0;
+        }
       }
     }
 
-    // 🔒 3. BUDGET (STRICT - 60 points ou EXCLUSION)
+    // 🔒 3. BUDGET (STRICT en home/person, SOUPLE en discovery)
     final userBudgetTags = searchTags.where((t) => t.startsWith('budget_')).toList();
     if (userBudgetTags.isNotEmpty) {
       final userBudget = userBudgetTags.first;
@@ -646,8 +669,16 @@ class ProductMatchingService {
             print('✅ BUDGET CALCULÉ MATCH: $priceInt€ = $calculatedBudget = +60 points');
             score += 60.0;
           } else {
-            print('❌ BUDGET CALCULÉ NE CORRESPOND PAS: $calculatedBudget ≠ $userBudget => EXCLUSION');
-            return -10000.0;
+            // Budget ne correspond PAS
+            if (isDiscoveryMode) {
+              // En mode discovery, on pénalise mais on n'exclut PAS
+              print('⚠️ BUDGET NE CORRESPOND PAS (discovery mode): $calculatedBudget ≠ $userBudget => Pénalité -10');
+              score -= 10.0;
+            } else {
+              // En mode home/person, EXCLUSION
+              print('❌ BUDGET CALCULÉ NE CORRESPOND PAS: $calculatedBudget ≠ $userBudget => EXCLUSION');
+              return -10000.0;
+            }
           }
         } else {
           // Pas de prix disponible => petite pénalité
@@ -659,9 +690,16 @@ class ProductMatchingService {
         print('✅ BUDGET MATCH: $userBudget = +60 points');
         score += 60.0;
       } else {
-        // Budget ne correspond PAS => EXCLUSION TOTALE
-        print('❌ BUDGET NE CORRESPOND PAS: $userBudget ≠ ${productBudgetTags.join(", ")} => EXCLUSION');
-        return -10000.0;
+        // Budget ne correspond PAS
+        if (isDiscoveryMode) {
+          // En mode discovery, on pénalise mais on n'exclut PAS
+          print('⚠️ BUDGET NE CORRESPOND PAS (discovery mode): $userBudget ≠ ${productBudgetTags.join(", ")} => Pénalité -10');
+          score -= 10.0;
+        } else {
+          // En mode home/person, EXCLUSION
+          print('❌ BUDGET NE CORRESPOND PAS: $userBudget ≠ ${productBudgetTags.join(", ")} => EXCLUSION');
+          return -10000.0;
+        }
       }
     }
 

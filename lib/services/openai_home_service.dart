@@ -39,6 +39,7 @@ class OpenAIHomeService {
           count: count,
           category: category,
           excludeProductIds: excludeIds,
+          filteringMode: "home", // Mode HOME: strict sur genre, souple sur le reste
         );
 
         print('✅ ${products.length} produits matchés instantanément');
