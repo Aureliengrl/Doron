@@ -1,204 +1,227 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
-import 'dart:convert';
-import 'package:flutter/services.dart' show rootBundle;
+import '/utils/app_logger.dart';
+import '/services/tags_definitions.dart';
 
 /// Service de matching de produits basé sur les tags
 /// Remplace les appels OpenAI pour des résultats instantanés
+/// ⚠️ TOUS les produits viennent UNIQUEMENT de Firebase (collections 'gifts' ou 'products')
+/// ⛔ PLUS AUCUN FALLBACK - Si Firebase vide, l'app crash pour identifier le problème
 class ProductMatchingService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  static List<Map<String, dynamic>>? _cachedFallbackProducts;
+
+  /// Extrait l'URL de l'image d'un produit en cherchant dans TOUS les champs possibles
+  /// Retourne une URL par défaut si aucune image n'est trouvée
+  static String _extractImageUrl(Map<String, dynamic> product) {
+    // Liste EXHAUSTIVE de tous les champs possibles pour une image
+    final possibleFields = [
+      'image',
+      'imageUrl',
+      'image_url',
+      'photo',
+      'img',
+      'product_photo',
+      'product_image',
+      'productPhoto',
+      'productImage',
+      'picture',
+      'thumbnail',
+      'main_image',
+      'mainImage',
+      'cover',
+      'coverImage',
+      'image1',
+      'images', // Parfois c'est un array
+    ];
+
+    // Essayer chaque champ
+    for (var field in possibleFields) {
+      final value = product[field];
+
+      // Si c'est une string non vide
+      if (value is String && value.isNotEmpty && value.startsWith('http')) {
+        AppLogger.debug('🖼️ Image trouvée dans champ "$field": ${value.substring(0, value.length > 50 ? 50 : value.length)}...', 'Matching');
+        return value;
+      }
+
+      // Si c'est un array, prendre le premier élément
+      if (value is List && value.isNotEmpty) {
+        final firstImage = value.first;
+        if (firstImage is String && firstImage.isNotEmpty && firstImage.startsWith('http')) {
+          AppLogger.debug('🖼️ Image trouvée dans array "$field": ${firstImage.substring(0, firstImage.length > 50 ? 50 : firstImage.length)}...', 'Matching');
+          return firstImage;
+        }
+      }
+    }
+
+    // Aucune image trouvée - logger pour debug
+    AppLogger.warning('⚠️ AUCUNE IMAGE trouvée pour produit "${product['name']}" - Champs disponibles: ${product.keys.join(", ")}', 'Matching');
+
+    // Retourner une image placeholder par défaut (icône cadeau générique)
+    return 'https://via.placeholder.com/400x400/8A2BE2/FFFFFF?text=🎁';
+  }
 
   /// Génère des produits personnalisés en matchant les tags utilisateur avec la base de produits
+  ///
+  /// Mode de filtrage:
+  /// - "home": Page d'accueil - Strict sur SEXE uniquement (basé sur soi), souple sur le reste
+  /// - "person": Recherche personne - Modéré sur tout (scoring uniquement pour cadeaux innovants)
+  /// - "discovery": Mode Inspirations - Très souple, variété maximale
   static Future<List<Map<String, dynamic>>> getPersonalizedProducts({
     required Map<String, dynamic> userTags,
     int count = 50,
     String? category,
     List<dynamic>? excludeProductIds, // Pour refresh intelligent
+    String filteringMode = "discovery", // "home", "person", "discovery"
   }) async {
     try {
-      print('🎯 Matching produits pour tags: ${userTags.keys.join(", ")}');
-      print('📋 User tags complets: $userTags');
-      print('🚫 Exclusion de ${excludeProductIds?.length ?? 0} produits');
+      AppLogger.info('🎯 Matching produits pour tags: ${userTags.keys.join(", ")}', 'Matching');
+      AppLogger.info('🔒 Mode filtrage: $filteringMode', 'Matching');
+      AppLogger.debug('📋 User tags complets: $userTags', 'Matching');
+      AppLogger.info('🚫 Exclusion de ${excludeProductIds?.length ?? 0} produits', 'Matching');
 
       // Convertir les réponses utilisateur en tags de recherche
       final searchTags = _convertUserTagsToSearchTags(userTags);
-      print('🏷️ Tags de recherche: $searchTags');
+      AppLogger.debug('🏷️ Tags de recherche: $searchTags', 'Matching');
 
-      // ✅ CHARGEMENT SIMPLE SANS FILTRES RESTRICTIFS
-      // On charge TOUS les produits et on filtre côté client
-      Query<Map<String, dynamic>> query = _firestore.collection('products');
+      // 🎯 FILTRAGE FIREBASE - Différent selon le mode
+      Query<Map<String, dynamic>> query = _firestore.collection('gifts');
+      AppLogger.firebase('🎁 Chargement depuis collection Firebase: gifts');
 
-      // Charger TOUS les produits (sans filtres restrictifs)
-      print('📦 Chargement de TOUS les produits Firebase...');
-      var snapshot = await query.limit(3000).get();
-      var allProducts = snapshot.docs.map((doc) {
-        final data = doc.data();
-
-        // ✅ NORMALISER les champs Firebase vers le format attendu
-        return {
-          'id': doc.id,
-          'name': data['product_title'] ?? data['name'] ?? 'Produit',
-          'brand': data['platform'] ?? data['brand'] ?? '',
-          'price': data['product_price'] ?? data['price'] ?? 0,
-          'image': data['product_photo'] ?? data['image'] ?? data['imageUrl'] ?? '',
-          'imageUrl': data['product_photo'] ?? data['image'] ?? data['imageUrl'] ?? '',
-          'url': data['product_url'] ?? data['url'] ?? '',
-          'source': data['platform'] ?? data['source'] ?? 'Amazon',
-          'categories': data['categories'] ?? data['tags'] ?? [],
-          'tags': data['tags'] ?? [],
-          'gender': data['gender'] ?? 'unisexe',
-          'category': data['category'] ?? '',
-          // Garder aussi les champs originaux au cas où
-          ...data,
-        };
-      }).toList();
-
-      print('📦 ${allProducts.length} produits chargés depuis Firebase (normalisés)');
-
-      // Si Firebase est vide, charger depuis fallback
-      if (allProducts.isEmpty) {
-        print('⚠️ Firebase vide, chargement depuis assets (fallback_products.json)...');
-        allProducts.addAll(await _loadFallbackProducts());
-        print('📦 ${allProducts.length} produits chargés depuis assets/jsons/fallback_products.json');
-      }
-
-      if (allProducts.isEmpty) {
-        print('⚠️ Assets vides aussi, utiliser des produits hardcodés (3 produits répétés)');
-        return _getFallbackProducts(count);
-      }
-
-      print('✨ SOURCE DES PRODUITS: ${allProducts.length} produits disponibles AVANT filtrage strict');
-
-      // ============= FILTRAGE STRICT PAR GENRE =============
-      // Si l'utilisateur a un genre, FILTRER STRICTEMENT les produits
       final gender = userTags['gender'] ?? userTags['recipientGender'];
+      String? genderFilter;
       if (gender != null) {
         final genderStr = gender.toString().toLowerCase();
-        String targetGender = '';
-
         if (genderStr.contains('homme') || genderStr.contains('male')) {
-          targetGender = 'homme';
+          genderFilter = 'homme';
         } else if (genderStr.contains('femme') || genderStr.contains('female')) {
-          targetGender = 'femme';
-        }
-
-        if (targetGender.isNotEmpty) {
-          final beforeFilter = allProducts.length;
-          allProducts = allProducts.where((product) {
-            final productTags = (product['tags'] as List?)?.cast<String>() ?? [];
-            final productCategories = (product['categories'] as List?)?.cast<String>() ?? [];
-            final allProductTags = {...productTags, ...productCategories}.map((t) => t.toLowerCase()).toSet();
-            final productGender = product['gender']?.toString().toLowerCase() ?? '';
-
-            // Accepter les produits qui correspondent au genre OU qui sont unisexes
-            return allProductTags.contains(targetGender) ||
-                   allProductTags.contains('unisexe') ||
-                   productGender == targetGender ||
-                   productGender == 'unisexe' ||
-                   productGender.isEmpty; // Produits sans genre spécifié = unisexe par défaut
-          }).toList();
-
-          print('🚹🚺 FILTRE GENRE ($targetGender): $beforeFilter → ${allProducts.length} produits');
+          genderFilter = 'femme';
         }
       }
 
-      // ============= FILTRAGE STRICT PAR TYPE DE CADEAU =============
-      // Si l'utilisateur a spécifié des types de cadeaux privilégiés, FILTRER STRICTEMENT
+      // ⚙️ FILTRAGE PAR SEXE
+      // - MODE HOME: Filtre strict par sexe (basé sur soi-même)
+      // - MODE PERSON: Pas de filtre Firebase (scoring favorise mais permet innovation)
+      // - MODE DISCOVERY: Pas de filtre Firebase (variété maximale)
+      if (filteringMode == "home" && genderFilter != null) {
+        query = query.where('tags', arrayContains: genderFilter);
+        AppLogger.firebase('🏠 HOME - Filtrage Firebase STRICT par sexe: $genderFilter');
+      } else if (genderFilter != null) {
+        AppLogger.info('🌐 ${filteringMode.toUpperCase()} - Pas de filtre sexe Firebase, scoring favorisera $genderFilter', 'Matching');
+      }
+
+      // ⚙️ FILTRAGE PAR CATÉGORIE
+      if (category != null && category != 'Pour toi' && category != 'all') {
+        AppLogger.info('📁 Catégorie sélectionnée: $category - FILTRAGE STRICT activé', 'Matching');
+      }
+
+      // Charger 2000 produits (augmenté pour plus de variété)
+      AppLogger.info('🔄 Exécution requête Firebase gifts.limit(2000)...', 'Matching');
+
+      var snapshot = await query.limit(2000).get();
+      AppLogger.success('✅ Requête Firebase réussie: ${snapshot.docs.length} documents', 'Matching');
+
+      var allProducts = <Map<String, dynamic>>[];
+      for (var doc in snapshot.docs) {
+        try {
+          final data = doc.data();
+          data['id'] = doc.id;
+          allProducts.add(data);
+        } catch (e) {
+          AppLogger.warning('⚠️ Erreur parsing produit ${doc.id}: $e', 'Matching');
+          // Continue avec les autres produits
+        }
+      }
+
+      AppLogger.firebase('📦 ${allProducts.length} produits parsés avec succès depuis Firebase');
+
+      // 🔍 DEBUG CRITIQUE: Afficher les 3 premiers produits pour vérifier structure
+      if (allProducts.isNotEmpty) {
+        AppLogger.debug('🔍 SAMPLE PRODUIT 1: ${allProducts.first}', 'Matching');
+        if (allProducts.length > 1) {
+          AppLogger.debug('🔍 SAMPLE PRODUIT 2: ${allProducts[1]}', 'Matching');
+        }
+      } else {
+        AppLogger.error('⚠️ COLLECTION GIFTS EST VIDE - Aucun produit trouvé !', 'Matching', null);
+      }
+
+      // 🔥 RETRY SANS FILTRE si Firebase retourne 0 (le filtre sexe peut être trop restrictif)
+      if (allProducts.isEmpty && genderFilter != null) {
+        AppLogger.warning('Aucun produit avec filtre sexe, retry SANS filtre...', 'Matching');
+        query = _firestore.collection('gifts');
+        snapshot = await query.limit(2000).get();
+        allProducts = snapshot.docs.map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return data;
+        }).toList();
+        AppLogger.firebase('📦 ${allProducts.length} produits chargés depuis Firebase gifts SANS filtre');
+      }
+
+      // 🔄 FALLBACK vers collection 'products' si 'gifts' est vide
+      if (allProducts.isEmpty) {
+        AppLogger.warning('Collection gifts vide, fallback vers products...', 'Matching');
+        query = _firestore.collection('products');
+        snapshot = await query.limit(2000).get();
+        allProducts = snapshot.docs.map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return data;
+        }).toList();
+        AppLogger.firebase('📦 ${allProducts.length} produits chargés depuis Firebase products (fallback)');
+      }
+
+      // ⛔ PLUS AUCUN FALLBACK - Si Firebase vide, on CRASH pour identifier le problème
+      if (allProducts.isEmpty) {
+        AppLogger.error('❌ ERREUR CRITIQUE: AUCUN PRODUIT DANS FIREBASE !', 'Matching', null);
+        AppLogger.error('Collection gifts: VIDE', 'Matching', null);
+        AppLogger.error('Collection products: VIDE', 'Matching', null);
+        AppLogger.error('⚠️ Vérifier que le scraping Replit a bien fonctionné!', 'Matching', null);
+        throw Exception('FIREBASE VIDE - Aucun produit dans gifts ni products. Le scraping Replit n\'a pas fonctionné ou les collections sont vides.');
+      }
+
+      AppLogger.success('✅ ${allProducts.length} produits chargés depuis Firebase - AUCUN FALLBACK', 'Matching');
+
+      // ============= FILTRAGE PAR TYPE DE CADEAU =============
+      // JAMAIS de filtrage strict sur les types de cadeaux - seulement scoring
+      // Cela permet d'avoir des cadeaux innovants même en mode PERSON
       final giftTypes = userTags['giftTypes'];
       if (giftTypes != null) {
         final typesList = giftTypes is List ? giftTypes : [giftTypes];
-        if (typesList.isNotEmpty) {
-          final beforeFilter = allProducts.length;
+        AppLogger.info('🎁 Types de cadeaux demandés: ${typesList.join(", ")} (scoring favorisera ces types)', 'Matching');
+      }
 
-          // Normaliser les types de cadeaux recherchés
-          final normalizedGiftTypes = typesList
-              .map((t) => _normalizeTag(t.toString()))
-              .toSet();
+      // Scorer et trier les produits par pertinence
+      AppLogger.info('🎯 Début du scoring de ${allProducts.length} produits...', 'Matching');
+      final scoredProducts = <Map<String, dynamic>>[];
+      int scoringErrors = 0;
 
-          allProducts = allProducts.where((product) {
-            final productTags = (product['tags'] as List?)?.cast<String>() ?? [];
-            final productCategories = (product['categories'] as List?)?.cast<String>() ?? [];
-            final productCategory = product['category']?.toString() ?? '';
-            final allProductTags = {
-              ...productTags.map((t) => _normalizeTag(t)),
-              ...productCategories.map((t) => _normalizeTag(t)),
-              if (productCategory.isNotEmpty) _normalizeTag(productCategory),
-            };
-
-            // Vérifier si le produit correspond à AU MOINS UN type de cadeau recherché
-            return normalizedGiftTypes.any((giftType) =>
-              allProductTags.contains(giftType) ||
-              allProductTags.any((tag) => tag.contains(giftType) || giftType.contains(tag))
-            );
-          }).toList();
-
-          print('🎁 FILTRE TYPE CADEAU (${typesList.join(", ")}): $beforeFilter → ${allProducts.length} produits');
+      for (var product in allProducts) {
+        try {
+          final score = _calculateMatchScore(product, searchTags, userTags);
+          scoredProducts.add({
+            ...product,
+            '_matchScore': score,
+          });
+        } catch (e) {
+          scoringErrors++;
+          AppLogger.warning('⚠️ Erreur scoring produit ${product['id']}: $e', 'Matching');
+          // Ajouter quand même avec score 0 pour ne pas perdre le produit
+          scoredProducts.add({
+            ...product,
+            '_matchScore': 0.0,
+          });
         }
       }
 
-      // ============= FILTRAGE PAR CATÉGORIE (pour Pinterest) =============
-      // Si une catégorie spécifique est demandée (ex: "Mode", "High Tech")
-      if (category != null && category.isNotEmpty) {
-        final beforeFilter = allProducts.length;
-        final normalizedCategory = _normalizeTag(category);
-
-        allProducts = allProducts.where((product) {
-          final productTags = (product['tags'] as List?)?.cast<String>() ?? [];
-          final productCategories = (product['categories'] as List?)?.cast<String>() ?? [];
-          final productCategory = product['category']?.toString() ?? '';
-          final allProductTags = {
-            ...productTags.map((t) => _normalizeTag(t)),
-            ...productCategories.map((t) => _normalizeTag(t)),
-            if (productCategory.isNotEmpty) _normalizeTag(productCategory),
-          };
-
-          return allProductTags.contains(normalizedCategory) ||
-                 allProductTags.any((tag) => tag.contains(normalizedCategory) || normalizedCategory.contains(tag));
-        }).toList();
-
-        print('📂 FILTRE CATÉGORIE ($category): $beforeFilter → ${allProducts.length} produits');
+      if (scoringErrors > 0) {
+        AppLogger.warning('⚠️ $scoringErrors produits ont eu des erreurs de scoring', 'Matching');
       }
-
-      // Vérifier qu'il reste des produits après filtrage
-      if (allProducts.isEmpty) {
-        print('⚠️ AUCUN produit après filtrage strict ! Relâchement des contraintes...');
-        // Recharger SANS les filtres stricts pour éviter une page vide
-        var snapshot2 = await _firestore.collection('products').limit(3000).get();
-        allProducts = snapshot2.docs.map((doc) {
-          final data = doc.data();
-          return {
-            'id': doc.id,
-            'name': data['product_title'] ?? data['name'] ?? 'Produit',
-            'brand': data['platform'] ?? data['brand'] ?? '',
-            'price': data['product_price'] ?? data['price'] ?? 0,
-            'image': data['product_photo'] ?? data['image'] ?? data['imageUrl'] ?? '',
-            'imageUrl': data['product_photo'] ?? data['image'] ?? data['imageUrl'] ?? '',
-            'url': data['product_url'] ?? data['url'] ?? '',
-            'source': data['platform'] ?? data['source'] ?? 'Amazon',
-            'categories': data['categories'] ?? data['tags'] ?? [],
-            'tags': data['tags'] ?? [],
-            'gender': data['gender'] ?? 'unisexe',
-            'category': data['category'] ?? '',
-            ...data,
-          };
-        }).toList();
-      }
-
-      print('✨ APRÈS FILTRES STRICTS: ${allProducts.length} produits disponibles pour le scoring');
-
-      // Scorer et trier les produits par pertinence
-      final scoredProducts = allProducts.map((product) {
-        final score = _calculateMatchScore(product, searchTags, userTags);
-        return {
-          ...product,
-          '_matchScore': score,
-        };
-      }).toList();
+      AppLogger.success('✅ Scoring terminé: ${scoredProducts.length} produits', 'Matching');
 
       // 🎯 PAS DE SEUIL MINIMUM - On prend les meilleurs produits peu importe leur score
       // Cela garantit qu'on a toujours des produits variés même si le matching n'est pas parfait
-      print('📊 ${scoredProducts.length} produits disponibles pour sélection');
+      AppLogger.info('📊 ${scoredProducts.length} produits disponibles pour sélection', 'Matching');
 
       // Trier par score décroissant pour avoir les meilleurs en premier
       scoredProducts.sort((a, b) => (b['_matchScore'] as double).compareTo(a['_matchScore'] as double));
@@ -220,7 +243,7 @@ class ProductMatchingService {
       final shuffledProducts = [...topProducts, ...middleProducts];
       shuffledProducts.shuffle(random);
 
-      print('🎲 Shuffle effectué: top ${topCount} produits + ${middleProducts.length} produits mélangés');
+      AppLogger.debug('🎲 Shuffle effectué: top ${topCount} produits + ${middleProducts.length} produits mélangés', 'Matching');
 
       // 🎯 DÉDUPLICATION ET DIVERSITÉ DES MARQUES (max 20% d'une même marque)
       final selectedProducts = <Map<String, dynamic>>[];
@@ -231,12 +254,12 @@ class ProductMatchingService {
       final seenProductIds = <dynamic>{};
       final seenProductNames = <String>{}; // Déduplication par nom normalisé
       final excludedIds = excludeProductIds?.toSet() ?? {};
+      int categoryFilteredCount = 0; // Compteur de produits filtrés par catégorie
 
-      // ⚠️ DÉSACTIVER TEMPORAIREMENT LE CACHE pour garantir de la variété
-      // Le cache peut exclure TOUS les produits disponibles
-      print('🔄 Exclusion désactivée pour garantir variété (${excludedIds.length} produits ignorés)');
-      print('🎯 Max par marque: $maxPerBrand produits (20%)');
-      print('🎯 Max par catégorie: $maxPerCategory produits (30%)');
+      // ✅ EXCLUSION RÉACTIVÉE pour éviter de revoir les mêmes produits
+      AppLogger.info('🎯 Exclusion de ${excludedIds.length} produits déjà vus', 'Matching');
+      AppLogger.debug('🎯 Max par marque: $maxPerBrand produits (20%)', 'Matching');
+      AppLogger.debug('🎯 Max par catégorie: $maxPerCategory produits (30%)', 'Matching');
 
       for (var product in shuffledProducts) {
         if (selectedProducts.length >= count) break;
@@ -250,10 +273,10 @@ class ProductMatchingService {
         final categories = (product['categories'] as List?)?.cast<String>() ?? [];
         final mainCategory = categories.isNotEmpty ? categories.first : 'Autre';
 
-        // 1️⃣ Vérifier exclusion (DÉSACTIVÉ pour garantir variété)
-        // if (excludedIds.contains(productId)) {
-        //   continue;
-        // }
+        // 1️⃣ Vérifier exclusion des produits déjà vus
+        if (excludedIds.contains(productId)) {
+          continue;
+        }
 
         // 2️⃣ Vérifier dédupli par ID
         if (seenProductIds.contains(productId)) {
@@ -277,6 +300,41 @@ class ProductMatchingService {
           continue; // Skip, trop de produits de cette catégorie
         }
 
+        // 6️⃣ Vérifier correspondance sexe - SEULEMENT EN MODE HOME
+        // En mode HOME (page accueil), filtre strict pour cadeaux adaptés à SOI-MÊME
+        // En mode PERSON/DISCOVERY, on laisse passer pour innovation et variété (scoring favorisera)
+        if (filteringMode == "home" && genderFilter != null) {
+          final productTags = (product['tags'] as List?)?.cast<String>() ?? [];
+          if (!productTags.contains(genderFilter)) {
+            // Ce produit n'a pas le bon tag de sexe, on le skip en mode HOME
+            continue;
+          }
+        }
+
+        // 7️⃣ Vérifier correspondance catégorie - FILTRAGE STRICT si catégorie sélectionnée
+        // Si l'utilisateur a cliqué sur une catégorie (Tech, Mode, etc.), montrer UNIQUEMENT cette catégorie
+        if (category != null && category != 'Pour toi' && category != 'all') {
+          final productTags = (product['tags'] as List?)?.cast<String>() ?? [];
+          final productCategories = (product['categories'] as List?)?.cast<String>() ?? [];
+          final productCategory = product['category']?.toString() ?? '';
+
+          // Normaliser la catégorie recherchée
+          final normalizedCategory = _normalizeTag(category);
+
+          // Vérifier si le produit appartient à cette catégorie
+          final matchesCategory =
+            productTags.any((tag) => _normalizeTag(tag) == normalizedCategory || _normalizeTag(tag).contains(normalizedCategory)) ||
+            productCategories.any((cat) => _normalizeTag(cat) == normalizedCategory || _normalizeTag(cat).contains(normalizedCategory)) ||
+            _normalizeTag(productCategory) == normalizedCategory ||
+            _normalizeTag(productCategory).contains(normalizedCategory);
+
+          if (!matchesCategory) {
+            // Ce produit n'appartient pas à la catégorie demandée, on le skip
+            categoryFilteredCount++;
+            continue;
+          }
+        }
+
         // ✅ Ajouter le produit
         selectedProducts.add(product);
         seenProductIds.add(productId);
@@ -285,108 +343,228 @@ class ProductMatchingService {
         categoryCounts[mainCategory] = currentCategoryCount + 1;
       }
 
+      // 📊 Log du filtrage par catégorie
+      if (category != null && category != 'Pour toi' && category != 'all') {
+        AppLogger.info('📁 Filtrage catégorie "$category": ${categoryFilteredCount} produits exclus, ${selectedProducts.length} produits retenus', 'Matching');
+      }
+
+      // 🎨 MÉLANGE INTELLIGENT FINAL pour éviter produits similaires côte à côte
+      // Séparer par catégorie et entremêler
+      final productsByCategory = <String, List<Map<String, dynamic>>>{};
+      for (var product in selectedProducts) {
+        final categories = (product['categories'] as List?)?.cast<String>() ?? [];
+        final mainCategory = categories.isNotEmpty ? categories.first : 'Autre';
+        productsByCategory.putIfAbsent(mainCategory, () => []).add(product);
+      }
+
+      // Reconstruire la liste en alternant les catégories
+      final diversifiedProducts = <Map<String, dynamic>>[];
+      final categoryKeys = productsByCategory.keys.toList();
+      int maxIterations = selectedProducts.length;
+      int iteration = 0;
+
+      while (diversifiedProducts.length < selectedProducts.length && iteration < maxIterations) {
+        for (var category in categoryKeys) {
+          final products = productsByCategory[category]!;
+          if (products.isNotEmpty) {
+            diversifiedProducts.add(products.removeAt(0));
+            if (diversifiedProducts.length >= selectedProducts.length) break;
+          }
+        }
+        iteration++;
+      }
+
+      // Remplacer la liste sélectionnée par la version diversifiée
+      selectedProducts
+        ..clear()
+        ..addAll(diversifiedProducts);
+
       // Retirer le score de matching avant de retourner
       for (var product in selectedProducts) {
         product.remove('_matchScore');
       }
 
-      print('✅ ${selectedProducts.length} produits matchés et retournés');
-      print('📊 Diversité des marques: ${brandCounts.length} marques différentes');
-      print('📊 Répartition marques: ${brandCounts.entries.map((e) => '${e.key}: ${e.value}').take(10).join(", ")}');
-      print('📊 Répartition catégories: ${categoryCounts.entries.map((e) => '${e.key}: ${e.value}').join(", ")}');
+      // 🖼️ EXTRACTION ROBUSTE DES IMAGES - Ajouter le champ 'image' standardisé
+      AppLogger.info('🖼️ Extraction des URLs d\'images pour ${selectedProducts.length} produits...', 'Matching');
+      int imagesFound = 0;
+      int imagesPlaceholder = 0;
+
+      for (var product in selectedProducts) {
+        final imageUrl = _extractImageUrl(product);
+        product['image'] = imageUrl; // Ajouter/remplacer le champ 'image' standardisé
+
+        if (imageUrl.contains('placeholder')) {
+          imagesPlaceholder++;
+        } else {
+          imagesFound++;
+        }
+      }
+
+      AppLogger.success('🖼️ Images extraites: $imagesFound URLs valides, $imagesPlaceholder placeholders', 'Matching');
+
+      AppLogger.success('${selectedProducts.length} produits matchés et retournés', 'Matching');
+      AppLogger.info('📊 Diversité des marques: ${brandCounts.length} marques différentes', 'Matching');
+      AppLogger.debug('📊 Répartition marques: ${brandCounts.entries.map((e) => '${e.key}: ${e.value}').take(10).join(", ")}', 'Matching');
+      AppLogger.debug('📊 Répartition catégories: ${categoryCounts.entries.map((e) => '${e.key}: ${e.value}').join(", ")}', 'Matching');
       return selectedProducts;
-    } catch (e) {
-      print('❌ Erreur matching produits: $e');
-      // En cas d'erreur, retourner des produits par défaut
-      return _getFallbackProducts(count);
+    } catch (e, stackTrace) {
+      // ⚠️ ERREUR LORS DU CHARGEMENT - Logger détails complets
+      AppLogger.error('❌ ERREUR lors du matching produits', 'Matching', e);
+      AppLogger.error('Type erreur: ${e.runtimeType}', 'Matching', null);
+      AppLogger.error('Message: ${e.toString()}', 'Matching', null);
+      AppLogger.error('StackTrace complet:', 'Matching', null);
+      AppLogger.error('$stackTrace', 'Matching', null);
+
+      // Vérifier si c'est une erreur Firebase spécifique
+      if (e.toString().contains('permission') || e.toString().contains('Permission')) {
+        AppLogger.error('⚠️ ERREUR PERMISSIONS FIREBASE - Vérifier les Firestore Rules!', 'Matching', null);
+      }
+      if (e.toString().contains('network') || e.toString().contains('Network')) {
+        AppLogger.error('⚠️ ERREUR RÉSEAU - Pas de connexion internet?', 'Matching', null);
+      }
+
+      // Retourner liste vide au lieu de crasher pour que l'app continue
+      AppLogger.warning('Retour liste vide pour éviter crash app', 'Matching');
+      return [];
     }
   }
 
-  /// Convertit les tags utilisateur en tags de recherche
+  /// Convertit les tags utilisateur en tags de recherche OFFICIELS
+  /// Utilise UNIQUEMENT les tags de TagsDefinitions
   static Set<String> _convertUserTagsToSearchTags(Map<String, dynamic> userTags) {
     final tags = <String>{};
 
-    // Âge
-    final age = userTags['age'] ?? userTags['recipientAge'];
-    if (age != null) {
-      final ageInt = age is int ? age : int.tryParse(age.toString()) ?? 25;
-      if (ageInt < 18) {
-        tags.addAll(['enfant', 'jeune', 'ado']);
-      } else if (ageInt < 30) {
-        tags.addAll(['jeune-adulte', '20-30ans', 'moderne']);
-      } else if (ageInt < 50) {
-        tags.addAll(['adulte', '30-50ans']);
-      } else {
-        tags.addAll(['senior', '50+']);
-      }
-    }
-
-    // Genre
+    // ========================================================================
+    // 1️⃣ GENRE (STRICT - 1 seul tag) → gender_femme, gender_homme, gender_mixte
+    // ========================================================================
     final gender = userTags['gender'] ?? userTags['recipientGender'];
     if (gender != null) {
-      final genderStr = gender.toString().toLowerCase();
-      if (genderStr.contains('homme') || genderStr.contains('male')) {
-        tags.add('homme');
-      } else if (genderStr.contains('femme') || genderStr.contains('female')) {
-        tags.add('femme');
-      } else {
-        tags.add('unisexe');
+      final genderStr = gender.toString();
+      final convertedGender = TagsDefinitions.genderConversion[genderStr] ??
+                              TagsDefinitions.genderConversion['Non spécifié'];
+      if (convertedGender != null) {
+        tags.add(convertedGender);
+        AppLogger.debug('🚹 Genre converti: $genderStr → $convertedGender', 'TagsConversion');
       }
     }
 
-    // Centres d'intérêt (normalisés pour meilleur matching)
-    final interests = userTags['interests'] ?? userTags['hobbies'];
-    if (interests != null) {
-      final interestsList = interests is List ? interests : [interests];
-      for (var interest in interestsList) {
-        final normalized = _normalizeTag(interest.toString());
-        tags.add(normalized);
-        // Garder aussi l'original pour compatibilité
-        tags.add(interest.toString().toLowerCase());
+    // ========================================================================
+    // 2️⃣ CATÉGORIE PRINCIPALE (STRICT - 1 seul tag)
+    // ========================================================================
+    final preferredCategories = userTags['preferredCategories'];
+    if (preferredCategories != null) {
+      final catList = preferredCategories is List ? preferredCategories : [preferredCategories];
+      for (final cat in catList) {
+        final catStr = cat.toString();
+        final converted = TagsDefinitions.categoryConversion[catStr];
+        if (converted != null) {
+          tags.add(converted);
+          AppLogger.debug('📁 Catégorie convertie: $catStr → $converted', 'TagsConversion');
+        }
       }
     }
 
-    // Style
+    // ========================================================================
+    // 3️⃣ BUDGET (STRICT - 1 seul tag)
+    // ========================================================================
+    final budget = userTags['budget'];
+    if (budget != null) {
+      final budgetInt = int.tryParse(budget.toString()) ?? 0;
+      final budgetTag = TagsDefinitions.getBudgetTagFromPrice(budgetInt);
+      tags.add(budgetTag);
+      AppLogger.debug('💰 Budget converti: $budgetInt → $budgetTag', 'TagsConversion');
+    }
+
+    // ========================================================================
+    // 4️⃣ STYLES (SOUPLE - plusieurs tags possibles)
+    // ========================================================================
     final style = userTags['style'];
     if (style != null) {
-      tags.add(style.toString().toLowerCase());
+      final styleStr = style.toString();
+      final converted = TagsDefinitions.styleConversion[styleStr];
+      if (converted != null) {
+        tags.add(converted);
+        AppLogger.debug('🎨 Style converti: $styleStr → $converted', 'TagsConversion');
+      }
     }
 
-    // Types de cadeaux
+    // ========================================================================
+    // 5️⃣ PERSONNALITÉS (SOUPLE - plusieurs tags possibles)
+    // ========================================================================
+    final personality = userTags['personality'];
+    if (personality != null) {
+      final personalityStr = personality.toString().toLowerCase();
+      // Chercher dans le map de conversion
+      TagsDefinitions.personalityConversion.forEach((key, value) {
+        if (personalityStr.contains(key.toLowerCase())) {
+          tags.add(value);
+          AppLogger.debug('😊 Personnalité convertie: $key → $value', 'TagsConversion');
+        }
+      });
+    }
+
+    // ========================================================================
+    // 6️⃣ PASSIONS / HOBBIES / INTERESTS (SOUPLE - plusieurs tags possibles)
+    // ========================================================================
+    final interests = userTags['interests'] ?? userTags['hobbies'] ?? userTags['recipientHobbies'];
+    if (interests != null) {
+      final interestsList = interests is String ? interests.split(',').map((e) => e.trim()).toList() :
+                           (interests is List ? interests.map((e) => e.toString()).toList() : [interests.toString()]);
+
+      for (final interest in interestsList) {
+        final interestLower = interest.toLowerCase();
+        // Chercher dans le map de conversion de passions
+        TagsDefinitions.passionConversion.forEach((key, value) {
+          if (interestLower.contains(key.toLowerCase())) {
+            tags.add(value);
+            AppLogger.debug('❤️ Passion convertie: $key → $value', 'TagsConversion');
+          }
+        });
+      }
+    }
+
+    // ========================================================================
+    // 7️⃣ TYPES DE CADEAUX (SOUPLE - plusieurs tags possibles)
+    // ========================================================================
     final giftTypes = userTags['giftTypes'];
     if (giftTypes != null) {
       final typesList = giftTypes is List ? giftTypes : [giftTypes];
-      for (var type in typesList) {
-        tags.add(type.toString().toLowerCase());
+      for (final type in typesList) {
+        final typeStr = type.toString().toLowerCase();
+        // Essayer de matcher avec les types valides
+        for (final validType in TagsDefinitions.giftTypeTags) {
+          if (typeStr.contains(validType.replaceFirst('type_', '')) ||
+              validType.contains(typeStr)) {
+            tags.add(validType);
+            AppLogger.debug('🎁 Type cadeau ajouté: $validType', 'TagsConversion');
+            break;
+          }
+        }
       }
     }
 
-    // Budget
-    final budget = userTags['budget'];
-    if (budget != null) {
-      final budgetStr = budget.toString().toLowerCase();
-      if (budgetStr.contains('50') || budgetStr.contains('moins')) {
-        tags.add('budget_0-50');
-      } else if (budgetStr.contains('100')) {
-        tags.add('budget_50-100');
-      } else if (budgetStr.contains('200')) {
-        tags.add('budget_100-200');
-      } else {
-        tags.add('budget_200+');
-      }
-    }
+    // ========================================================================
+    // VALIDATION FINALE - Ne garder QUE les tags valides
+    // ========================================================================
+    final validTags = TagsDefinitions.filterValidTags(tags.toList());
+    AppLogger.success('✅ Tags convertis: ${validTags.length} tags valides sur ${tags.length} générés', 'TagsConversion');
+    AppLogger.debug('🏷️ Tags finaux: ${validTags.join(", ")}', 'TagsConversion');
 
-    // Relation
-    final relation = userTags['relation'] ?? userTags['recipient'];
-    if (relation != null) {
-      tags.add(relation.toString().toLowerCase());
-    }
-
-    return tags;
+    return validTags.toSet();
   }
 
-  /// Calcule le score de matching entre un produit et les tags recherchés
-  /// Priorise SEXE, ÂGE et TYPE DE CADEAU (critères principaux pour personnalisation)
+  /// Calcule le score de matching selon le NOUVEAU SYSTÈME DE TAGS OFFICIEL
+  ///
+  /// LOGIQUE STRICTE (correspondance exacte REQUISE - sinon exclusion):
+  /// - Genre (gender_*)
+  /// - Catégorie principale (cat_*)
+  /// - Tranche de prix (budget_*)
+  ///
+  /// LOGIQUE SOUPLE (scoring partiel - augmente score si match):
+  /// - Styles (style_*)
+  /// - Personnalités (perso_*)
+  /// - Passions (passion_*)
+  /// - Types de cadeaux (type_*)
   static double _calculateMatchScore(
     Map<String, dynamic> product,
     Set<String> searchTags,
@@ -394,162 +572,207 @@ class ProductMatchingService {
   ) {
     double score = 0.0;
 
-    // Tags du produit
+    // Extraire TOUS les tags du produit (tags + categories)
     final productTags = (product['tags'] as List?)?.cast<String>() ?? [];
     final productCategories = (product['categories'] as List?)?.cast<String>() ?? [];
-    final allProductTags = {...productTags, ...productCategories};
+    final allProductTags = {...productTags, ...productCategories}.map((t) => t.toLowerCase()).toSet();
 
-    // 🎯 PRIORITÉ 1: SEXE (poids très fort - 50 points max)
-    final gender = userTags['gender'] ?? userTags['recipientGender'];
-    if (gender != null) {
-      final genderStr = gender.toString().toLowerCase();
-      bool genderMatch = false;
+    print('🔍 Scoring produit "${product['name']}": ${allProductTags.length} tags');
 
-      if (genderStr.contains('homme') || genderStr.contains('male')) {
-        genderMatch = allProductTags.any((tag) => tag.toLowerCase() == 'homme');
-      } else if (genderStr.contains('femme') || genderStr.contains('female')) {
-        genderMatch = allProductTags.any((tag) => tag.toLowerCase() == 'femme');
-      }
+    // ========================================================================
+    // RÈGLES STRICTES - EXCLUSION SI PAS DE MATCH
+    // ========================================================================
 
-      if (genderMatch) {
-        score += 50.0; // Bonus énorme pour match sexe exact
-      }
+    // 🔒 1. GENRE (STRICT - 100 points ou EXCLUSION)
+    final userGenderTags = searchTags.where((t) => t.startsWith('gender_')).toList();
+    if (userGenderTags.isNotEmpty) {
+      final userGender = userGenderTags.first;
+      final productGenderTags = allProductTags.where((t) => t.startsWith('gender_')).toList();
 
-      // Bonus pour produits unisexes (plus faible)
-      if (allProductTags.any((tag) => tag.toLowerCase() == 'unisexe')) {
-        score += 20.0;
-      }
-    }
-
-    // 🎯 PRIORITÉ 2: ÂGE avec préférences catégorielles (poids très fort - 45 points max)
-    final age = userTags['age'] ?? userTags['recipientAge'];
-    if (age != null) {
-      final ageInt = age is int ? age : int.tryParse(age.toString()) ?? 25;
-      String ageGroup = '';
-
-      if (ageInt < 18) {
-        ageGroup = 'enfant';
-      } else if (ageInt < 30) {
-        ageGroup = '20-30ans';
-      } else if (ageInt < 50) {
-        ageGroup = '30-50ans';
+      if (productGenderTags.isEmpty) {
+        // Produit sans tag de genre => on accepte comme mixte
+        print('⚠️ Produit sans genre, considéré comme mixte: +50');
+        score += 50.0;
+      } else if (productGenderTags.contains(userGender.toLowerCase())) {
+        // Match exact du genre
+        print('✅ GENRE MATCH: $userGender = +100 points');
+        score += 100.0;
+      } else if (productGenderTags.contains('gender_mixte')) {
+        // Produit mixte accepté pour tout genre
+        print('✅ Produit mixte accepté: +70 points');
+        score += 70.0;
       } else {
-        ageGroup = '50+';
-      }
-
-      // Match exact de la tranche d'âge
-      if (allProductTags.any((tag) => tag.toLowerCase() == ageGroup)) {
-        score += 45.0; // Bonus énorme pour match âge exact
-      }
-
-      // 🎨 BONUS SPÉCIFIQUE PAR ÂGE - Préférences catégorielles
-      // 18-25 ans → Plus de mode, tech, gaming
-      if (ageInt >= 18 && ageInt < 26) {
-        if (allProductTags.any((tag) => ['fashion', 'mode', 'vetement', 'style'].contains(_normalizeTag(tag)))) {
-          score += 30.0; // Énorme bonus mode pour 18-25 ans
-        }
-        if (allProductTags.any((tag) => ['tech', 'gaming', 'hightech'].contains(_normalizeTag(tag)))) {
-          score += 25.0; // Gros bonus tech/gaming pour jeunes
-        }
-      }
-      // 26-35 ans → Tech, sport, maison, voyages
-      else if (ageInt >= 26 && ageInt < 36) {
-        if (allProductTags.any((tag) => ['tech', 'sport', 'home', 'travel', 'voyage'].contains(_normalizeTag(tag)))) {
-          score += 20.0;
-        }
-      }
-      // 36-50 ans → Maison, cuisine, bien-être, mode classique
-      else if (ageInt >= 36 && ageInt < 51) {
-        if (allProductTags.any((tag) => ['home', 'cooking', 'wellness', 'beauty'].contains(_normalizeTag(tag)))) {
-          score += 20.0;
-        }
-      }
-      // 50+ ans → Bien-être, maison, jardinage, livres
-      else if (ageInt >= 51) {
-        if (allProductTags.any((tag) => ['wellness', 'home', 'book', 'jardin'].contains(_normalizeTag(tag)))) {
-          score += 20.0;
-        }
+        // Genre ne correspond PAS => EXCLUSION TOTALE
+        print('❌ GENRE NE CORRESPOND PAS: $userGender ≠ ${productGenderTags.join(", ")} => EXCLUSION');
+        return -10000.0; // Score négatif énorme = exclusion garantie
       }
     }
 
-    // 🎯 CRITÈRE 3: Centres d'intérêt / Hobbies / Passions (35 points max)
-    final interests = userTags['interests'] ?? userTags['hobbies'] ?? userTags['recipientHobbies'];
-    if (interests != null) {
-      final interestsList = interests is List ? interests : [interests];
-      int matchCount = 0;
+    // 🔒 2. CATÉGORIE PRINCIPALE (STRICT - 80 points ou EXCLUSION)
+    final userCategoryTags = searchTags.where((t) => t.startsWith('cat_')).toList();
+    if (userCategoryTags.isNotEmpty) {
+      final userCategory = userCategoryTags.first; // Une seule catégorie normalement
+      final productCategoryTags = allProductTags.where((t) => t.startsWith('cat_')).toList();
 
-      for (var interest in interestsList) {
-        final normalizedInterest = _normalizeTag(interest.toString());
-        // Vérifier match exact ou partiel avec tags normalisés
-        final hasMatch = allProductTags.any((tag) {
-          final normalizedTag = _normalizeTag(tag);
-          return normalizedTag == normalizedInterest ||
-                 normalizedTag.contains(normalizedInterest) ||
-                 normalizedInterest.contains(normalizedTag);
-        });
-        if (hasMatch) {
-          matchCount++;
-          // Premier match = 35 points, deuxième = 15 points, troisième+ = 5 points
-          if (matchCount == 1) {
-            score += 35.0; // Bonus énorme pour le premier intérêt matché
-          } else if (matchCount == 2) {
-            score += 15.0; // Bonus moyen pour un deuxième intérêt
-          } else if (matchCount <= 4) {
-            score += 5.0; // Petit bonus pour intérêts supplémentaires
+      if (productCategoryTags.isEmpty) {
+        // Produit sans catégorie => petite pénalité mais pas d'exclusion
+        print('⚠️ Produit sans catégorie définie: +20');
+        score += 20.0;
+      } else if (productCategoryTags.contains(userCategory.toLowerCase())) {
+        // Match exact de la catégorie
+        print('✅ CATÉGORIE MATCH: $userCategory = +80 points');
+        score += 80.0;
+      } else {
+        // Catégorie ne correspond PAS => EXCLUSION TOTALE
+        print('❌ CATÉGORIE NE CORRESPOND PAS: $userCategory ≠ ${productCategoryTags.join(", ")} => EXCLUSION');
+        return -10000.0;
+      }
+    }
+
+    // 🔒 3. BUDGET (STRICT - 60 points ou EXCLUSION)
+    final userBudgetTags = searchTags.where((t) => t.startsWith('budget_')).toList();
+    if (userBudgetTags.isNotEmpty) {
+      final userBudget = userBudgetTags.first;
+      final productBudgetTags = allProductTags.where((t) => t.startsWith('budget_')).toList();
+
+      if (productBudgetTags.isEmpty) {
+        // Pas de tag budget => vérifier le prix directement
+        final price = product['price'];
+        if (price != null) {
+          final priceInt = price is int ? price : (price is double ? price.toInt() : 0);
+          final calculatedBudget = TagsDefinitions.getBudgetTagFromPrice(priceInt);
+
+          if (calculatedBudget.toLowerCase() == userBudget.toLowerCase()) {
+            print('✅ BUDGET CALCULÉ MATCH: $priceInt€ = $calculatedBudget = +60 points');
+            score += 60.0;
+          } else {
+            print('❌ BUDGET CALCULÉ NE CORRESPOND PAS: $calculatedBudget ≠ $userBudget => EXCLUSION');
+            return -10000.0;
           }
+        } else {
+          // Pas de prix disponible => petite pénalité
+          print('⚠️ Pas de prix disponible: +10');
+          score += 10.0;
+        }
+      } else if (productBudgetTags.contains(userBudget.toLowerCase())) {
+        // Match exact du budget
+        print('✅ BUDGET MATCH: $userBudget = +60 points');
+        score += 60.0;
+      } else {
+        // Budget ne correspond PAS => EXCLUSION TOTALE
+        print('❌ BUDGET NE CORRESPOND PAS: $userBudget ≠ ${productBudgetTags.join(", ")} => EXCLUSION');
+        return -10000.0;
+      }
+    }
+
+    // ========================================================================
+    // RÈGLES SOUPLES - SCORING PARTIEL (pas d'exclusion)
+    // ========================================================================
+
+    // 💫 4. STYLES (SOUPLE - max 40 points)
+    final userStyleTags = searchTags.where((t) => t.startsWith('style_')).toList();
+    if (userStyleTags.isNotEmpty) {
+      final productStyleTags = allProductTags.where((t) => t.startsWith('style_')).toList();
+      int styleMatches = 0;
+
+      for (final userStyle in userStyleTags) {
+        if (productStyleTags.contains(userStyle.toLowerCase())) {
+          styleMatches++;
+          print('✨ Style match: $userStyle');
         }
       }
-    }
 
-    // 🎯 CRITÈRE 4: Budget (15 points)
-    final budget = userTags['budget'];
-    final price = product['price'];
-    if (budget != null && price != null) {
-      final priceValue = price is int ? price : (price is double ? price.toInt() : 0);
-      final budgetStr = budget.toString().toLowerCase();
-
-      bool budgetMatch = false;
-      if (budgetStr.contains('50') && priceValue <= 50) budgetMatch = true;
-      if (budgetStr.contains('100') && priceValue >= 50 && priceValue <= 100) budgetMatch = true;
-      if (budgetStr.contains('200') && priceValue >= 100 && priceValue <= 200) budgetMatch = true;
-
-      if (budgetMatch) {
-        score += 15.0;
+      if (styleMatches > 0) {
+        final styleScore = styleMatches * 20.0; // 20 points par style matché
+        score += styleScore.clamp(0, 40); // Max 40 points
+        print('🎨 STYLES: $styleMatches matches = +${styleScore.clamp(0, 40)} points');
       }
     }
 
-    // 🎯 CRITÈRE 5: Style / Catégories (10 points)
-    final style = userTags['style'];
-    if (style != null && allProductTags.any((tag) => tag.toLowerCase() == style.toString().toLowerCase())) {
-      score += 10.0;
+    // 💫 5. PERSONNALITÉS (SOUPLE - max 30 points)
+    final userPersonalityTags = searchTags.where((t) => t.startsWith('perso_')).toList();
+    if (userPersonalityTags.isNotEmpty) {
+      final productPersonalityTags = allProductTags.where((t) => t.startsWith('perso_')).toList();
+      int personalityMatches = 0;
+
+      for (final userPersonality in userPersonalityTags) {
+        if (productPersonalityTags.contains(userPersonality.toLowerCase())) {
+          personalityMatches++;
+          print('✨ Personnalité match: $userPersonality');
+        }
+      }
+
+      if (personalityMatches > 0) {
+        final personalityScore = personalityMatches * 15.0; // 15 points par personnalité matchée
+        score += personalityScore.clamp(0, 30); // Max 30 points
+        print('😊 PERSONNALITÉS: $personalityMatches matches = +${personalityScore.clamp(0, 30)} points');
+      }
     }
 
-    // 📈 TENDANCES: Popularité (facteur de 0.3 - max ~30 points pour produit à 99)
-    final popularity = product['popularity'] as int? ?? 0;
-    score += popularity * 0.3;
+    // 💫 6. PASSIONS (SOUPLE - max 50 points - le plus important des souples)
+    final userPassionTags = searchTags.where((t) => t.startsWith('passion_')).toList();
+    if (userPassionTags.isNotEmpty) {
+      final productPassionTags = allProductTags.where((t) => t.startsWith('passion_')).toList();
+      int passionMatches = 0;
 
-    // 🎲 Variation aléatoire légère (pour éviter ordre identique)
-    score += Random().nextDouble() * 3.0;
+      for (final userPassion in userPassionTags) {
+        if (productPassionTags.contains(userPassion.toLowerCase())) {
+          passionMatches++;
+          print('✨ Passion match: $userPassion');
+        }
+      }
+
+      if (passionMatches > 0) {
+        final passionScore = passionMatches * 25.0; // 25 points par passion matchée
+        score += passionScore.clamp(0, 50); // Max 50 points
+        print('❤️ PASSIONS: $passionMatches matches = +${passionScore.clamp(0, 50)} points');
+      }
+    }
+
+    // 💫 7. TYPES DE CADEAUX (SOUPLE - max 30 points)
+    final userTypeTags = searchTags.where((t) => t.startsWith('type_')).toList();
+    if (userTypeTags.isNotEmpty) {
+      final productTypeTags = allProductTags.where((t) => t.startsWith('type_')).toList();
+      int typeMatches = 0;
+
+      for (final userType in userTypeTags) {
+        if (productTypeTags.contains(userType.toLowerCase())) {
+          typeMatches++;
+          print('✨ Type cadeau match: $userType');
+        }
+      }
+
+      if (typeMatches > 0) {
+        final typeScore = typeMatches * 15.0; // 15 points par type matché
+        score += typeScore.clamp(0, 30); // Max 30 points
+        print('🎁 TYPES: $typeMatches matches = +${typeScore.clamp(0, 30)} points');
+      }
+    }
+
+    // ========================================================================
+    // BONUS SECONDAIRES
+    // ========================================================================
+
+    // 📈 Popularité (max 20 points)
+    final popularity = product['popularity'] as int? ?? 0;
+    if (popularity > 0) {
+      final popularityScore = (popularity * 0.2).clamp(0, 20);
+      score += popularityScore;
+      print('📈 Popularité: $popularity = +${popularityScore.toStringAsFixed(1)} points');
+    }
+
+    // 🎲 Variation aléatoire légère (0-5 points pour éviter ordre identique)
+    final randomBonus = Random().nextDouble() * 5.0;
+    score += randomBonus;
+
+    print('🏁 SCORE FINAL: ${score.toStringAsFixed(1)} points');
+    print('');
 
     return score;
   }
 
-  /// Charge les produits depuis le fichier JSON des assets
-  static Future<List<Map<String, dynamic>>> _loadFallbackProducts() async {
-    if (_cachedFallbackProducts != null) {
-      return _cachedFallbackProducts!;
-    }
-
-    try {
-      final jsonString = await rootBundle.loadString('assets/jsons/fallback_products.json');
-      final List<dynamic> jsonList = json.decode(jsonString);
-      _cachedFallbackProducts = jsonList.cast<Map<String, dynamic>>();
-      return _cachedFallbackProducts!;
-    } catch (e) {
-      print('❌ Erreur chargement assets: $e');
-      return [];
-    }
-  }
+  /// ⛔ FONCTION SUPPRIMÉE - Plus de fallback assets
+  /// Tous les produits DOIVENT venir de Firebase uniquement
 
   /// Génère des sections thématiques pour la page d'accueil
   /// Retourne une liste de sections avec titre et produits
@@ -680,7 +903,7 @@ class ProductMatchingService {
       'filter': {'maxPrice': 50},
     });
 
-    print('✅ ${sections.length} sections générées pour l\'accueil');
+    AppLogger.success('${sections.length} sections générées pour l\'accueil', 'Matching');
     return sections;
   }
 
@@ -798,53 +1021,16 @@ class ProductMatchingService {
         .trim();
   }
 
-  /// Produits de secours hardcodés en cas d'erreur totale
-  static List<Map<String, dynamic>> _getFallbackProducts(int count) {
-    final fallbackProducts = [
-      {
-        'id': 1,
-        'name': 'Écouteurs sans fil Premium',
-        'brand': 'TechSound',
-        'price': 79,
-        'description': 'Écouteurs Bluetooth avec réduction de bruit active',
-        'image': 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400',
-        'url': 'https://www.amazon.fr/s?k=écouteurs+sans+fil',
-        'source': 'Amazon',
-        'tags': ['tech', 'audio', 'moderne'],
-        'categories': ['tech'],
-      },
-      {
-        'id': 2,
-        'name': 'Coffret de soins visage bio',
-        'brand': 'NatureBelle',
-        'price': 45,
-        'description': 'Coffret complet de soins naturels pour le visage',
-        'image': 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400',
-        'url': 'https://www.sephora.fr',
-        'source': 'Sephora',
-        'tags': ['beauté', 'bio', 'soin'],
-        'categories': ['beauty'],
-      },
-      {
-        'id': 3,
-        'name': 'Montre connectée Sport',
-        'brand': 'FitTime',
-        'price': 129,
-        'description': 'Montre intelligente avec suivi d\'activité',
-        'image': 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400',
-        'url': 'https://www.amazon.fr/s?k=montre+connectée',
-        'source': 'Amazon',
-        'tags': ['tech', 'sport', 'fitness'],
-        'categories': ['tech'],
-      },
-    ];
-
-    // Répéter pour atteindre le nombre demandé
-    final result = <Map<String, dynamic>>[];
-    while (result.length < count) {
-      result.addAll(fallbackProducts.map((p) => Map<String, dynamic>.from(p)));
-    }
-
-    return result.take(count).toList();
-  }
+  /// ⛔ FONCTION SUPPRIMÉE - Plus de produits hardcodés en fallback
+  /// Si Firebase est vide, l'app doit crasher pour qu'on identifie le problème
+  /// Tous les produits DOIVENT venir de Firebase (collection 'gifts' ou 'products')
+  ///
+  /// ANCIENNE FONCTION _getFallbackProducts() SUPPRIMÉE
+  /// Contenait 50 produits hardcodés (tech, mode, beauté, sport, maison)
+  /// Ces produits génériques masquaient le vrai problème: Firebase vide
+  ///
+  /// DÉSORMAIS:
+  /// - Firebase vide → Exception lancée
+  /// - L'utilisateur voit immédiatement qu'il y a un problème
+  /// - On peut identifier pourquoi le scraping n'a pas fonctionné
 }

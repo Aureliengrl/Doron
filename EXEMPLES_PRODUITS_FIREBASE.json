@@ -1,0 +1,289 @@
+{
+  "info": "Exemples de produits correctement tagués pour Firebase collection 'gifts'",
+  "date": "2025-11-20",
+  "version": "Système de tags officiels DORÕN",
+
+  "exemples": [
+    {
+      "nom": "Exemple 1: Montre connectée Samsung (Tech, Mixte, 100-200€)",
+      "data": {
+        "id": "prod_001",
+        "name": "Montre Connectée Samsung Galaxy Watch 6",
+        "brand": "Samsung",
+        "price": 129,
+        "description": "Montre connectée avec suivi santé complet, GPS, étanche",
+        "image": "https://example.com/samsung-watch.jpg",
+        "source": "Amazon",
+        "popularity": 85,
+        "tags": [
+          "gender_mixte",
+          "cat_tech",
+          "budget_100_200",
+          "style_moderne",
+          "style_sportif",
+          "perso_actif",
+          "perso_techie",
+          "passion_tech",
+          "passion_sport",
+          "type_high_tech"
+        ],
+        "categories": ["Électronique", "Sport", "Santé"]
+      }
+    },
+    {
+      "nom": "Exemple 2: Sac à main Longchamp (Mode, Femme, 100-200€)",
+      "data": {
+        "id": "prod_002",
+        "name": "Sac Longchamp Le Pliage",
+        "brand": "Longchamp",
+        "price": 145,
+        "description": "Sac à main en cuir, design élégant et intemporel",
+        "image": "https://example.com/longchamp-bag.jpg",
+        "source": "Amazon",
+        "popularity": 92,
+        "tags": [
+          "gender_femme",
+          "cat_mode",
+          "budget_100_200",
+          "style_elegant",
+          "style_classique",
+          "perso_romantique",
+          "perso_bienveillant",
+          "passion_mode",
+          "type_mode_accessoires"
+        ],
+        "categories": ["Mode", "Accessoires"]
+      }
+    },
+    {
+      "nom": "Exemple 3: Console Nintendo Switch (Tech, Homme, 200+)",
+      "data": {
+        "id": "prod_003",
+        "name": "Console Nintendo Switch OLED",
+        "brand": "Nintendo",
+        "price": 349,
+        "description": "Console de jeux vidéo portable avec écran OLED 7 pouces",
+        "image": "https://example.com/nintendo-switch.jpg",
+        "source": "Amazon",
+        "popularity": 95,
+        "tags": [
+          "gender_homme",
+          "cat_tech",
+          "budget_200+",
+          "style_tendance",
+          "perso_cool",
+          "perso_techie",
+          "passion_jeuxvideo",
+          "passion_tech",
+          "type_high_tech"
+        ],
+        "categories": ["Jeux vidéo", "Électronique"]
+      }
+    },
+    {
+      "nom": "Exemple 4: Bougie parfumée Diptyque (Maison, Femme, 50-100€)",
+      "data": {
+        "id": "prod_004",
+        "name": "Bougie Parfumée Diptyque Baies",
+        "brand": "Diptyque",
+        "price": 68,
+        "description": "Bougie parfumée aux notes de baies et de roses bulgares",
+        "image": "https://example.com/diptyque-candle.jpg",
+        "source": "Amazon",
+        "popularity": 78,
+        "tags": [
+          "gender_femme",
+          "cat_maison",
+          "budget_50_100",
+          "style_elegant",
+          "style_luxe",
+          "perso_zen",
+          "perso_romantique",
+          "passion_beaute",
+          "type_bien_etre",
+          "type_maison_deco"
+        ],
+        "categories": ["Maison", "Décoration", "Parfum"]
+      }
+    },
+    {
+      "nom": "Exemple 5: Coffret dégustation whisky (Food, Homme, 50-100€)",
+      "data": {
+        "id": "prod_005",
+        "name": "Coffret Dégustation 6 Whiskies du Monde",
+        "brand": "La Maison du Whisky",
+        "price": 89,
+        "description": "Coffret découverte avec 6 miniatures de whiskies d'exception",
+        "image": "https://example.com/whisky-box.jpg",
+        "source": "Amazon",
+        "popularity": 82,
+        "tags": [
+          "gender_homme",
+          "cat_food",
+          "budget_50_100",
+          "style_classique",
+          "style_luxe",
+          "perso_gourmand",
+          "perso_intellectuel",
+          "passion_vins",
+          "passion_cuisine",
+          "type_gastronomie"
+        ],
+        "categories": ["Gastronomie", "Alcool", "Coffrets"]
+      }
+    },
+    {
+      "nom": "Exemple 6: Palette maquillage Urban Decay (Beauté, Femme, 50-100€)",
+      "data": {
+        "id": "prod_006",
+        "name": "Palette Urban Decay Naked Heat",
+        "brand": "Urban Decay",
+        "price": 54,
+        "description": "Palette de 12 fards à paupières tons chauds",
+        "image": "https://example.com/urban-decay.jpg",
+        "source": "Amazon",
+        "popularity": 88,
+        "tags": [
+          "gender_femme",
+          "cat_beaute",
+          "budget_50_100",
+          "style_tendance",
+          "style_elegant",
+          "perso_creatif",
+          "perso_sociable",
+          "passion_beaute",
+          "passion_mode",
+          "type_beaute_soins"
+        ],
+        "categories": ["Beauté", "Maquillage"]
+      }
+    },
+    {
+      "nom": "Exemple 7: Enceinte Bluetooth JBL (Tech, Mixte, 0-50€)",
+      "data": {
+        "id": "prod_007",
+        "name": "Enceinte Bluetooth JBL Flip 6",
+        "brand": "JBL",
+        "price": 89,
+        "description": "Enceinte portable étanche avec son puissant, 12h d'autonomie",
+        "image": "https://example.com/jbl-flip6.jpg",
+        "source": "Amazon",
+        "popularity": 90,
+        "tags": [
+          "gender_mixte",
+          "cat_tech",
+          "budget_50_100",
+          "style_moderne",
+          "style_sportif",
+          "perso_cool",
+          "perso_actif",
+          "passion_musique",
+          "passion_tech",
+          "type_high_tech"
+        ],
+        "categories": ["Audio", "Électronique"]
+      }
+    },
+    {
+      "nom": "Exemple 8: Kit jardinage (Maison, Mixte, 0-50€)",
+      "data": {
+        "id": "prod_008",
+        "name": "Kit de Jardinage 10 Pièces avec Sac",
+        "brand": "Gardena",
+        "price": 45,
+        "description": "Ensemble d'outils de jardinage avec sac de transport",
+        "image": "https://example.com/gardening-kit.jpg",
+        "source": "Amazon",
+        "popularity": 75,
+        "tags": [
+          "gender_mixte",
+          "cat_maison",
+          "budget_0_50",
+          "style_eco_responsable",
+          "perso_zen",
+          "perso_pratique",
+          "passion_jardinage",
+          "passion_nature",
+          "type_maison_deco",
+          "type_sport_outdoor"
+        ],
+        "categories": ["Jardinage", "Maison", "Extérieur"]
+      }
+    },
+    {
+      "nom": "Exemple 9: Livre best-seller (Culture, Mixte, 0-50€)",
+      "data": {
+        "id": "prod_009",
+        "name": "Atomic Habits par James Clear",
+        "brand": "Avery",
+        "price": 22,
+        "description": "Guide pratique pour créer de bonnes habitudes et éliminer les mauvaises",
+        "image": "https://example.com/atomic-habits.jpg",
+        "source": "Amazon",
+        "popularity": 96,
+        "tags": [
+          "gender_mixte",
+          "cat_tendances",
+          "budget_0_50",
+          "style_minimaliste",
+          "perso_ambitieux",
+          "perso_intellectuel",
+          "passion_lecture",
+          "type_culture",
+          "type_livres_bd"
+        ],
+        "categories": ["Livres", "Développement personnel"]
+      }
+    },
+    {
+      "nom": "Exemple 10: Tapis de yoga (Sport, Femme, 0-50€)",
+      "data": {
+        "id": "prod_010",
+        "name": "Tapis de Yoga Épais Antidérapant",
+        "brand": "Manduka",
+        "price": 39,
+        "description": "Tapis de yoga écologique 6mm, antidérapant, avec sac de transport",
+        "image": "https://example.com/yoga-mat.jpg",
+        "source": "Amazon",
+        "popularity": 84,
+        "tags": [
+          "gender_femme",
+          "cat_tendances",
+          "budget_0_50",
+          "style_eco_responsable",
+          "style_minimaliste",
+          "perso_zen",
+          "perso_actif",
+          "passion_yoga",
+          "passion_sport",
+          "type_bien_etre",
+          "type_sport_outdoor"
+        ],
+        "categories": ["Sport", "Yoga", "Bien-être"]
+      }
+    }
+  ],
+
+  "instructions": {
+    "comment_importer": "Copie chaque objet 'data' et importe-le dans Firebase Console > Firestore > Collection 'gifts' > Add document",
+    "tags_obligatoires": [
+      "Au moins 1 tag gender_* (gender_femme, gender_homme, ou gender_mixte)",
+      "Au moins 1 tag cat_* (cat_tendances, cat_tech, cat_mode, cat_maison, cat_beaute, cat_food)",
+      "Au moins 1 tag budget_* (budget_0_50, budget_50_100, budget_100_200, budget_200+)"
+    ],
+    "tags_recommandes": [
+      "1-3 tags style_* pour meilleur matching",
+      "1-3 tags perso_* pour personnalité",
+      "1-5 tags passion_* selon le produit",
+      "1-2 tags type_* pour catégoriser"
+    ],
+    "note_importante": "Les tags STRICTS (gender, cat, budget) DOIVENT être présents sinon le produit sera exclu du matching!"
+  },
+
+  "script_import_automatique": {
+    "description": "Script Node.js pour importer automatiquement dans Firebase",
+    "fichier": "import_products.js",
+    "commande": "node import_products.js",
+    "code": "Voir fichier import_products.js à créer"
+  }
+}
