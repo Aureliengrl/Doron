@@ -1368,10 +1368,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
               AspectRatio(
                 aspectRatio: 0.65,
                 child: ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
-                  ),
+                  borderRadius: BorderRadius.circular(24), // Arrondi complet pour éviter dépassement
                   child: SizedBox(
                     width: double.infinity,
                     height: double.infinity,
@@ -1403,113 +1400,115 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
   }
 
   void _showProductDetail(Map<String, dynamic> product) {
-    final isLiked = _model.likedProductTitles.contains(product['name'] ?? '');
-
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.7),
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.all(16),
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 500),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 60,
-                offset: const Offset(0, 20),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Image avec boutons
-              Stack(
-                children: [
-                  ProductImage(
-                    imageUrl: product['image'] as String? ?? '',
-                    height: 350,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24),
-                    ),
-                  ),
-                  // Bouton fermer
-                  Positioned(
-                    top: 12,
-                    left: 12,
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => Navigator.pop(context),
-                        borderRadius: BorderRadius.circular(50),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.95),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.close,
-                            color: Color(0xFF111827),
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Bouton coeur
-                  Positioned(
-                    top: 12,
-                    right: 12,
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () async {
-                          await _toggleFavorite(product);
-                          Navigator.pop(context);
-                          _showProductDetail(product);
-                        },
-                        borderRadius: BorderRadius.circular(50),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: isLiked
-                                ? Colors.red
-                                : Colors.white.withOpacity(0.95),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            isLiked ? Icons.favorite : Icons.favorite_border,
-                            color: isLiked ? Colors.white : const Color(0xFF111827),
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final isLiked = _model.likedProductTitles.contains(product['name'] ?? '');
+
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.all(16),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 500),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 60,
+                    offset: const Offset(0, 20),
                   ),
                 ],
               ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Image avec boutons
+                  Stack(
+                    children: [
+                      ProductImage(
+                        imageUrl: product['image'] as String? ?? '',
+                        height: 350,
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(24),
+                          topRight: Radius.circular(24),
+                        ),
+                      ),
+                      // Bouton fermer
+                      Positioned(
+                        top: 12,
+                        left: 12,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => Navigator.pop(context),
+                            borderRadius: BorderRadius.circular(50),
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.95),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.close,
+                                color: Color(0xFF111827),
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Bouton coeur - Mis à jour avec setDialogState
+                      Positioned(
+                        top: 12,
+                        right: 12,
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () async {
+                              await _toggleFavorite(product);
+                              // Mettre à jour l'UI du dialog sans le fermer
+                              setDialogState(() {});
+                            },
+                            borderRadius: BorderRadius.circular(50),
+                            child: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: isLiked
+                                    ? Colors.red
+                                    : Colors.white.withOpacity(0.95),
+                                shape: BoxShape.circle,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                isLiked ? Icons.favorite : Icons.favorite_border,
+                                color: isLiked ? Colors.white : const Color(0xFF111827),
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
 
               // Détails du produit
               Padding(
@@ -1627,6 +1626,8 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
             ],
           ),
         ),
+          );
+        },
       ),
     );
   }

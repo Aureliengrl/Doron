@@ -49,6 +49,15 @@ class TikTokInspirationPageModel extends ChangeNotifier {
       final seenProductIds = prefs.getStringList('seen_inspiration_product_ids')
           ?.map((s) => int.tryParse(s) ?? 0).toList() ?? [];
 
+      print('📋 TikTok Inspiration: ${seenProductIds.length} produits déjà vus');
+
+      // 🔄 Si TOUS les produits ont été vus (>100), réinitialiser pour permettre de revoir
+      if (seenProductIds.length > 100) {
+        print('♻️ TikTok Inspiration: Reset des produits vus (${seenProductIds.length} > 100)');
+        await prefs.remove('seen_inspiration_product_ids');
+        seenProductIds.clear();
+      }
+
       AppLogger.info('🎬 Chargement TikTok Inspiration (exclusion de ${seenProductIds.length} produits déjà vus)', 'TikTok');
 
       // 🎯 Générer les produits via ProductMatchingService
@@ -127,6 +136,7 @@ class TikTokInspirationPageModel extends ChangeNotifier {
       _hasError = false;
       notifyListeners();
 
+      print('✅ TikTok Inspiration: État final - ${_products.length} produits, isLoading: $_isLoading, hasError: $_hasError');
       AppLogger.success('TikTok Inspiration: ${products.length} produits chargés (Firebase + matching local)', 'TikTok');
     } catch (e) {
       AppLogger.error('Erreur chargement TikTok Inspiration', 'TikTok', e);

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import 'package:doron/services/openai_voice_analysis_service.dart';
+import 'package:doron/services/firebase_data_service.dart';
 import 'voice_analysis_page_model.dart';
 
 class VoiceAnalysisPageWidget extends StatefulWidget {
@@ -31,7 +33,7 @@ class _VoiceAnalysisPageWidgetState extends State<VoiceAnalysisPageWidget> {
     _model.addListener(_onModelChanged);
   }
 
-  void _onModelChanged() {
+  void _onModelChanged() async {
     if (!_hasNavigated &&
         !_model.isAnalyzing &&
         !_model.hasError &&
@@ -39,15 +41,29 @@ class _VoiceAnalysisPageWidgetState extends State<VoiceAnalysisPageWidget> {
       // Marquer comme ayant navigué pour éviter les navigations multiples
       _hasNavigated = true;
 
-      // Navigation automatique vers les résultats
+      // Convertir l'analyse en profil de cadeau
+      final giftProfile = OpenAIVoiceAnalysisService.convertToGiftProfile(
+        _model.analysisResult!,
+      );
+      giftProfile['rawTranscript'] = widget.transcript;
+
+      print('✅ Profil cadeau généré depuis l\'assistant vocal: $giftProfile');
+
+      // Sauvegarder le profil pour la génération (optionnel, pour tracking)
+      try {
+        await FirebaseDataService.saveGiftProfile(giftProfile);
+        print('✅ Profil sauvegardé dans Firebase');
+      } catch (e) {
+        print('⚠️ Erreur sauvegarde profil (non bloquant): $e');
+      }
+
+      // Navigation automatique vers la génération de cadeaux
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) {
+          print('🎁 Navigation vers génération de cadeaux avec profil vocal');
           context.pushReplacement(
-            '/voiceResults',
-            extra: {
-              'analysis': _model.analysisResult,
-              'transcript': widget.transcript,
-            },
+            '/onboarding-gifts-result',
+            extra: giftProfile,
           );
         }
       });

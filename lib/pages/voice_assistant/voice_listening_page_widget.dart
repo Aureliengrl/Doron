@@ -76,39 +76,38 @@ class _VoiceListeningPageWidgetState extends State<VoiceListeningPageWidget> {
                     ),
                   ),
 
-                  // Suggestions de ce qu'il faut dire
-                  if (!model.isListening)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Vous pouvez mentionner:',
-                              style: TextStyle(
-                                fontFamily: 'Outfit',
-                                color: Colors.white.withOpacity(0.7),
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                              ),
+                  // Suggestions de ce qu'il faut dire - TOUJOURS VISIBLE
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Vous pouvez mentionner:',
+                            style: TextStyle(
+                              fontFamily: 'Outfit',
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
                             ),
-                            const SizedBox(height: 8),
-                            _buildSuggestionItem('• Qui est cette personne (maman, ami, etc.)'),
-                            _buildSuggestionItem('• Son âge ou tranche d\'âge'),
-                            _buildSuggestionItem('• Votre budget'),
-                            _buildSuggestionItem('• Ses hobbies et centres d\'intérêt'),
-                            _buildSuggestionItem('• L\'occasion (anniversaire, Noël, etc.)'),
-                            _buildSuggestionItem('• Son style (moderne, classique, etc.)'),
-                          ],
-                        ),
+                          ),
+                          const SizedBox(height: 8),
+                          _buildSuggestionItem('• Qui est cette personne (maman, ami, etc.)'),
+                          _buildSuggestionItem('• Son âge ou tranche d\'âge'),
+                          _buildSuggestionItem('• Votre budget'),
+                          _buildSuggestionItem('• Ses hobbies et centres d\'intérêt'),
+                          _buildSuggestionItem('• L\'occasion (anniversaire, Noël, etc.)'),
+                          _buildSuggestionItem('• Son style (moderne, classique, etc.)'),
+                        ],
                       ),
                     ),
+                  ),
 
                   const Spacer(),
 
