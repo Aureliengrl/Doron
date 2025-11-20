@@ -231,8 +231,14 @@ class ProductMatchingService {
       // Trier par score décroissant pour avoir les meilleurs en premier
       scoredProducts.sort((a, b) => (b['_matchScore'] as double).compareTo(a['_matchScore'] as double));
 
-      // Garder tous les produits (pas de filtrage par score)
+      // Filtrer les produits avec score d'exclusion (-10000) SAUF en mode discovery
       var relevantProducts = scoredProducts;
+      if (filteringMode != "discovery") {
+        relevantProducts = scoredProducts.where((p) => (p['_matchScore'] as double) > -1000).toList();
+        AppLogger.info('📊 Filtrage par score: ${relevantProducts.length} produits après exclusion', 'Matching');
+      } else {
+        AppLogger.info('📊 Mode discovery: AUCUN filtrage par score, ${relevantProducts.length} produits disponibles', 'Matching');
+      }
 
       // 🎲 SHUFFLE PARTIEL AMÉLIORÉ pour VRAIMENT éviter les mêmes produits
       // On garde le top 20% intact (meilleurs scores), mais on shuffle 80% restants

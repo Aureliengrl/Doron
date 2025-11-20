@@ -108,10 +108,23 @@ class TikTokInspirationPageModel extends ChangeNotifier {
         print('⚠️ TikTok Inspiration: Aucun produit retourné');
         print('⚠️ Tags utilisés: $tagsToUse');
         print('⚠️ IDs exclus: ${effectiveExcludeIds.length}');
-        print('⚠️ Cela indique soit que Firebase est vide, soit un problème de filtrage');
 
+        // Message d'erreur plus détaillé
         _errorMessage = '📦 Aucun produit disponible';
-        _errorDetails = 'Impossible de charger les produits.\n\nVérifie ta connexion ou reviens plus tard.';
+
+        // Vérifier la cause probable
+        if (effectiveExcludeIds.length > 20) {
+          _errorDetails = 'Tu as déjà vu tous les produits disponibles !\n\n'
+                          'Reviens plus tard pour découvrir de nouveaux produits.';
+        } else {
+          _errorDetails = 'La base de produits est actuellement vide ou en cours de chargement.\n\n'
+                          'Cela peut arriver si :\n'
+                          '• Les produits Firebase ne sont pas encore importés\n'
+                          '• Les filtres sont trop restrictifs\n'
+                          '• Il y a un problème de connexion\n\n'
+                          'Utilise le bouton "Reset complet" ci-dessous pour recharger.';
+        }
+
         _hasError = true;
         _isLoading = false;
         notifyListeners();

@@ -192,78 +192,119 @@ Réponds UNIQUEMENT avec le JSON, sans texte avant ou après:''';
     }
   }
 
-  /// Convertit les données analysées en format compatible avec saveGiftProfile
-  /// Extrait les TAGS OFFICIELS DORÕN du nouveau format JSON
+  /// Convertit les données analysées en format compatible avec ProductMatchingService
+  /// Extrait les TAGS OFFICIELS DORÕN et les convertit au format attendu
   static Map<String, dynamic> convertToGiftProfile(
     Map<String, dynamic> analysis,
   ) {
-    // Extraire tous les tags des listes
-    final List<String> allTags = [];
+    print('🏷️ Voice Analysis: Converting to gift profile...');
+    print('   Analysis: $analysis');
 
-    // Tag de genre (STRICT - 1 seul)
-    if (analysis['genderTag'] != null) {
-      allTags.add(analysis['genderTag'] as String);
+    // Extraire le genre au format attendu par ProductMatchingService
+    String? gender;
+    final genderTag = analysis['genderTag'] as String?;
+    if (genderTag != null) {
+      if (genderTag.contains('femme')) {
+        gender = 'Femme';
+      } else if (genderTag.contains('homme')) {
+        gender = 'Homme';
+      } else {
+        gender = 'Non spécifié';
+      }
+    } else {
+      gender = analysis['gender'] ?? 'Non spécifié';
     }
 
-    // Tags de catégories (STRICT - peut avoir plusieurs)
-    if (analysis['categoryTags'] != null) {
-      allTags.addAll((analysis['categoryTags'] as List).cast<String>());
+    // Extraire les catégories au format attendu
+    final categoryTags = (analysis['categoryTags'] as List?)?.cast<String>() ?? [];
+    final preferredCategories = categoryTags.map((tag) {
+      if (tag.contains('tendances')) return 'Tendances';
+      if (tag.contains('tech')) return 'Tech';
+      if (tag.contains('mode')) return 'Mode';
+      if (tag.contains('maison')) return 'Maison';
+      if (tag.contains('beaute')) return 'Beauté';
+      if (tag.contains('food')) return 'Food';
+      return tag;
+    }).toList();
+
+    // Extraire le budget
+    final budgetValue = analysis['budget'] ?? 100;
+
+    // Extraire le style
+    final styleTags = (analysis['styleTags'] as List?)?.cast<String>() ?? [];
+    String? style;
+    if (styleTags.isNotEmpty) {
+      final firstStyle = styleTags.first;
+      if (firstStyle.contains('elegant')) style = 'Élégant';
+      else if (firstStyle.contains('tendance')) style = 'Tendance';
+      else if (firstStyle.contains('minimaliste')) style = 'Minimaliste';
+      else if (firstStyle.contains('classique')) style = 'Classique';
+      else if (firstStyle.contains('decontracte')) style = 'Décontracté';
+      else if (firstStyle.contains('sportif')) style = 'Sportif';
+      else if (firstStyle.contains('moderne')) style = 'Moderne';
+      else style = 'Moderne';
+    } else {
+      style = 'Moderne';
     }
 
-    // Tag de budget (STRICT - 1 seul)
-    if (analysis['budgetTag'] != null) {
-      allTags.add(analysis['budgetTag'] as String);
+    // Extraire les passions/hobbies au format attendu
+    final passionTags = (analysis['passionTags'] as List?)?.cast<String>() ?? [];
+    final interests = passionTags.map((tag) {
+      if (tag.contains('sport')) return 'sport';
+      if (tag.contains('cuisine')) return 'cuisine';
+      if (tag.contains('voyages')) return 'voyages';
+      if (tag.contains('photo')) return 'photo';
+      if (tag.contains('jeuxvideo')) return 'jeux vidéo';
+      if (tag.contains('lecture')) return 'lecture';
+      if (tag.contains('musique')) return 'musique';
+      if (tag.contains('mode')) return 'mode';
+      if (tag.contains('tech')) return 'tech';
+      if (tag.contains('art')) return 'art';
+      return tag;
+    }).toList();
+
+    // Extraire la personnalité
+    final personalityTags = (analysis['personalityTags'] as List?)?.cast<String>() ?? [];
+    String? personality;
+    if (personalityTags.isNotEmpty) {
+      final firstPersonality = personalityTags.first;
+      if (firstPersonality.contains('creatif')) personality = 'créatif';
+      else if (firstPersonality.contains('actif')) personality = 'actif';
+      else if (firstPersonality.contains('cool')) personality = 'cool';
+      else if (firstPersonality.contains('bienveillant')) personality = 'bienveillant';
+      else personality = personalityTags.first.replaceFirst('perso_', '');
     }
 
-    // Tags de styles (SOUPLE - plusieurs possibles)
-    if (analysis['styleTags'] != null) {
-      allTags.addAll((analysis['styleTags'] as List).cast<String>());
-    }
+    // Format compatible avec ProductMatchingService
+    final profile = {
+      // Format attendu par ProductMatchingService
+      'gender': gender,
+      'recipientGender': gender,
+      'budget': budgetValue.toString(),
+      'preferredCategories': preferredCategories,
+      'style': style,
+      'interests': interests,
+      'personality': personality,
 
-    // Tags de personnalités (SOUPLE - plusieurs possibles)
-    if (analysis['personalityTags'] != null) {
-      allTags.addAll((analysis['personalityTags'] as List).cast<String>());
-    }
-
-    // Tags de passions (SOUPLE - plusieurs possibles)
-    if (analysis['passionTags'] != null) {
-      allTags.addAll((analysis['passionTags'] as List).cast<String>());
-    }
-
-    // Tags de types de cadeaux (SOUPLE - plusieurs possibles)
-    if (analysis['giftTypeTags'] != null) {
-      allTags.addAll((analysis['giftTypeTags'] as List).cast<String>());
-    }
-
-    print('🏷️ Voice Analysis: Extracted ${allTags.length} tags from OpenAI');
-    print('   Tags: ${allTags.join(", ")}');
-
-    return {
-      // Informations de base
-      'personType': analysis['recipientType'] ?? 'Autre',
-      'personName': analysis['recipientName'] ?? '',
-      'budget': analysis['budget']?.toString() ?? '',
-      'age': analysis['age']?.toString() ?? '',
-      'gender': analysis['gender'] ?? 'Non spécifié',
+      // Informations additionnelles
+      'recipient': analysis['recipientType'] ?? 'Autre',
+      'recipientAge': analysis['age']?.toString() ?? '',
       'occasion': analysis['occasion'] ?? 'non spécifié',
-      'specialNotes': analysis['specialNotes'] ?? '',
-
-      // NOUVEAU: Tags officiels DORÕN
-      'officialTags': allTags,
-
-      // Ancien format pour compatibilité (sera converti par TagsDefinitions)
-      'genderTag': analysis['genderTag'],
-      'categoryTags': analysis['categoryTags'],
-      'budgetTag': analysis['budgetTag'],
-      'styleTags': analysis['styleTags'],
-      'personalityTags': analysis['personalityTags'],
-      'passionTags': analysis['passionTags'],
-      'giftTypeTags': analysis['giftTypeTags'],
 
       // Métadonnées
-      'sourceType': 'voice', // Marquer que c'est venu de l'assistant vocal
+      'sourceType': 'voice',
       'rawTranscript': '', // Sera rempli par l'appelant
     };
+
+    print('✅ Voice profile converted:');
+    print('   - Gender: $gender');
+    print('   - Budget: $budgetValue');
+    print('   - Categories: $preferredCategories');
+    print('   - Style: $style');
+    print('   - Interests: $interests');
+    print('   - Personality: $personality');
+
+    return profile;
   }
 
   /// Génère un résumé textuel de l'analyse
