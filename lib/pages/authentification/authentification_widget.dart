@@ -1136,6 +1136,8 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                           child: FFButtonWidget(
                                                             onPressed:
                                                                 () async {
+                                                              print('🔵 INSCRIPTION DÉBUT: Validation du formulaire...');
+
                                                               if (_model.formKey1
                                                                           .currentState ==
                                                                       null ||
@@ -1143,17 +1145,22 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                       .formKey1
                                                                       .currentState!
                                                                       .validate()) {
+                                                                print('❌ INSCRIPTION: Validation formulaire échouée');
                                                                 return;
                                                               }
+
+                                                              print('✅ INSCRIPTION: Formulaire validé');
                                                               GoRouter.of(
                                                                       context)
                                                                   .prepareAuthEvent();
+
                                                               if (_model
                                                                       .passwordCreateTextController
                                                                       .text !=
                                                                   _model
                                                                       .passwordConfirmTextController
                                                                       .text) {
+                                                                print('❌ INSCRIPTION: Mots de passe ne correspondent pas');
                                                                 ScaffoldMessenger.of(
                                                                         context)
                                                                     .showSnackBar(
@@ -1167,44 +1174,83 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                 return;
                                                               }
 
-                                                              final user =
-                                                                  await authManager
-                                                                      .createAccountWithEmail(
-                                                                context,
-                                                                _model
-                                                                    .emailAddressCreateTextController
-                                                                    .text,
-                                                                _model
-                                                                    .passwordCreateTextController
-                                                                    .text,
-                                                              );
-                                                              if (user ==
-                                                                  null) {
-                                                                return;
+                                                              print('✅ INSCRIPTION: Mots de passe correspondent');
+
+                                                              try {
+                                                                print('🔄 INSCRIPTION: Création du compte Firebase...');
+                                                                print('   Email: ${_model.emailAddressCreateTextController.text}');
+                                                                print('   Nom: ${_model.displayNameTextController.text}');
+
+                                                                final user =
+                                                                    await authManager
+                                                                        .createAccountWithEmail(
+                                                                  context,
+                                                                  _model
+                                                                      .emailAddressCreateTextController
+                                                                      .text,
+                                                                  _model
+                                                                      .passwordCreateTextController
+                                                                      .text,
+                                                                );
+
+                                                                if (user == null) {
+                                                                  print('❌ INSCRIPTION: createAccountWithEmail retourné null (erreur déjà affichée)');
+                                                                  return;
+                                                                }
+
+                                                                print('✅ INSCRIPTION: Compte Firebase créé - UID: ${user.uid}');
+
+                                                                print('🔄 INSCRIPTION: Mise à jour du displayName dans Firestore...');
+                                                                await UsersRecord
+                                                                    .collection
+                                                                    .doc(user.uid)
+                                                                    .update(
+                                                                        createUsersRecordData(
+                                                                      displayName:
+                                                                          _model
+                                                                              .displayNameTextController
+                                                                              .text,
+                                                                    ));
+
+                                                                print('✅ INSCRIPTION: DisplayName mis à jour dans Firestore');
+
+                                                                FFAppState()
+                                                                        .firstTime =
+                                                                    true;
+                                                                safeSetState(
+                                                                    () {});
+
+                                                                print('🔄 INSCRIPTION: Navigation vers OnboardingGiftsResult...');
+                                                                print('   context.mounted: ${context.mounted}');
+
+                                                                if (!context.mounted) {
+                                                                  print('❌ INSCRIPTION: Context non mounted, impossible de naviguer');
+                                                                  return;
+                                                                }
+
+                                                                context.goNamedAuth(
+                                                                    OnboardingGiftsResultWidget
+                                                                        .routeName,
+                                                                    context
+                                                                        .mounted);
+
+                                                                print('✅ INSCRIPTION COMPLÈTE: Navigation déclenchée!');
+                                                              } catch (e, stackTrace) {
+                                                                print('❌ INSCRIPTION ERREUR CRITIQUE: $e');
+                                                                print('Stack trace: $stackTrace');
+
+                                                                if (context.mounted) {
+                                                                  ScaffoldMessenger.of(context)
+                                                                      .showSnackBar(
+                                                                    SnackBar(
+                                                                      content: Text(
+                                                                        'Erreur lors de l\'inscription: $e',
+                                                                      ),
+                                                                      duration: Duration(seconds: 5),
+                                                                    ),
+                                                                  );
+                                                                }
                                                               }
-
-                                                              await UsersRecord
-                                                                  .collection
-                                                                  .doc(user.uid)
-                                                                  .update(
-                                                                      createUsersRecordData(
-                                                                    displayName:
-                                                                        _model
-                                                                            .displayNameTextController
-                                                                            .text,
-                                                                  ));
-
-                                                              FFAppState()
-                                                                      .firstTime =
-                                                                  true;
-                                                              safeSetState(
-                                                                  () {});
-
-                                                              context.goNamedAuth(
-                                                                  OnboardingGiftsResultWidget
-                                                                      .routeName,
-                                                                  context
-                                                                      .mounted);
                                                             },
                                                             text: FFLocalizations
                                                                     .of(context)
@@ -1456,11 +1502,30 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                             FFButtonWidget(
                                                                           onPressed:
                                                                               () async {
+                                                                            print('🔵 GOOGLE SIGN-IN DÉBUT');
                                                                             GoRouter.of(context).prepareAuthEvent();
-                                                                            final user =
-                                                                                await authManager.signInWithGoogle(context);
-                                                                            if (user ==
-                                                                                null) {
+
+                                                                            try {
+                                                                              print('🔄 GOOGLE: Appel signInWithGoogle...');
+                                                                              final user =
+                                                                                  await authManager.signInWithGoogle(context);
+                                                                              if (user ==
+                                                                                  null) {
+                                                                                print('❌ GOOGLE: signInWithGoogle retourné null');
+                                                                                return;
+                                                                              }
+
+                                                                              print('✅ GOOGLE: Connexion réussie - UID: ${user.uid}');
+                                                                            } catch (e) {
+                                                                              print('❌ GOOGLE: Erreur lors de signInWithGoogle: $e');
+                                                                              if (context.mounted) {
+                                                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                                                  SnackBar(
+                                                                                    content: Text('Erreur Google Sign-In: $e'),
+                                                                                    duration: Duration(seconds: 5),
+                                                                                  ),
+                                                                                );
+                                                                              }
                                                                               return;
                                                                             }
 
@@ -1598,13 +1663,40 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                             child:
                                                                                 FFButtonWidget(
                                                                               onPressed: () async {
+                                                                                print('🔵 APPLE SIGN-IN DÉBUT');
                                                                                 GoRouter.of(context).prepareAuthEvent();
-                                                                                final user = await authManager.signInWithApple(context);
-                                                                                if (user == null) {
-                                                                                  return;
-                                                                                }
 
-                                                                                context.goNamedAuth(OnboardingGiftsResultWidget.routeName, context.mounted);
+                                                                                try {
+                                                                                  print('🔄 APPLE: Appel signInWithApple...');
+                                                                                  final user = await authManager.signInWithApple(context);
+                                                                                  if (user == null) {
+                                                                                    print('❌ APPLE: signInWithApple retourné null');
+                                                                                    return;
+                                                                                  }
+
+                                                                                  print('✅ APPLE: Connexion réussie - UID: ${user.uid}');
+                                                                                  print('🔄 APPLE: Navigation vers OnboardingGiftsResult...');
+
+                                                                                  if (!context.mounted) {
+                                                                                    print('❌ APPLE: Context non mounted, impossible de naviguer');
+                                                                                    return;
+                                                                                  }
+
+                                                                                  context.goNamedAuth(OnboardingGiftsResultWidget.routeName, context.mounted);
+                                                                                  print('✅ APPLE: Navigation déclenchée');
+                                                                                } catch (e, stackTrace) {
+                                                                                  print('❌ APPLE: Erreur critique: $e');
+                                                                                  print('Stack trace: $stackTrace');
+
+                                                                                  if (context.mounted) {
+                                                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                                                      SnackBar(
+                                                                                        content: Text('Erreur Apple Sign-In: $e'),
+                                                                                        duration: Duration(seconds: 5),
+                                                                                      ),
+                                                                                    );
+                                                                                  }
+                                                                                }
                                                                               },
                                                                               text: FFLocalizations.of(context).getText(
                                                                                 'xy6o5xqi' /* Continue with Apple */,

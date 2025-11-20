@@ -346,13 +346,21 @@ Future<FFFirestorePage<T>> queryCollectionPage<T>(
 
 // Creates a Firestore document representing the logged in user if it doesn't yet exist
 Future maybeCreateUser(User user) async {
+  print('🔄 maybeCreateUser: Début pour UID: ${user.uid}');
+
   final userRecord = UsersRecord.collection.doc(user.uid);
+
+  print('🔄 maybeCreateUser: Vérification si utilisateur existe...');
   final userExists = await userRecord.get().then((u) => u.exists);
+
   if (userExists) {
+    print('✅ maybeCreateUser: Utilisateur existe déjà, chargement du document');
     currentUserDocument = await UsersRecord.getDocumentOnce(userRecord);
+    print('✅ maybeCreateUser: Document chargé');
     return;
   }
 
+  print('🔄 maybeCreateUser: Utilisateur n\'existe pas, création du document...');
   final userData = createUsersRecordData(
     email: user.email ??
         FirebaseAuth.instance.currentUser?.email ??
@@ -365,8 +373,15 @@ Future maybeCreateUser(User user) async {
     createdTime: getCurrentTimestamp,
   );
 
+  print('🔄 maybeCreateUser: Enregistrement dans Firestore...');
+  print('   Email: ${userData.email}');
+  print('   DisplayName: ${userData.displayName}');
+
   await userRecord.set(userData);
+
+  print('✅ maybeCreateUser: Document créé avec succès');
   currentUserDocument = UsersRecord.getDocumentFromData(userData, userRecord);
+  print('✅ maybeCreateUser: Terminé');
 }
 
 Future updateUserDocument({String? email}) async {
