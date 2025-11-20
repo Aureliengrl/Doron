@@ -374,8 +374,8 @@ Future maybeCreateUser(User user) async {
   );
 
   print('🔄 maybeCreateUser: Enregistrement dans Firestore...');
-  print('   Email: ${userData.email}');
-  print('   DisplayName: ${userData.displayName}');
+  print('   Email: ${userData['email']}');
+  print('   DisplayName: ${userData['display_name']}');
 
   await userRecord.set(userData);
 
