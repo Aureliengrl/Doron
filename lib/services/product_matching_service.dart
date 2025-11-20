@@ -58,9 +58,9 @@ class ProductMatchingService {
         AppLogger.info('🌐 ${filteringMode.toUpperCase()} - Pas de filtre sexe Firebase, scoring favorisera $genderFilter', 'Matching');
       }
 
-      // ⚙️ FILTRAGE PAR CATÉGORIE - Jamais en mode HOME ou PERSON (seulement scoring)
+      // ⚙️ FILTRAGE PAR CATÉGORIE
       if (category != null && category != 'Pour toi' && category != 'all') {
-        AppLogger.info('📁 Catégorie demandée: $category (scoring uniquement, pas de filtre Firebase)', 'Matching');
+        AppLogger.info('📁 Catégorie sélectionnée: $category - FILTRAGE STRICT activé', 'Matching');
       }
 
       // Charger 2000 produits (augmenté pour plus de variété)
@@ -202,6 +202,7 @@ class ProductMatchingService {
       final seenProductIds = <dynamic>{};
       final seenProductNames = <String>{}; // Déduplication par nom normalisé
       final excludedIds = excludeProductIds?.toSet() ?? {};
+      int categoryFilteredCount = 0; // Compteur de produits filtrés par catégorie
 
       // ✅ EXCLUSION RÉACTIVÉE pour éviter de revoir les mêmes produits
       AppLogger.info('🎯 Exclusion de ${excludedIds.length} produits déjà vus', 'Matching');
@@ -258,12 +259,41 @@ class ProductMatchingService {
           }
         }
 
+        // 7️⃣ Vérifier correspondance catégorie - FILTRAGE STRICT si catégorie sélectionnée
+        // Si l'utilisateur a cliqué sur une catégorie (Tech, Mode, etc.), montrer UNIQUEMENT cette catégorie
+        if (category != null && category != 'Pour toi' && category != 'all') {
+          final productTags = (product['tags'] as List?)?.cast<String>() ?? [];
+          final productCategories = (product['categories'] as List?)?.cast<String>() ?? [];
+          final productCategory = product['category']?.toString() ?? '';
+
+          // Normaliser la catégorie recherchée
+          final normalizedCategory = _normalizeTag(category);
+
+          // Vérifier si le produit appartient à cette catégorie
+          final matchesCategory =
+            productTags.any((tag) => _normalizeTag(tag) == normalizedCategory || _normalizeTag(tag).contains(normalizedCategory)) ||
+            productCategories.any((cat) => _normalizeTag(cat) == normalizedCategory || _normalizeTag(cat).contains(normalizedCategory)) ||
+            _normalizeTag(productCategory) == normalizedCategory ||
+            _normalizeTag(productCategory).contains(normalizedCategory);
+
+          if (!matchesCategory) {
+            // Ce produit n'appartient pas à la catégorie demandée, on le skip
+            categoryFilteredCount++;
+            continue;
+          }
+        }
+
         // ✅ Ajouter le produit
         selectedProducts.add(product);
         seenProductIds.add(productId);
         seenProductNames.add(normalizedName);
         brandCounts[brand] = currentBrandCount + 1;
         categoryCounts[mainCategory] = currentCategoryCount + 1;
+      }
+
+      // 📊 Log du filtrage par catégorie
+      if (category != null && category != 'Pour toi' && category != 'all') {
+        AppLogger.info('📁 Filtrage catégorie "$category": ${categoryFilteredCount} produits exclus, ${selectedProducts.length} produits retenus', 'Matching');
       }
 
       // 🎨 MÉLANGE INTELLIGENT FINAL pour éviter produits similaires côte à côte
