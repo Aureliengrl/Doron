@@ -42,11 +42,20 @@ class _OnboardingGiftsResultWidgetState
 
   String? _returnTo; // Page de retour (ex: /search-page)
 
-  /// Parse les paramètres de query de l'URL
+  /// Parse les paramètres de query de l'URL et les données extra
   void _parseQueryParameters() {
     final goRouterState = GoRouterState.of(context);
     final personId = goRouterState.uri.queryParameters['personId'];
     _returnTo = goRouterState.uri.queryParameters['returnTo'];
+
+    // 🎤 NOUVEAU: Récupérer les données passées via extra (assistant vocal)
+    final extraData = goRouterState.extra;
+    print('🎯 Extra data détecté: ${extraData != null ? "OUI" : "NON"}');
+
+    if (extraData != null && extraData is Map<String, dynamic>) {
+      print('✅ Profil vocal reçu via extra: ${extraData.keys.join(", ")}');
+      _model.setVoiceProfile(extraData);
+    }
 
     if (personId != null) {
       _model.setPersonId(personId);
@@ -72,8 +81,14 @@ class _OnboardingGiftsResultWidgetState
     try {
       Map<String, dynamic>? profileForGeneration;
 
-      // Si un personId est spécifié, charger les tags de la personne (nouvelle architecture)
-      if (_model.personId != null) {
+      // 🎤 PRIORITÉ 1: Si profil vocal existe (assistant vocal), l'utiliser
+      if (_model.voiceProfile != null) {
+        print('🎤 Utilisation du profil vocal pour génération');
+        profileForGeneration = _model.voiceProfile;
+        print('✅ Profil vocal: ${profileForGeneration!.keys.join(", ")}');
+      }
+      // 🎯 PRIORITÉ 2: Si un personId est spécifié, charger les tags de la personne
+      else if (_model.personId != null) {
         print('🔍 Chargement des données pour personne: ${_model.personId}');
         final people = await FirebaseDataService.loadPeople();
         final person = people.firstWhere(
@@ -122,8 +137,9 @@ class _OnboardingGiftsResultWidgetState
         _model.setPersonTags(personTags);
         profileForGeneration = personTags;
         print('✅ Tags de personne chargés: ${personTags.keys.join(", ")}');
-      } else {
-        // Ancienne méthode (compatibilité): charger les réponses d'onboarding complètes
+      }
+      // 📝 PRIORITÉ 3: Ancienne méthode (compatibilité): charger depuis Firebase
+      else {
         print('🔍 Chargement du profil onboarding (mode compatibilité)');
         final userProfile = await FirebaseDataService.loadOnboardingAnswers();
         _model.setUserProfile(userProfile);

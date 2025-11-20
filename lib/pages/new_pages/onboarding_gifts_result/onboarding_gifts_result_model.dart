@@ -9,6 +9,7 @@ class OnboardingGiftsResultModel {
   String? errorDetails;
   String? personId; // ID de la personne pour laquelle on génère les cadeaux
   Map<String, dynamic>? personTags; // Tags de la personne (recipient, budget, etc.)
+  Map<String, dynamic>? voiceProfile; // 🎤 Profil généré par l'assistant vocal
 
   void setGifts(List<Map<String, dynamic>> newGifts) {
     gifts = newGifts;
@@ -38,6 +39,12 @@ class OnboardingGiftsResultModel {
 
   void setPersonTags(Map<String, dynamic>? tags) {
     personTags = tags;
+  }
+
+  /// 🎤 Défini le profil vocal (assistant vocal)
+  void setVoiceProfile(Map<String, dynamic>? profile) {
+    voiceProfile = profile;
+    print('🎤 Profil vocal défini dans model: ${profile?.keys.join(", ")}');
   }
 
   void dispose() {
