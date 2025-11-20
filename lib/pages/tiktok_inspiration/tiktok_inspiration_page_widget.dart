@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/backend/backend.dart';
 import '/backend/schema/structs/index.dart';
@@ -335,6 +336,25 @@ class _TikTokInspirationPageWidgetState
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            // Bouton reset complet
+            TextButton.icon(
+              onPressed: () async {
+                // Reset complet des produits vus
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.remove('seen_inspiration_product_ids');
+                print('🔄 RESET MANUEL: Cache produits vus supprimé');
+                _model.loadProducts();
+              },
+              icon: const Icon(Icons.delete_sweep, color: Colors.white70, size: 20),
+              label: Text(
+                'Reset complet et recharger',
+                style: GoogleFonts.poppins(
+                  fontSize: 13,
+                  color: Colors.white70,
                 ),
               ),
             ),
