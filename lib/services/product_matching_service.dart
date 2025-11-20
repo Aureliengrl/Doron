@@ -229,6 +229,7 @@ class ProductMatchingService {
             searchTags,
             userTags,
             filteringMode: filteringMode,
+            categoryFilter: category, // Passer le filtre de catégorie
           );
           scoredProducts.add({
             ...product,
@@ -618,8 +619,14 @@ class ProductMatchingService {
     Set<String> searchTags,
     Map<String, dynamic> userTags, {
     String filteringMode = "home",
+    String? categoryFilter, // Filtre de catégorie actif (null = pas de filtre)
   }) {
     double score = 0.0;
+
+    // Déterminer si un filtre de catégorie est actif
+    final hasCategoryFilter = categoryFilter != null &&
+                               categoryFilter != 'Pour toi' &&
+                               categoryFilter != 'all';
 
     // Extraire TOUS les tags du produit (tags + categories)
     final productTags = (product['tags'] as List?)?.cast<String>() ?? [];
@@ -644,7 +651,7 @@ class ProductMatchingService {
     // RÈGLES STRICTES - EXCLUSION OU PÉNALITÉ SELON MODE
     // ========================================================================
 
-    // 🔒 1. GENRE (SCORING uniquement, PLUS JAMAIS d'exclusion)
+    // 🔒 1. GENRE (EXCLUSION STRICTE sauf si filtre de catégorie actif)
     final userGenderTags = searchTags.where((t) => t.startsWith('gender_')).toList();
     if (userGenderTags.isNotEmpty) {
       final userGender = userGenderTags.first.toLowerCase();
@@ -663,19 +670,19 @@ class ProductMatchingService {
         print('✅ Produit mixte accepté: +70 points');
         score += 70.0;
       } else {
-        // Genre ne correspond PAS - PÉNALITÉ mais PAS d'exclusion
-        if (isDiscoveryMode) {
+        // Genre ne correspond PAS
+        if (hasCategoryFilter) {
+          // Si filtre de catégorie actif -> PÉNALITÉ uniquement (pas d'exclusion)
+          print('⚠️ GENRE NE CORRESPOND PAS (filtre catégorie actif): $userGender ≠ ${productGenderTags.join(", ")} => Pénalité -30');
+          score -= 30.0;
+        } else if (isDiscoveryMode) {
           // Discovery: très petite pénalité
           print('⚠️ GENRE NE CORRESPOND PAS (discovery): ${productGenderTags.join(", ")} => Pénalité -10');
           score -= 10.0;
-        } else if (isHomeMode) {
-          // Home: pénalité modérée (avant c'était exclusion)
-          print('⚠️ GENRE NE CORRESPOND PAS (home): $userGender ≠ ${productGenderTags.join(", ")} => Pénalité -40');
-          score -= 40.0;
         } else {
-          // Person: petite pénalité
-          print('⚠️ GENRE NE CORRESPOND PAS (person): $userGender ≠ ${productGenderTags.join(", ")} => Pénalité -30');
-          score -= 30.0;
+          // Home/Person: EXCLUSION STRICTE pour homme/femme
+          print('❌ GENRE NE CORRESPOND PAS: $userGender ≠ ${productGenderTags.join(", ")} => EXCLUSION');
+          return -10000.0;
         }
       }
     } else {
