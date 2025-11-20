@@ -1219,22 +1219,6 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                     true;
                                                                 safeSetState(
                                                                     () {});
-
-                                                                print('🔄 INSCRIPTION: Navigation vers OnboardingGiftsResult...');
-                                                                print('   context.mounted: ${context.mounted}');
-
-                                                                if (!context.mounted) {
-                                                                  print('❌ INSCRIPTION: Context non mounted, impossible de naviguer');
-                                                                  return;
-                                                                }
-
-                                                                context.goNamedAuth(
-                                                                    OnboardingGiftsResultWidget
-                                                                        .routeName,
-                                                                    context
-                                                                        .mounted);
-
-                                                                print('✅ INSCRIPTION COMPLÈTE: Navigation déclenchée!');
                                                               } catch (e, stackTrace) {
                                                                 print('❌ INSCRIPTION ERREUR CRITIQUE: $e');
                                                                 print('Stack trace: $stackTrace');
@@ -1250,7 +1234,80 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                     ),
                                                                   );
                                                                 }
+                                                                return;
                                                               }
+
+                                                              // ==================== NOUVELLE ARCHITECTURE ====================
+                                                              // Transférer les données locales vers Firebase après création du compte
+                                                              try {
+                                                                final prefs = await SharedPreferences.getInstance();
+
+                                                                // 1. Transférer les tags utilisateur
+                                                                final userTagsLocal = prefs.getString('local_user_profile_tags');
+                                                                if (userTagsLocal != null) {
+                                                                  final userTags = json.decode(userTagsLocal) as Map<String, dynamic>;
+                                                                  await FirebaseDataService.saveUserProfileTags(userTags);
+                                                                  print('✅ User tags transferred to Firebase');
+                                                                }
+
+                                                                // 2. Transférer les people
+                                                                final peopleLocal = prefs.getString('local_people');
+                                                                if (peopleLocal != null) {
+                                                                  final people = (json.decode(peopleLocal) as List).cast<Map<String, dynamic>>();
+                                                                  for (var person in people) {
+                                                                    await FirebaseDataService.createPerson(
+                                                                      tags: person['tags'],
+                                                                      isPendingFirstGen: person['meta']?['isPendingFirstGen'] ?? false,
+                                                                    );
+                                                                  }
+                                                                  print('✅ People transferred to Firebase');
+                                                                }
+
+                                                                // 3. Transférer l'ancien format pour compatibilité
+                                                                final localData = prefs.getString('local_onboarding_answers');
+                                                                if (localData != null) {
+                                                                  final answers = json.decode(localData) as Map<String, dynamic>;
+                                                                  await FirebaseDataService.saveOnboardingAnswers(answers);
+                                                                  print('✅ Onboarding answers transferred to Firebase');
+                                                                }
+                                                              } catch (e) {
+                                                                print('❌ Error transferring data to Firebase: $e');
+                                                              }
+
+                                                              // 4. Vérifier s'il y a une personne en attente de génération
+                                                              try {
+                                                                // D'abord, vérifier si un personId a été passé en paramètre (premier onboarding)
+                                                                if (_pendingPersonId != null && _pendingPersonId!.isNotEmpty && context.mounted) {
+                                                                  print('🎯 PersonId depuis onboarding: $_pendingPersonId');
+                                                                  // Ajouter returnTo si présent
+                                                                  final returnParam = (_returnTo != null && _returnTo!.isNotEmpty)
+                                                                      ? '&returnTo=${Uri.encodeComponent(_returnTo!)}'
+                                                                      : '';
+                                                                  context.go('/onboarding-gifts-result?personId=$_pendingPersonId$returnParam');
+                                                                } else {
+                                                                  // Sinon, chercher une personne en attente dans Firebase (ancienne méthode)
+                                                                  final pendingPerson = await FirebaseDataService.getFirstPendingPerson();
+
+                                                                  if (pendingPerson != null && context.mounted) {
+                                                                    // Rediriger vers la page de génération pour cette personne
+                                                                    final personId = pendingPerson['id'] as String;
+                                                                    print('🎯 Redirection vers génération pour personne: $personId');
+                                                                    context.go('/onboarding-gifts-result?personId=$personId');
+                                                                  } else if (context.mounted) {
+                                                                    // Pas de personne en attente, aller à la page d'accueil
+                                                                    print('🏠 Redirection vers page d\'accueil');
+                                                                    context.goNamedAuth('HomePinterest', context.mounted);
+                                                                  }
+                                                                }
+                                                              } catch (e) {
+                                                                print('❌ Error checking pending person: $e');
+                                                                // En cas d'erreur, rediriger vers l'accueil
+                                                                if (context.mounted) {
+                                                                  context.goNamedAuth('HomePinterest', context.mounted);
+                                                                }
+                                                              }
+
+                                                              print('✅ INSCRIPTION COMPLÈTE!');
                                                             },
                                                             text: FFLocalizations
                                                                     .of(context)
@@ -1675,15 +1732,6 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                                   }
 
                                                                                   print('✅ APPLE: Connexion réussie - UID: ${user.uid}');
-                                                                                  print('🔄 APPLE: Navigation vers OnboardingGiftsResult...');
-
-                                                                                  if (!context.mounted) {
-                                                                                    print('❌ APPLE: Context non mounted, impossible de naviguer');
-                                                                                    return;
-                                                                                  }
-
-                                                                                  context.goNamedAuth(OnboardingGiftsResultWidget.routeName, context.mounted);
-                                                                                  print('✅ APPLE: Navigation déclenchée');
                                                                                 } catch (e, stackTrace) {
                                                                                   print('❌ APPLE: Erreur critique: $e');
                                                                                   print('Stack trace: $stackTrace');
@@ -1695,6 +1743,77 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                                         duration: Duration(seconds: 5),
                                                                                       ),
                                                                                     );
+                                                                                  }
+                                                                                  return;
+                                                                                }
+
+                                                                                // ==================== NOUVELLE ARCHITECTURE ====================
+                                                                                // Transférer les données locales vers Firebase après connexion
+                                                                                try {
+                                                                                  final prefs = await SharedPreferences.getInstance();
+
+                                                                                  // 1. Transférer les tags utilisateur
+                                                                                  final userTagsLocal = prefs.getString('local_user_profile_tags');
+                                                                                  if (userTagsLocal != null) {
+                                                                                    final userTags = json.decode(userTagsLocal) as Map<String, dynamic>;
+                                                                                    await FirebaseDataService.saveUserProfileTags(userTags);
+                                                                                    print('✅ User tags transferred to Firebase');
+                                                                                  }
+
+                                                                                  // 2. Transférer les people
+                                                                                  final peopleLocal = prefs.getString('local_people');
+                                                                                  if (peopleLocal != null) {
+                                                                                    final people = (json.decode(peopleLocal) as List).cast<Map<String, dynamic>>();
+                                                                                    for (var person in people) {
+                                                                                      await FirebaseDataService.createPerson(
+                                                                                        tags: person['tags'],
+                                                                                        isPendingFirstGen: person['meta']?['isPendingFirstGen'] ?? false,
+                                                                                      );
+                                                                                    }
+                                                                                    print('✅ People transferred to Firebase');
+                                                                                  }
+
+                                                                                  // 3. Transférer l'ancien format pour compatibilité
+                                                                                  final localData = prefs.getString('local_onboarding_answers');
+                                                                                  if (localData != null) {
+                                                                                    final answers = json.decode(localData) as Map<String, dynamic>;
+                                                                                    await FirebaseDataService.saveOnboardingAnswers(answers);
+                                                                                    print('✅ Onboarding answers transferred to Firebase');
+                                                                                  }
+                                                                                } catch (e) {
+                                                                                  print('❌ Error transferring data to Firebase: $e');
+                                                                                }
+
+                                                                                // 4. Vérifier s'il y a une personne en attente de génération
+                                                                                try {
+                                                                                  // D'abord, vérifier si un personId a été passé en paramètre (premier onboarding)
+                                                                                  if (_pendingPersonId != null && _pendingPersonId!.isNotEmpty && context.mounted) {
+                                                                                    print('🎯 PersonId depuis onboarding: $_pendingPersonId');
+                                                                                    // Ajouter returnTo si présent
+                                                                                    final returnParam = (_returnTo != null && _returnTo!.isNotEmpty)
+                                                                                        ? '&returnTo=${Uri.encodeComponent(_returnTo!)}'
+                                                                                        : '';
+                                                                                    context.go('/onboarding-gifts-result?personId=$_pendingPersonId$returnParam');
+                                                                                  } else {
+                                                                                    // Sinon, chercher une personne en attente dans Firebase (ancienne méthode)
+                                                                                    final pendingPerson = await FirebaseDataService.getFirstPendingPerson();
+
+                                                                                    if (pendingPerson != null && context.mounted) {
+                                                                                      // Rediriger vers la page de génération pour cette personne
+                                                                                      final personId = pendingPerson['id'] as String;
+                                                                                      print('🎯 Redirection vers génération pour personne: $personId');
+                                                                                      context.go('/onboarding-gifts-result?personId=$personId');
+                                                                                    } else if (context.mounted) {
+                                                                                      // Pas de personne en attente, aller à la page d'accueil
+                                                                                      print('🏠 Redirection vers page d\'accueil');
+                                                                                      context.goNamedAuth('HomePinterest', context.mounted);
+                                                                                    }
+                                                                                  }
+                                                                                } catch (e) {
+                                                                                  print('❌ Error checking pending person: $e');
+                                                                                  // En cas d'erreur, rediriger vers l'accueil
+                                                                                  if (context.mounted) {
+                                                                                    context.goNamedAuth('HomePinterest', context.mounted);
                                                                                   }
                                                                                 }
                                                                               },
@@ -2208,42 +2327,130 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                     16.0),
                                                         child: FFButtonWidget(
                                                           onPressed: () async {
+                                                            print('🔵 CONNEXION EMAIL DÉBUT');
+
                                                             if (_model.formKey2
                                                                         .currentState ==
                                                                     null ||
                                                                 !_model.formKey2
                                                                     .currentState!
                                                                     .validate()) {
+                                                              print('❌ CONNEXION: Validation formulaire échouée');
                                                               return;
                                                             }
+
+                                                            print('✅ CONNEXION: Formulaire validé');
                                                             GoRouter.of(context)
                                                                 .prepareAuthEvent();
 
-                                                            final user =
-                                                                await authManager
-                                                                    .signInWithEmail(
-                                                              context,
-                                                              _model
-                                                                  .emailAddressTextController
-                                                                  .text,
-                                                              _model
-                                                                  .passwordTextController
-                                                                  .text,
-                                                            );
-                                                            if (user == null) {
+                                                            try {
+                                                              print('🔄 CONNEXION: Appel signInWithEmail...');
+                                                              final user =
+                                                                  await authManager
+                                                                      .signInWithEmail(
+                                                                context,
+                                                                _model
+                                                                    .emailAddressTextController
+                                                                    .text,
+                                                                _model
+                                                                    .passwordTextController
+                                                                    .text,
+                                                              );
+                                                              if (user == null) {
+                                                                print('❌ CONNEXION: signInWithEmail retourné null');
+                                                                return;
+                                                              }
+
+                                                              print('✅ CONNEXION: Connexion réussie - UID: ${user.uid}');
+
+                                                              FFAppState()
+                                                                      .firstTime =
+                                                                  true;
+                                                              safeSetState(() {});
+                                                            } catch (e) {
+                                                              print('❌ CONNEXION: Erreur lors de signInWithEmail: $e');
+                                                              if (context.mounted) {
+                                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                                  SnackBar(
+                                                                    content: Text('Erreur de connexion: $e'),
+                                                                    duration: Duration(seconds: 5),
+                                                                  ),
+                                                                );
+                                                              }
                                                               return;
                                                             }
 
-                                                            FFAppState()
-                                                                    .firstTime =
-                                                                true;
-                                                            safeSetState(() {});
+                                                            // ==================== NOUVELLE ARCHITECTURE ====================
+                                                            // Transférer les données locales vers Firebase si présentes
+                                                            try {
+                                                              final prefs = await SharedPreferences.getInstance();
 
-                                                            context.goNamedAuth(
-                                                                HomeAlgoaceWidget
-                                                                    .routeName,
-                                                                context
-                                                                    .mounted);
+                                                              // 1. Transférer les tags utilisateur
+                                                              final userTagsLocal = prefs.getString('local_user_profile_tags');
+                                                              if (userTagsLocal != null) {
+                                                                final userTags = json.decode(userTagsLocal) as Map<String, dynamic>;
+                                                                await FirebaseDataService.saveUserProfileTags(userTags);
+                                                                print('✅ User tags transferred to Firebase');
+                                                              }
+
+                                                              // 2. Transférer les people
+                                                              final peopleLocal = prefs.getString('local_people');
+                                                              if (peopleLocal != null) {
+                                                                final people = (json.decode(peopleLocal) as List).cast<Map<String, dynamic>>();
+                                                                for (var person in people) {
+                                                                  await FirebaseDataService.createPerson(
+                                                                    tags: person['tags'],
+                                                                    isPendingFirstGen: person['meta']?['isPendingFirstGen'] ?? false,
+                                                                  );
+                                                                }
+                                                                print('✅ People transferred to Firebase');
+                                                              }
+
+                                                              // 3. Transférer l'ancien format pour compatibilité
+                                                              final localData = prefs.getString('local_onboarding_answers');
+                                                              if (localData != null) {
+                                                                final answers = json.decode(localData) as Map<String, dynamic>;
+                                                                await FirebaseDataService.saveOnboardingAnswers(answers);
+                                                                print('✅ Onboarding answers transferred to Firebase');
+                                                              }
+                                                            } catch (e) {
+                                                              print('❌ Error transferring data to Firebase: $e');
+                                                            }
+
+                                                            // 4. Vérifier s'il y a une personne en attente de génération
+                                                            try {
+                                                              // D'abord, vérifier si un personId a été passé en paramètre (premier onboarding)
+                                                              if (_pendingPersonId != null && _pendingPersonId!.isNotEmpty && context.mounted) {
+                                                                print('🎯 PersonId depuis onboarding: $_pendingPersonId');
+                                                                // Ajouter returnTo si présent
+                                                                final returnParam = (_returnTo != null && _returnTo!.isNotEmpty)
+                                                                    ? '&returnTo=${Uri.encodeComponent(_returnTo!)}'
+                                                                    : '';
+                                                                context.go('/onboarding-gifts-result?personId=$_pendingPersonId$returnParam');
+                                                              } else {
+                                                                // Sinon, chercher une personne en attente dans Firebase
+                                                                final pendingPerson = await FirebaseDataService.getFirstPendingPerson();
+
+                                                                if (pendingPerson != null && context.mounted) {
+                                                                  // Rediriger vers la page de génération pour cette personne
+                                                                  final personId = pendingPerson['id'] as String;
+                                                                  print('🎯 Redirection vers génération pour personne: $personId');
+                                                                  context.go('/onboarding-gifts-result?personId=$personId');
+                                                                } else if (context.mounted) {
+                                                                  // Pas de personne en attente, aller à la page d'accueil
+                                                                  print('🏠 Redirection vers page d\'accueil');
+                                                                  context.goNamedAuth('HomePinterest', context.mounted);
+                                                                }
+                                                              }
+                                                            } catch (e) {
+                                                              print('❌ Error checking pending person: $e');
+                                                              // En cas d'erreur, rediriger vers l'accueil
+                                                              if (context.mounted) {
+                                                                context.goNamedAuth('HomePinterest', context.mounted);
+                                                              }
+                                                            }
+
+                                                            print('✅ CONNEXION COMPLÈTE!');
                                                           },
                                                           text: FFLocalizations
                                                                   .of(context)
