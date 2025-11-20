@@ -276,6 +276,14 @@ class ProductMatchingService {
         relevantProducts = scoredProducts.where((p) => (p['_matchScore'] as double) > -1000).toList();
         AppLogger.info('📊 Filtrage par score: ${relevantProducts.length} produits après exclusion (${excludedProducts.length} exclus)', 'Matching');
 
+        // 🆘 FALLBACK CRITIQUE: Si TOUS les produits sont exclus, on prend quand même les meilleurs
+        // Ça arrive si l'utilisateur est homme et TOUS les produits Firebase sont pour femme (ou inverse)
+        if (relevantProducts.isEmpty && scoredProducts.isNotEmpty) {
+          AppLogger.error('⚠️ TOUS LES PRODUITS EXCLUS ! Fallback: on prend les ${count} meilleurs scores quand même', 'Matching');
+          relevantProducts = scoredProducts.take(count * 3).toList(); // Prendre 3x plus pour avoir du choix après shuffle
+          AppLogger.warning('🆘 FALLBACK ACTIVÉ: ${relevantProducts.length} produits avec meilleurs scores (même négatifs)', 'Matching');
+        }
+
         // Log sample de produits gardés pour debug
         if (relevantProducts.isNotEmpty) {
           final sample = relevantProducts.first;
@@ -695,9 +703,12 @@ class ProductMatchingService {
           print('⚠️ GENRE NE CORRESPOND PAS (discovery): ${productGenderTags.join(", ")} => Pénalité -10');
           score -= 10.0;
         } else {
-          // Home/Person: EXCLUSION STRICTE pour homme/femme
-          print('❌ GENRE NE CORRESPOND PAS: $userGender ≠ ${productGenderTags.join(", ")} => EXCLUSION');
-          return -10000.0;
+          // 🆘 TEMPORAIRE: DÉSACTIVÉ pour debug - voir si produits s'affichent
+          // TODO: Réactiver quand Firebase aura produits des 2 genres
+          // Home/Person: PÉNALITÉ FORTE au lieu d'exclusion (pour debug)
+          print('⚠️ GENRE NE CORRESPOND PAS (DEBUG MODE): $userGender ≠ ${productGenderTags.join(", ")} => Pénalité -80 (EXCLUSION DÉSACTIVÉE)');
+          score -= 80.0;
+          // return -10000.0; // COMMENTÉ TEMPORAIREMENT
         }
       }
     } else {
