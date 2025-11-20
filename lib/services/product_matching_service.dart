@@ -644,16 +644,16 @@ class ProductMatchingService {
     // RÈGLES STRICTES - EXCLUSION OU PÉNALITÉ SELON MODE
     // ========================================================================
 
-    // 🔒 1. GENRE (STRICT en home, SCORING STRICT en person, souple en discovery)
+    // 🔒 1. GENRE (SCORING uniquement, PLUS JAMAIS d'exclusion)
     final userGenderTags = searchTags.where((t) => t.startsWith('gender_')).toList();
     if (userGenderTags.isNotEmpty) {
       final userGender = userGenderTags.first.toLowerCase();
       final productGenderTags = allProductTags.where((t) => t.toLowerCase().startsWith('gender_')).map((t) => t.toLowerCase()).toList();
 
       if (productGenderTags.isEmpty) {
-        // Produit sans tag de genre => on accepte comme mixte
-        print('⚠️ Produit sans genre, considéré comme mixte: +50');
-        score += 50.0;
+        // Produit sans tag de genre => considéré universel, très bon
+        print('⚠️ Produit sans genre, considéré comme universel: +80');
+        score += 80.0;
       } else if (productGenderTags.contains(userGender)) {
         // Match exact du genre
         print('✅ GENRE MATCH: $userGender = +100 points');
@@ -663,24 +663,28 @@ class ProductMatchingService {
         print('✅ Produit mixte accepté: +70 points');
         score += 70.0;
       } else {
-        // Genre ne correspond PAS
+        // Genre ne correspond PAS - PÉNALITÉ mais PAS d'exclusion
         if (isDiscoveryMode) {
-          // Discovery: pénalité légère
-          print('⚠️ GENRE NE CORRESPOND PAS (discovery): ${productGenderTags.join(", ")} => Pénalité -30');
-          score -= 30.0;
+          // Discovery: très petite pénalité
+          print('⚠️ GENRE NE CORRESPOND PAS (discovery): ${productGenderTags.join(", ")} => Pénalité -10');
+          score -= 10.0;
         } else if (isHomeMode) {
-          // Home: EXCLUSION TOTALE
-          print('❌ GENRE NE CORRESPOND PAS (home): $userGender ≠ ${productGenderTags.join(", ")} => EXCLUSION');
-          return -10000.0;
+          // Home: pénalité modérée (avant c'était exclusion)
+          print('⚠️ GENRE NE CORRESPOND PAS (home): $userGender ≠ ${productGenderTags.join(", ")} => Pénalité -40');
+          score -= 40.0;
         } else {
-          // Person: FORTE pénalité mais pas exclusion (permet diversité)
-          print('⚠️ GENRE NE CORRESPOND PAS (person): $userGender ≠ ${productGenderTags.join(", ")} => Grosse pénalité -80 (scoring mode)');
-          score -= 80.0;
+          // Person: petite pénalité
+          print('⚠️ GENRE NE CORRESPOND PAS (person): $userGender ≠ ${productGenderTags.join(", ")} => Pénalité -30');
+          score -= 30.0;
         }
       }
+    } else {
+      // Pas de tag genre utilisateur = on accepte tout
+      print('📝 Utilisateur sans préférence genre: +50 pour tous les produits');
+      score += 50.0;
     }
 
-    // 🔒 2. ÂGE (STRICT en home, SCORING en person, ignoré en discovery)
+    // 🔒 2. ÂGE (SCORING uniquement, PLUS JAMAIS d'exclusion)
     final age = userTags['age'] ?? userTags['recipientAge'];
     if (age != null && !isDiscoveryMode) {
       final ageInt = int.tryParse(age.toString()) ?? 0;
@@ -706,14 +710,14 @@ class ProductMatchingService {
             print('✅ ÂGE MATCH: $userAgeTag ($ageInt ans) = +50 points');
             score += 50.0;
           } else {
-            // Âge ne correspond pas
+            // Âge ne correspond pas - PÉNALITÉ mais PAS d'exclusion
             if (isHomeMode) {
-              // Home: EXCLUSION stricte
-              print('❌ ÂGE NE CORRESPOND PAS: $userAgeTag ≠ ${productAgeTags.join(", ")} => EXCLUSION');
-              return -10000.0;
+              // Home: Pénalité importante mais pas d'exclusion
+              print('⚠️ ÂGE NE CORRESPOND PAS (home): $userAgeTag ≠ ${productAgeTags.join(", ")} => Pénalité -35');
+              score -= 35.0;
             } else {
               // Person: SCORING au lieu d'exclusion (pénalité modérée)
-              print('⚠️ ÂGE NE CORRESPOND PAS: $userAgeTag ≠ ${productAgeTags.join(", ")} => Pénalité -25 (scoring mode)');
+              print('⚠️ ÂGE NE CORRESPOND PAS (person): $userAgeTag ≠ ${productAgeTags.join(", ")} => Pénalité -25');
               score -= 25.0;
             }
           }
@@ -725,7 +729,7 @@ class ProductMatchingService {
       }
     }
 
-    // 🔒 3. CATÉGORIE PRINCIPALE (STRICT en home, SOUPLE en person, très souple en discovery)
+    // 🔒 3. CATÉGORIE PRINCIPALE (SCORING uniquement, PLUS JAMAIS d'exclusion)
     final userCategoryTags = searchTags.where((t) => t.startsWith('cat_')).toList();
     if (userCategoryTags.isNotEmpty) {
       final userCategory = userCategoryTags.first;
@@ -739,11 +743,11 @@ class ProductMatchingService {
         print('✅ CATÉGORIE MATCH: $userCategory = +80 points');
         score += 80.0;
       } else {
-        // Catégorie ne correspond PAS
+        // Catégorie ne correspond PAS - PÉNALITÉ mais PAS d'exclusion
         if (isHomeMode) {
-          // Home: EXCLUSION
-          print('❌ CATÉGORIE NE CORRESPOND PAS (home): $userCategory ≠ ${productCategoryTags.join(", ")} => EXCLUSION');
-          return -10000.0;
+          // Home: Pénalité importante mais pas d'exclusion (permet variété)
+          print('⚠️ CATÉGORIE NE CORRESPOND PAS (home): $userCategory ≠ ${productCategoryTags.join(", ")} => Pénalité -45');
+          score -= 45.0;
         } else if (isPersonMode) {
           // Person: pénalité modérée (permet innovation)
           print('⚠️ CATÉGORIE NE CORRESPOND PAS (person): $userCategory ≠ ${productCategoryTags.join(", ")} => Pénalité -30');
@@ -756,7 +760,7 @@ class ProductMatchingService {
       }
     }
 
-    // 🔒 4. BUDGET (STRICT en home, SOUPLE en person/discovery)
+    // 🔒 4. BUDGET (SCORING uniquement, PLUS JAMAIS d'exclusion)
     final userBudgetTags = searchTags.where((t) => t.startsWith('budget_')).toList();
     if (userBudgetTags.isNotEmpty) {
       final userBudget = userBudgetTags.first;
@@ -773,11 +777,11 @@ class ProductMatchingService {
             print('✅ BUDGET CALCULÉ MATCH: $priceInt€ = $calculatedBudget = +60 points');
             score += 60.0;
           } else {
-            // Budget ne correspond PAS
+            // Budget ne correspond PAS - PÉNALITÉ mais PAS d'exclusion
             if (isHomeMode) {
-              // Home: EXCLUSION
-              print('❌ BUDGET NE CORRESPOND PAS (home): $calculatedBudget ≠ $userBudget => EXCLUSION');
-              return -10000.0;
+              // Home: Pénalité importante mais pas d'exclusion (permet flexibilité)
+              print('⚠️ BUDGET NE CORRESPOND PAS (home): $calculatedBudget ≠ $userBudget => Pénalité -30');
+              score -= 30.0;
             } else if (isPersonMode) {
               // Person: pénalité légère (permet flexibilité)
               print('⚠️ BUDGET NE CORRESPOND PAS (person): $calculatedBudget ≠ $userBudget => Pénalité -20');
@@ -798,15 +802,19 @@ class ProductMatchingService {
         print('✅ BUDGET MATCH: $userBudget = +60 points');
         score += 60.0;
       } else {
-        // Budget ne correspond PAS
+        // Budget ne correspond PAS - PÉNALITÉ mais PAS d'exclusion
         if (isDiscoveryMode) {
           // En mode discovery, on pénalise mais on n'exclut PAS
           print('⚠️ BUDGET NE CORRESPOND PAS (discovery mode): $userBudget ≠ ${productBudgetTags.join(", ")} => Pénalité -10');
           score -= 10.0;
+        } else if (isHomeMode) {
+          // En mode home, pénalité importante mais PAS d'exclusion
+          print('⚠️ BUDGET NE CORRESPOND PAS (home): $userBudget ≠ ${productBudgetTags.join(", ")} => Pénalité -30');
+          score -= 30.0;
         } else {
-          // En mode home/person, EXCLUSION
-          print('❌ BUDGET NE CORRESPOND PAS: $userBudget ≠ ${productBudgetTags.join(", ")} => EXCLUSION');
-          return -10000.0;
+          // En mode person, pénalité modérée
+          print('⚠️ BUDGET NE CORRESPOND PAS (person): $userBudget ≠ ${productBudgetTags.join(", ")} => Pénalité -20');
+          score -= 20.0;
         }
       }
     }
