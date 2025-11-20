@@ -553,8 +553,18 @@ class ProductMatchingService {
     return validTags.toSet();
   }
 
-  /// Calcule le score de matching entre un produit et les tags recherchés
-  /// Priorise SEXE et ÂGE (critères principaux pour personnalisation)
+  /// Calcule le score de matching selon le NOUVEAU SYSTÈME DE TAGS OFFICIEL
+  ///
+  /// LOGIQUE STRICTE (correspondance exacte REQUISE - sinon exclusion):
+  /// - Genre (gender_*)
+  /// - Catégorie principale (cat_*)
+  /// - Tranche de prix (budget_*)
+  ///
+  /// LOGIQUE SOUPLE (scoring partiel - augmente score si match):
+  /// - Styles (style_*)
+  /// - Personnalités (perso_*)
+  /// - Passions (passion_*)
+  /// - Types de cadeaux (type_*)
   static double _calculateMatchScore(
     Map<String, dynamic> product,
     Set<String> searchTags,
@@ -562,142 +572,201 @@ class ProductMatchingService {
   ) {
     double score = 0.0;
 
-    // Tags du produit
+    // Extraire TOUS les tags du produit (tags + categories)
     final productTags = (product['tags'] as List?)?.cast<String>() ?? [];
     final productCategories = (product['categories'] as List?)?.cast<String>() ?? [];
-    final allProductTags = {...productTags, ...productCategories};
+    final allProductTags = {...productTags, ...productCategories}.map((t) => t.toLowerCase()).toSet();
 
-    // 🎯 PRIORITÉ 1: SEXE (poids très fort - 40 points max)
-    final gender = userTags['gender'] ?? userTags['recipientGender'];
-    if (gender != null) {
-      final genderStr = gender.toString().toLowerCase();
-      bool genderMatch = false;
+    print('🔍 Scoring produit "${product['name']}": ${allProductTags.length} tags');
 
-      if (genderStr.contains('homme') || genderStr.contains('male')) {
-        genderMatch = allProductTags.any((tag) => tag.toLowerCase() == 'homme');
-      } else if (genderStr.contains('femme') || genderStr.contains('female')) {
-        genderMatch = allProductTags.any((tag) => tag.toLowerCase() == 'femme');
-      }
+    // ========================================================================
+    // RÈGLES STRICTES - EXCLUSION SI PAS DE MATCH
+    // ========================================================================
 
-      if (genderMatch) {
-        score += 40.0; // Bonus énorme pour match sexe
-      }
+    // 🔒 1. GENRE (STRICT - 100 points ou EXCLUSION)
+    final userGenderTags = searchTags.where((t) => t.startsWith('gender_')).toList();
+    if (userGenderTags.isNotEmpty) {
+      final userGender = userGenderTags.first;
+      final productGenderTags = allProductTags.where((t) => t.startsWith('gender_')).toList();
 
-      // Bonus pour produits unisexes (plus faible)
-      if (allProductTags.any((tag) => tag.toLowerCase() == 'unisexe')) {
-        score += 15.0;
-      }
-    }
-
-    // 🎯 PRIORITÉ 2: ÂGE avec préférences catégorielles (poids très fort - 45 points max)
-    final age = userTags['age'] ?? userTags['recipientAge'];
-    if (age != null) {
-      final ageInt = age is int ? age : int.tryParse(age.toString()) ?? 25;
-      String ageGroup = '';
-
-      if (ageInt < 18) {
-        ageGroup = 'enfant';
-      } else if (ageInt < 30) {
-        ageGroup = '20-30ans';
-      } else if (ageInt < 50) {
-        ageGroup = '30-50ans';
+      if (productGenderTags.isEmpty) {
+        // Produit sans tag de genre => on accepte comme mixte
+        print('⚠️ Produit sans genre, considéré comme mixte: +50');
+        score += 50.0;
+      } else if (productGenderTags.contains(userGender.toLowerCase())) {
+        // Match exact du genre
+        print('✅ GENRE MATCH: $userGender = +100 points');
+        score += 100.0;
+      } else if (productGenderTags.contains('gender_mixte')) {
+        // Produit mixte accepté pour tout genre
+        print('✅ Produit mixte accepté: +70 points');
+        score += 70.0;
       } else {
-        ageGroup = '50+';
-      }
-
-      // Match exact de la tranche d'âge
-      if (allProductTags.any((tag) => tag.toLowerCase() == ageGroup)) {
-        score += 45.0; // Bonus énorme pour match âge exact
-      }
-
-      // 🎨 BONUS SPÉCIFIQUE PAR ÂGE - Préférences catégorielles
-      // 18-25 ans → Plus de mode, tech, gaming
-      if (ageInt >= 18 && ageInt < 26) {
-        if (allProductTags.any((tag) => ['fashion', 'mode', 'vetement', 'style'].contains(_normalizeTag(tag)))) {
-          score += 30.0; // Énorme bonus mode pour 18-25 ans
-        }
-        if (allProductTags.any((tag) => ['tech', 'gaming', 'hightech'].contains(_normalizeTag(tag)))) {
-          score += 25.0; // Gros bonus tech/gaming pour jeunes
-        }
-      }
-      // 26-35 ans → Tech, sport, maison, voyages
-      else if (ageInt >= 26 && ageInt < 36) {
-        if (allProductTags.any((tag) => ['tech', 'sport', 'home', 'travel', 'voyage'].contains(_normalizeTag(tag)))) {
-          score += 20.0;
-        }
-      }
-      // 36-50 ans → Maison, cuisine, bien-être, mode classique
-      else if (ageInt >= 36 && ageInt < 51) {
-        if (allProductTags.any((tag) => ['home', 'cooking', 'wellness', 'beauty'].contains(_normalizeTag(tag)))) {
-          score += 20.0;
-        }
-      }
-      // 50+ ans → Bien-être, maison, jardinage, livres
-      else if (ageInt >= 51) {
-        if (allProductTags.any((tag) => ['wellness', 'home', 'book', 'jardin'].contains(_normalizeTag(tag)))) {
-          score += 20.0;
-        }
+        // Genre ne correspond PAS => EXCLUSION TOTALE
+        print('❌ GENRE NE CORRESPOND PAS: $userGender ≠ ${productGenderTags.join(", ")} => EXCLUSION');
+        return -10000.0; // Score négatif énorme = exclusion garantie
       }
     }
 
-    // 🎯 CRITÈRE 3: Centres d'intérêt / Hobbies / Passions (35 points max)
-    final interests = userTags['interests'] ?? userTags['hobbies'] ?? userTags['recipientHobbies'];
-    if (interests != null) {
-      final interestsList = interests is List ? interests : [interests];
-      int matchCount = 0;
+    // 🔒 2. CATÉGORIE PRINCIPALE (STRICT - 80 points ou EXCLUSION)
+    final userCategoryTags = searchTags.where((t) => t.startsWith('cat_')).toList();
+    if (userCategoryTags.isNotEmpty) {
+      final userCategory = userCategoryTags.first; // Une seule catégorie normalement
+      final productCategoryTags = allProductTags.where((t) => t.startsWith('cat_')).toList();
 
-      for (var interest in interestsList) {
-        final normalizedInterest = _normalizeTag(interest.toString());
-        // Vérifier match exact ou partiel avec tags normalisés
-        final hasMatch = allProductTags.any((tag) {
-          final normalizedTag = _normalizeTag(tag);
-          return normalizedTag == normalizedInterest ||
-                 normalizedTag.contains(normalizedInterest) ||
-                 normalizedInterest.contains(normalizedTag);
-        });
-        if (hasMatch) {
-          matchCount++;
-          // Premier match = 35 points, deuxième = 15 points, troisième+ = 5 points
-          if (matchCount == 1) {
-            score += 35.0; // Bonus énorme pour le premier intérêt matché
-          } else if (matchCount == 2) {
-            score += 15.0; // Bonus moyen pour un deuxième intérêt
-          } else if (matchCount <= 4) {
-            score += 5.0; // Petit bonus pour intérêts supplémentaires
+      if (productCategoryTags.isEmpty) {
+        // Produit sans catégorie => petite pénalité mais pas d'exclusion
+        print('⚠️ Produit sans catégorie définie: +20');
+        score += 20.0;
+      } else if (productCategoryTags.contains(userCategory.toLowerCase())) {
+        // Match exact de la catégorie
+        print('✅ CATÉGORIE MATCH: $userCategory = +80 points');
+        score += 80.0;
+      } else {
+        // Catégorie ne correspond PAS => EXCLUSION TOTALE
+        print('❌ CATÉGORIE NE CORRESPOND PAS: $userCategory ≠ ${productCategoryTags.join(", ")} => EXCLUSION');
+        return -10000.0;
+      }
+    }
+
+    // 🔒 3. BUDGET (STRICT - 60 points ou EXCLUSION)
+    final userBudgetTags = searchTags.where((t) => t.startsWith('budget_')).toList();
+    if (userBudgetTags.isNotEmpty) {
+      final userBudget = userBudgetTags.first;
+      final productBudgetTags = allProductTags.where((t) => t.startsWith('budget_')).toList();
+
+      if (productBudgetTags.isEmpty) {
+        // Pas de tag budget => vérifier le prix directement
+        final price = product['price'];
+        if (price != null) {
+          final priceInt = price is int ? price : (price is double ? price.toInt() : 0);
+          final calculatedBudget = TagsDefinitions.getBudgetTagFromPrice(priceInt);
+
+          if (calculatedBudget.toLowerCase() == userBudget.toLowerCase()) {
+            print('✅ BUDGET CALCULÉ MATCH: $priceInt€ = $calculatedBudget = +60 points');
+            score += 60.0;
+          } else {
+            print('❌ BUDGET CALCULÉ NE CORRESPOND PAS: $calculatedBudget ≠ $userBudget => EXCLUSION');
+            return -10000.0;
           }
+        } else {
+          // Pas de prix disponible => petite pénalité
+          print('⚠️ Pas de prix disponible: +10');
+          score += 10.0;
+        }
+      } else if (productBudgetTags.contains(userBudget.toLowerCase())) {
+        // Match exact du budget
+        print('✅ BUDGET MATCH: $userBudget = +60 points');
+        score += 60.0;
+      } else {
+        // Budget ne correspond PAS => EXCLUSION TOTALE
+        print('❌ BUDGET NE CORRESPOND PAS: $userBudget ≠ ${productBudgetTags.join(", ")} => EXCLUSION');
+        return -10000.0;
+      }
+    }
+
+    // ========================================================================
+    // RÈGLES SOUPLES - SCORING PARTIEL (pas d'exclusion)
+    // ========================================================================
+
+    // 💫 4. STYLES (SOUPLE - max 40 points)
+    final userStyleTags = searchTags.where((t) => t.startsWith('style_')).toList();
+    if (userStyleTags.isNotEmpty) {
+      final productStyleTags = allProductTags.where((t) => t.startsWith('style_')).toList();
+      int styleMatches = 0;
+
+      for (final userStyle in userStyleTags) {
+        if (productStyleTags.contains(userStyle.toLowerCase())) {
+          styleMatches++;
+          print('✨ Style match: $userStyle');
         }
       }
-    }
 
-    // 🎯 CRITÈRE 4: Budget (15 points)
-    final budget = userTags['budget'];
-    final price = product['price'];
-    if (budget != null && price != null) {
-      final priceValue = price is int ? price : (price is double ? price.toInt() : 0);
-      final budgetStr = budget.toString().toLowerCase();
-
-      bool budgetMatch = false;
-      if (budgetStr.contains('50') && priceValue <= 50) budgetMatch = true;
-      if (budgetStr.contains('100') && priceValue >= 50 && priceValue <= 100) budgetMatch = true;
-      if (budgetStr.contains('200') && priceValue >= 100 && priceValue <= 200) budgetMatch = true;
-
-      if (budgetMatch) {
-        score += 15.0;
+      if (styleMatches > 0) {
+        final styleScore = styleMatches * 20.0; // 20 points par style matché
+        score += styleScore.clamp(0, 40); // Max 40 points
+        print('🎨 STYLES: $styleMatches matches = +${styleScore.clamp(0, 40)} points');
       }
     }
 
-    // 🎯 CRITÈRE 5: Style / Catégories (10 points)
-    final style = userTags['style'];
-    if (style != null && allProductTags.any((tag) => tag.toLowerCase() == style.toString().toLowerCase())) {
-      score += 10.0;
+    // 💫 5. PERSONNALITÉS (SOUPLE - max 30 points)
+    final userPersonalityTags = searchTags.where((t) => t.startsWith('perso_')).toList();
+    if (userPersonalityTags.isNotEmpty) {
+      final productPersonalityTags = allProductTags.where((t) => t.startsWith('perso_')).toList();
+      int personalityMatches = 0;
+
+      for (final userPersonality in userPersonalityTags) {
+        if (productPersonalityTags.contains(userPersonality.toLowerCase())) {
+          personalityMatches++;
+          print('✨ Personnalité match: $userPersonality');
+        }
+      }
+
+      if (personalityMatches > 0) {
+        final personalityScore = personalityMatches * 15.0; // 15 points par personnalité matchée
+        score += personalityScore.clamp(0, 30); // Max 30 points
+        print('😊 PERSONNALITÉS: $personalityMatches matches = +${personalityScore.clamp(0, 30)} points');
+      }
     }
 
-    // 📈 TENDANCES: Popularité (facteur de 0.3 - max ~30 points pour produit à 99)
-    final popularity = product['popularity'] as int? ?? 0;
-    score += popularity * 0.3;
+    // 💫 6. PASSIONS (SOUPLE - max 50 points - le plus important des souples)
+    final userPassionTags = searchTags.where((t) => t.startsWith('passion_')).toList();
+    if (userPassionTags.isNotEmpty) {
+      final productPassionTags = allProductTags.where((t) => t.startsWith('passion_')).toList();
+      int passionMatches = 0;
 
-    // 🎲 Variation aléatoire légère (pour éviter ordre identique)
-    score += Random().nextDouble() * 3.0;
+      for (final userPassion in userPassionTags) {
+        if (productPassionTags.contains(userPassion.toLowerCase())) {
+          passionMatches++;
+          print('✨ Passion match: $userPassion');
+        }
+      }
+
+      if (passionMatches > 0) {
+        final passionScore = passionMatches * 25.0; // 25 points par passion matchée
+        score += passionScore.clamp(0, 50); // Max 50 points
+        print('❤️ PASSIONS: $passionMatches matches = +${passionScore.clamp(0, 50)} points');
+      }
+    }
+
+    // 💫 7. TYPES DE CADEAUX (SOUPLE - max 30 points)
+    final userTypeTags = searchTags.where((t) => t.startsWith('type_')).toList();
+    if (userTypeTags.isNotEmpty) {
+      final productTypeTags = allProductTags.where((t) => t.startsWith('type_')).toList();
+      int typeMatches = 0;
+
+      for (final userType in userTypeTags) {
+        if (productTypeTags.contains(userType.toLowerCase())) {
+          typeMatches++;
+          print('✨ Type cadeau match: $userType');
+        }
+      }
+
+      if (typeMatches > 0) {
+        final typeScore = typeMatches * 15.0; // 15 points par type matché
+        score += typeScore.clamp(0, 30); // Max 30 points
+        print('🎁 TYPES: $typeMatches matches = +${typeScore.clamp(0, 30)} points');
+      }
+    }
+
+    // ========================================================================
+    // BONUS SECONDAIRES
+    // ========================================================================
+
+    // 📈 Popularité (max 20 points)
+    final popularity = product['popularity'] as int? ?? 0;
+    if (popularity > 0) {
+      final popularityScore = (popularity * 0.2).clamp(0, 20);
+      score += popularityScore;
+      print('📈 Popularité: $popularity = +${popularityScore.toStringAsFixed(1)} points');
+    }
+
+    // 🎲 Variation aléatoire légère (0-5 points pour éviter ordre identique)
+    final randomBonus = Random().nextDouble() * 5.0;
+    score += randomBonus;
+
+    print('🏁 SCORE FINAL: ${score.toStringAsFixed(1)} points');
+    print('');
 
     return score;
   }
