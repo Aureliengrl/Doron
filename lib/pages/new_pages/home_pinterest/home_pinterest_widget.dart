@@ -143,12 +143,19 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
 
       // 🎯 Générer les produits via ProductMatchingService (Firebase-first)
       print('🔄 Appel ProductMatchingService avec ${tagsToUse.length} tags...');
+
+      // Déterminer le mode de filtrage selon la catégorie
+      // "Pour toi" = DISCOVERY (souple, personnalisé mais pas restrictif)
+      // Autres catégories = HOME (plus strict car filtre actif)
+      final filterMode = _model.activeCategory == 'Pour toi' ? 'discovery' : 'home';
+      print('🎯 Mode de filtrage: $filterMode pour catégorie "${_model.activeCategory}"');
+
       final rawProducts = await ProductMatchingService.getPersonalizedProducts(
         userTags: tagsToUse,
         count: HomePinterestModel.productsPerPage,
         category: _model.activeCategory != 'Pour toi' ? _model.activeCategory : null,
         excludeProductIds: seenProductIds,
-        filteringMode: "home", // Mode HOME: Strict sur sexe (basé sur soi-même)
+        filteringMode: filterMode, // DISCOVERY pour "Pour toi", HOME pour les autres
       );
 
       print('✅ ProductMatchingService a retourné ${rawProducts.length} produits');
