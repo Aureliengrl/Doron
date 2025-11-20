@@ -664,7 +664,7 @@ class ProductMatchingService {
 
     // Modes de filtrage:
     // - HOME: TRÈS STRICT (genre, âge, catégories) - cadeaux pour SOI
-    // - PERSON: STRICT sur genre/âge, SOUPLE sur catégories/budget - cadeaux pour QUELQU'UN
+    // - PERSON: EXCLUSION STRICTE sur genre/âge, SOUPLE sur catégories/budget - cadeaux pour QUELQU'UN
     // - DISCOVERY: TRÈS SOUPLE partout - exploration maximale
     final isDiscoveryMode = filteringMode == "discovery";
     final isHomeMode = filteringMode == "home";
@@ -702,13 +702,14 @@ class ProductMatchingService {
           // Discovery: très petite pénalité
           print('⚠️ GENRE NE CORRESPOND PAS (discovery): ${productGenderTags.join(", ")} => Pénalité -10');
           score -= 10.0;
+        } else if (isPersonMode || isHomeMode) {
+          // 🔒 EXCLUSION STRICTE pour mode PERSON et HOME
+          print('❌ GENRE NE CORRESPOND PAS (${filteringMode}): $userGender ≠ ${productGenderTags.join(", ")} => EXCLUSION');
+          return -10000.0;
         } else {
-          // 🆘 TEMPORAIRE: DÉSACTIVÉ pour debug - voir si produits s'affichent
-          // TODO: Réactiver quand Firebase aura produits des 2 genres
-          // Home/Person: PÉNALITÉ FORTE au lieu d'exclusion (pour debug)
-          print('⚠️ GENRE NE CORRESPOND PAS (DEBUG MODE): $userGender ≠ ${productGenderTags.join(", ")} => Pénalité -80 (EXCLUSION DÉSACTIVÉE)');
+          // Fallback: pénalité forte
+          print('⚠️ GENRE NE CORRESPOND PAS: $userGender ≠ ${productGenderTags.join(", ")} => Pénalité -80');
           score -= 80.0;
-          // return -10000.0; // COMMENTÉ TEMPORAIREMENT
         }
       }
     } else {
@@ -743,14 +744,18 @@ class ProductMatchingService {
             print('✅ ÂGE MATCH: $userAgeTag ($ageInt ans) = +50 points');
             score += 50.0;
           } else {
-            // Âge ne correspond pas - PÉNALITÉ mais PAS d'exclusion
-            if (isHomeMode) {
+            // Âge ne correspond pas
+            if (isPersonMode) {
+              // Person: EXCLUSION STRICTE pour recherche de personne spécifique
+              print('❌ ÂGE NE CORRESPOND PAS (person): $userAgeTag ($ageInt ans) ≠ ${productAgeTags.join(", ")} => EXCLUSION');
+              return -10000.0;
+            } else if (isHomeMode) {
               // Home: Pénalité importante mais pas d'exclusion
               print('⚠️ ÂGE NE CORRESPOND PAS (home): $userAgeTag ≠ ${productAgeTags.join(", ")} => Pénalité -35');
               score -= 35.0;
             } else {
-              // Person: SCORING au lieu d'exclusion (pénalité modérée)
-              print('⚠️ ÂGE NE CORRESPOND PAS (person): $userAgeTag ≠ ${productAgeTags.join(", ")} => Pénalité -25');
+              // Discovery: pénalité modérée
+              print('⚠️ ÂGE NE CORRESPOND PAS (discovery): $userAgeTag ≠ ${productAgeTags.join(", ")} => Pénalité -25');
               score -= 25.0;
             }
           }
