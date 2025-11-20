@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 import '/utils/app_logger.dart';
-import '/services/tags_definitions.dart';
 
 /// Service de matching de produits basé sur les tags
 /// Remplace les appels OpenAI pour des résultats instantanés
@@ -429,128 +428,87 @@ class ProductMatchingService {
     }
   }
 
-  /// Convertit les tags utilisateur en tags de recherche OFFICIELS
-  /// Utilise UNIQUEMENT les tags de TagsDefinitions
+  /// Convertit les tags utilisateur en tags de recherche
   static Set<String> _convertUserTagsToSearchTags(Map<String, dynamic> userTags) {
     final tags = <String>{};
 
-    // ========================================================================
-    // 1️⃣ GENRE (STRICT - 1 seul tag) → gender_femme, gender_homme, gender_mixte
-    // ========================================================================
+    // Âge
+    final age = userTags['age'] ?? userTags['recipientAge'];
+    if (age != null) {
+      final ageInt = age is int ? age : int.tryParse(age.toString()) ?? 25;
+      if (ageInt < 18) {
+        tags.addAll(['enfant', 'jeune', 'ado']);
+      } else if (ageInt < 30) {
+        tags.addAll(['jeune-adulte', '20-30ans', 'moderne']);
+      } else if (ageInt < 50) {
+        tags.addAll(['adulte', '30-50ans']);
+      } else {
+        tags.addAll(['senior', '50+']);
+      }
+    }
+
+    // Genre
     final gender = userTags['gender'] ?? userTags['recipientGender'];
     if (gender != null) {
-      final genderStr = gender.toString();
-      final convertedGender = TagsDefinitions.genderConversion[genderStr] ??
-                              TagsDefinitions.genderConversion['Non spécifié'];
-      if (convertedGender != null) {
-        tags.add(convertedGender);
-        AppLogger.debug('🚹 Genre converti: $genderStr → $convertedGender', 'TagsConversion');
+      final genderStr = gender.toString().toLowerCase();
+      if (genderStr.contains('homme') || genderStr.contains('male')) {
+        tags.add('homme');
+      } else if (genderStr.contains('femme') || genderStr.contains('female')) {
+        tags.add('femme');
+      } else {
+        tags.add('unisexe');
       }
     }
 
-    // ========================================================================
-    // 2️⃣ CATÉGORIE PRINCIPALE (STRICT - 1 seul tag)
-    // ========================================================================
-    final preferredCategories = userTags['preferredCategories'];
-    if (preferredCategories != null) {
-      final catList = preferredCategories is List ? preferredCategories : [preferredCategories];
-      for (final cat in catList) {
-        final catStr = cat.toString();
-        final converted = TagsDefinitions.categoryConversion[catStr];
-        if (converted != null) {
-          tags.add(converted);
-          AppLogger.debug('📁 Catégorie convertie: $catStr → $converted', 'TagsConversion');
-        }
+    // Centres d'intérêt (normalisés pour meilleur matching)
+    final interests = userTags['interests'] ?? userTags['hobbies'];
+    if (interests != null) {
+      final interestsList = interests is List ? interests : [interests];
+      for (var interest in interestsList) {
+        final normalized = _normalizeTag(interest.toString());
+        tags.add(normalized);
+        // Garder aussi l'original pour compatibilité
+        tags.add(interest.toString().toLowerCase());
       }
     }
 
-    // ========================================================================
-    // 3️⃣ BUDGET (STRICT - 1 seul tag)
-    // ========================================================================
-    final budget = userTags['budget'];
-    if (budget != null) {
-      final budgetInt = int.tryParse(budget.toString()) ?? 0;
-      final budgetTag = TagsDefinitions.getBudgetTagFromPrice(budgetInt);
-      tags.add(budgetTag);
-      AppLogger.debug('💰 Budget converti: $budgetInt → $budgetTag', 'TagsConversion');
-    }
-
-    // ========================================================================
-    // 4️⃣ STYLES (SOUPLE - plusieurs tags possibles)
-    // ========================================================================
+    // Style
     final style = userTags['style'];
     if (style != null) {
-      final styleStr = style.toString();
-      final converted = TagsDefinitions.styleConversion[styleStr];
-      if (converted != null) {
-        tags.add(converted);
-        AppLogger.debug('🎨 Style converti: $styleStr → $converted', 'TagsConversion');
-      }
+      tags.add(style.toString().toLowerCase());
     }
 
-    // ========================================================================
-    // 5️⃣ PERSONNALITÉS (SOUPLE - plusieurs tags possibles)
-    // ========================================================================
-    final personality = userTags['personality'];
-    if (personality != null) {
-      final personalityStr = personality.toString().toLowerCase();
-      // Chercher dans le map de conversion
-      TagsDefinitions.personalityConversion.forEach((key, value) {
-        if (personalityStr.contains(key.toLowerCase())) {
-          tags.add(value);
-          AppLogger.debug('😊 Personnalité convertie: $key → $value', 'TagsConversion');
-        }
-      });
-    }
-
-    // ========================================================================
-    // 6️⃣ PASSIONS / HOBBIES / INTERESTS (SOUPLE - plusieurs tags possibles)
-    // ========================================================================
-    final interests = userTags['interests'] ?? userTags['hobbies'] ?? userTags['recipientHobbies'];
-    if (interests != null) {
-      final interestsList = interests is String ? interests.split(',').map((e) => e.trim()).toList() :
-                           (interests is List ? interests.map((e) => e.toString()).toList() : [interests.toString()]);
-
-      for (final interest in interestsList) {
-        final interestLower = interest.toLowerCase();
-        // Chercher dans le map de conversion de passions
-        TagsDefinitions.passionConversion.forEach((key, value) {
-          if (interestLower.contains(key.toLowerCase())) {
-            tags.add(value);
-            AppLogger.debug('❤️ Passion convertie: $key → $value', 'TagsConversion');
-          }
-        });
-      }
-    }
-
-    // ========================================================================
-    // 7️⃣ TYPES DE CADEAUX (SOUPLE - plusieurs tags possibles)
-    // ========================================================================
+    // Types de cadeaux
     final giftTypes = userTags['giftTypes'];
     if (giftTypes != null) {
       final typesList = giftTypes is List ? giftTypes : [giftTypes];
-      for (final type in typesList) {
-        final typeStr = type.toString().toLowerCase();
-        // Essayer de matcher avec les types valides
-        for (final validType in TagsDefinitions.giftTypeTags) {
-          if (typeStr.contains(validType.replaceFirst('type_', '')) ||
-              validType.contains(typeStr)) {
-            tags.add(validType);
-            AppLogger.debug('🎁 Type cadeau ajouté: $validType', 'TagsConversion');
-            break;
-          }
-        }
+      for (var type in typesList) {
+        tags.add(type.toString().toLowerCase());
       }
     }
 
-    // ========================================================================
-    // VALIDATION FINALE - Ne garder QUE les tags valides
-    // ========================================================================
-    final validTags = TagsDefinitions.filterValidTags(tags.toList());
-    AppLogger.success('✅ Tags convertis: ${validTags.length} tags valides sur ${tags.length} générés', 'TagsConversion');
-    AppLogger.debug('🏷️ Tags finaux: ${validTags.join(", ")}', 'TagsConversion');
+    // Budget
+    final budget = userTags['budget'];
+    if (budget != null) {
+      final budgetStr = budget.toString().toLowerCase();
+      if (budgetStr.contains('50') || budgetStr.contains('moins')) {
+        tags.add('budget_0-50');
+      } else if (budgetStr.contains('100')) {
+        tags.add('budget_50-100');
+      } else if (budgetStr.contains('200')) {
+        tags.add('budget_100-200');
+      } else {
+        tags.add('budget_200+');
+      }
+    }
 
-    return validTags.toSet();
+    // Relation
+    final relation = userTags['relation'] ?? userTags['recipient'];
+    if (relation != null) {
+      tags.add(relation.toString().toLowerCase());
+    }
+
+    return tags;
   }
 
   /// Calcule le score de matching entre un produit et les tags recherchés
