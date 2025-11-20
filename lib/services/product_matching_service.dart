@@ -89,61 +89,28 @@ class ProductMatchingService {
       AppLogger.firebase('🎁 Chargement depuis collection Firebase: gifts');
 
       // ========================================================================
-      // FILTRAGE FIREBASE STRICT (MODE HOME UNIQUEMENT)
+      // FILTRAGE FIREBASE - DÉSACTIVÉ TEMPORAIREMENT
+      // Le filtrage se fera côté client avec le scoring pour plus de flexibilité
       // ========================================================================
       bool firebaseFilterApplied = false;
-      String? genderFilter; // Variable pour stocker le filtre genre à réutiliser
+      String? genderFilter; // Variable pour stocker le filtre genre (utilisé pour logging)
 
-      if (filteringMode == "home") {
-        // MODE HOME: Filtrage Firebase STRICT sur genre ET âge
-        AppLogger.info('🏠 MODE HOME: Filtrage Firebase STRICT activé', 'Matching');
-
-        // 1️⃣ FILTRAGE PAR GENRE (STRICT)
-        final gender = userTags['gender'] ?? userTags['recipientGender'];
-        String? genderTag;
-        if (gender != null) {
-          final genderStr = gender.toString();
-          if (genderStr.contains('Femme') || genderStr.contains('femme')) {
-            genderTag = 'gender_femme';
-          } else if (genderStr.contains('Homme') || genderStr.contains('homme')) {
-            genderTag = 'gender_homme';
-          } else {
-            genderTag = 'gender_mixte';
-          }
-
-          if (genderTag != null) {
-            query = query.where('tags', arrayContains: genderTag);
-            firebaseFilterApplied = true;
-            genderFilter = genderTag; // Stocker pour réutilisation plus tard
-            AppLogger.firebase('🔒 Filtrage Firebase STRICT par genre: $genderTag', 'Matching');
-          }
+      // Stocker le genre pour le scoring côté client
+      final gender = userTags['gender'] ?? userTags['recipientGender'];
+      if (gender != null) {
+        final genderStr = gender.toString();
+        if (genderStr.contains('Femme') || genderStr.contains('femme')) {
+          genderFilter = 'gender_femme';
+        } else if (genderStr.contains('Homme') || genderStr.contains('homme')) {
+          genderFilter = 'gender_homme';
+        } else {
+          genderFilter = 'gender_mixte';
         }
-
-        // 2️⃣ FILTRAGE PAR ÂGE (STRICT si disponible)
-        final age = userTags['age'] ?? userTags['recipientAge'];
-        if (age != null) {
-          final ageInt = int.tryParse(age.toString()) ?? 0;
-          if (ageInt > 0) {
-            // Créer des tranches d'âge larges pour le filtrage
-            String? ageTag;
-            if (ageInt < 18) {
-              ageTag = 'age_enfant'; // 0-17
-            } else if (ageInt < 30) {
-              ageTag = 'age_jeune'; // 18-29
-            } else if (ageInt < 50) {
-              ageTag = 'age_adulte'; // 30-49
-            } else {
-              ageTag = 'age_senior'; // 50+
-            }
-
-            // Note: On ne peut pas utiliser arrayContains deux fois dans Firebase
-            // On va plutôt filtrer par âge dans le scoring en mode STRICT
-            AppLogger.info('🎂 Âge détecté: $ageInt ans → tranche $ageTag (filtrage dans scoring)', 'Matching');
-          }
-        }
-      } else {
-        AppLogger.info('🌐 MODE ${filteringMode.toUpperCase()}: Pas de filtre Firebase strict, scoring seulement', 'Matching');
+        AppLogger.info('👤 Genre utilisateur: $genderFilter (filtrage côté client)', 'Matching');
       }
+
+      // Log du mode de filtrage
+      AppLogger.info('🌐 MODE ${filteringMode.toUpperCase()}: Chargement de tous les produits, filtrage par scoring', 'Matching');
 
       // ⚙️ FILTRAGE PAR CATÉGORIE (STRICT pour page d'accueil)
       if (category != null && category != 'Pour toi' && category != 'all') {
@@ -623,10 +590,15 @@ class ProductMatchingService {
     // VALIDATION FINALE - Ne garder QUE les tags valides
     // ========================================================================
     final validTags = TagsDefinitions.filterValidTags(tags.toList());
-    AppLogger.success('✅ Tags convertis: ${validTags.length} tags valides sur ${tags.length} générés', 'TagsConversion');
-    AppLogger.debug('🏷️ Tags finaux: ${validTags.join(", ")}', 'TagsConversion');
 
-    return validTags.toSet();
+    // Normaliser les tags : toLowerCase + remplacer tirets par underscores
+    // Pour être cohérent avec les tags Firebase (budget_100-200 → budget_100_200)
+    final normalizedTags = validTags.map((t) => t.toLowerCase().replaceAll('-', '_')).toSet();
+
+    AppLogger.success('✅ Tags convertis: ${normalizedTags.length} tags valides sur ${tags.length} générés', 'TagsConversion');
+    AppLogger.debug('🏷️ Tags finaux: ${normalizedTags.join(", ")}', 'TagsConversion');
+
+    return normalizedTags;
   }
 
   /// Calcule le score de matching selon le NOUVEAU SYSTÈME DE TAGS OFFICIEL
@@ -652,7 +624,11 @@ class ProductMatchingService {
     // Extraire TOUS les tags du produit (tags + categories)
     final productTags = (product['tags'] as List?)?.cast<String>() ?? [];
     final productCategories = (product['categories'] as List?)?.cast<String>() ?? [];
-    final allProductTags = {...productTags, ...productCategories}.map((t) => t.toLowerCase()).toSet();
+    // Normaliser les tags : toLowerCase + remplacer tirets par underscores
+    // Firebase peut avoir "budget_100-200" ou "budget_100_200", on standardise
+    final allProductTags = {...productTags, ...productCategories}
+        .map((t) => t.toLowerCase().replaceAll('-', '_'))
+        .toSet();
 
     print('🔍 Scoring produit "${product['name']}" (mode: $filteringMode): ${allProductTags.length} tags');
 
@@ -671,14 +647,14 @@ class ProductMatchingService {
     // 🔒 1. GENRE (STRICT en home, SCORING STRICT en person, souple en discovery)
     final userGenderTags = searchTags.where((t) => t.startsWith('gender_')).toList();
     if (userGenderTags.isNotEmpty) {
-      final userGender = userGenderTags.first;
-      final productGenderTags = allProductTags.where((t) => t.startsWith('gender_')).toList();
+      final userGender = userGenderTags.first.toLowerCase();
+      final productGenderTags = allProductTags.where((t) => t.toLowerCase().startsWith('gender_')).map((t) => t.toLowerCase()).toList();
 
       if (productGenderTags.isEmpty) {
         // Produit sans tag de genre => on accepte comme mixte
         print('⚠️ Produit sans genre, considéré comme mixte: +50');
         score += 50.0;
-      } else if (productGenderTags.contains(userGender.toLowerCase())) {
+      } else if (productGenderTags.contains(userGender)) {
         // Match exact du genre
         print('✅ GENRE MATCH: $userGender = +100 points');
         score += 100.0;
