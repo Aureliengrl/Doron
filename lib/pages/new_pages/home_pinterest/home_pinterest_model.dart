@@ -41,11 +41,16 @@ class HomePinterestModel {
     {'id': 'premium', 'name': '> 200€', 'min': 200, 'max': 999999},
   ];
 
-  void toggleLike(int productId) {
+  void toggleLike(int productId, String productTitle) {
+    // Mettre à jour LES DEUX listes de favoris
     if (likedProducts.contains(productId)) {
       likedProducts.remove(productId);
+      likedProductTitles.remove(productTitle);
+      print('🗑️ Model: Produit retiré des favoris - ID: $productId, Titre: $productTitle');
     } else {
       likedProducts.add(productId);
+      likedProductTitles.add(productTitle);
+      print('❤️ Model: Produit ajouté aux favoris - ID: $productId, Titre: $productTitle');
     }
   }
 

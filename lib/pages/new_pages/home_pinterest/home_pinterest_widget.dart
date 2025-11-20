@@ -301,18 +301,17 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
     final productTitle = product['name'] ?? '';
     final isCurrentlyLiked = _model.likedProductTitles.contains(productTitle);
 
+    print('💗 Toggle favori AVANT: isLiked=$isCurrentlyLiked, ID=$productId, Titre=$productTitle');
+    print('💗 likedProductTitles AVANT: ${_model.likedProductTitles}');
+
     // Haptic feedback
     HapticFeedback.mediumImpact();
 
     // Toggle l'état local immédiatement pour l'UI
     if (mounted) {
       setState(() {
-        _model.toggleLike(productId);
-        if (isCurrentlyLiked) {
-          _model.likedProductTitles.remove(productTitle);
-        } else {
-          _model.likedProductTitles.add(productTitle);
-        }
+        _model.toggleLike(productId, productTitle);
+        print('💗 likedProductTitles APRÈS toggle: ${_model.likedProductTitles}');
       });
     }
 
@@ -371,16 +370,11 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
       }
     } catch (e) {
       print('❌ Erreur toggle favori: $e');
-      // Revenir à l'état précédent en cas d'erreur
+      // Revenir à l'état précédent en cas d'erreur (rollback)
       if (mounted) {
         setState(() {
-          _model.toggleLike(productId);
-          // Restaurer aussi likedProductTitles
-          if (isCurrentlyLiked) {
-            _model.likedProductTitles.add(productTitle);
-          } else {
-            _model.likedProductTitles.remove(productTitle);
-          }
+          _model.toggleLike(productId, productTitle); // Re-toggle pour revenir en arrière
+          print('🔄 Rollback: likedProductTitles après erreur: ${_model.likedProductTitles}');
         });
         // Afficher un message d'erreur à l'utilisateur
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1469,7 +1463,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                           ),
                         ),
                       ),
-                      // Bouton coeur - Toggle directement dans le dialog
+                      // Bouton coeur - Appel simplifié de _toggleFavorite
                       Positioned(
                         top: 12,
                         right: 12,
@@ -1477,90 +1471,15 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                           color: Colors.transparent,
                           child: InkWell(
                             onTap: () async {
-                              final productId = product['id'] as int;
-                              final productTitle = product['name'] ?? '';
-                              final wasLiked = isLiked;
+                              print('💗 Dialog: Clic sur cœur pour "${product['name']}"');
 
-                              print('💗 Toggle favori: $productTitle (actuellement: ${wasLiked ? "liké" : "pas liké"})');
+                              // Appeler la fonction centralisée
+                              await _toggleFavorite(product);
 
-                              // Haptic feedback
-                              HapticFeedback.mediumImpact();
-
-                              // Toggle immédiatement dans l'UI
+                              // Rafraîchir l'UI du dialog
                               setDialogState(() {
-                                _model.toggleLike(productId);
-                                if (wasLiked) {
-                                  _model.likedProductTitles.remove(productTitle);
-                                } else {
-                                  _model.likedProductTitles.add(productTitle);
-                                }
+                                print('🔄 Dialog: Rafraîchissement UI après toggle');
                               });
-
-                              // Mettre à jour aussi l'état du widget parent
-                              if (mounted) {
-                                setState(() {});
-                              }
-
-                              // Sauvegarder dans Firebase en arrière-plan
-                              try {
-                                if (wasLiked) {
-                                  // Retirer des favoris Firebase
-                                  final favorites = await queryFavouritesRecordOnce(
-                                    queryBuilder: (favoritesRecord) => favoritesRecord
-                                        .where('uid', isEqualTo: currentUserReference)
-                                        .where('product.product_title', isEqualTo: productTitle),
-                                  );
-
-                                  for (var fav in favorites) {
-                                    if (!fav.hasPersonId() || fav.personId == null || fav.personId!.isEmpty) {
-                                      await fav.reference.delete();
-                                      print('✅ Favori supprimé de Firebase: $productTitle');
-                                    }
-                                  }
-                                } else {
-                                  // Ajouter aux favoris Firebase
-                                  await FavouritesRecord.collection.add(
-                                    createFavouritesRecordData(
-                                      uid: currentUserReference,
-                                      platform: "amazon",
-                                      timeStamp: DateTime.now(),
-                                      personId: null,
-                                      product: ProductsStruct(
-                                        productTitle: productTitle,
-                                        productPrice: '${product['price'] ?? 0}€',
-                                        productUrl: product['url'] ?? '',
-                                        productPhoto: product['image'] ?? '',
-                                        productStarRating: '',
-                                        productOriginalPrice: '',
-                                        productNumRatings: 0,
-                                        platform: "amazon",
-                                      ),
-                                    ),
-                                  );
-                                  print('✅ Favori ajouté à Firebase: $productTitle');
-                                }
-                              } catch (e) {
-                                print('❌ Erreur sauvegarde favori Firebase: $e');
-                                // Restaurer l'état en cas d'erreur
-                                setDialogState(() {
-                                  _model.toggleLike(productId);
-                                  if (wasLiked) {
-                                    _model.likedProductTitles.add(productTitle);
-                                  } else {
-                                    _model.likedProductTitles.remove(productTitle);
-                                  }
-                                });
-
-                                if (mounted) {
-                                  setState(() {});
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Erreur lors de la sauvegarde du favori'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              }
                             },
                             borderRadius: BorderRadius.circular(50),
                             child: Container(
