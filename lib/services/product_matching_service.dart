@@ -141,8 +141,10 @@ class ProductMatchingService {
         }
       }
 
-      // Charger beaucoup de produits pour avoir de la variété
-      final loadLimit = firebaseFilterApplied ? 2000 : 1000;
+      // Charger BEAUCOUP de produits pour maximiser chances d'avoir bons genres
+      // CRITIQUE: Si on charge trop peu et qu'ils sont tous du mauvais genre, aucun ne s'affiche !
+      // Solution: charger BEAUCOUP (10000) pour être sûr d'avoir des produits de tous genres
+      final loadLimit = firebaseFilterApplied ? 10000 : 10000;
       AppLogger.info('🔄 Exécution requête Firebase gifts.limit($loadLimit)...', 'Matching');
 
       var snapshot = await query.limit(loadLimit).get();
@@ -171,7 +173,7 @@ class ProductMatchingService {
       if (allProducts.isEmpty && firebaseFilterApplied) {
         AppLogger.warning('⚠️ Aucun produit avec filtres Firebase, retry SANS filtre...', 'Matching');
         query = _firestore.collection('gifts');
-        snapshot = await query.limit(1000).get();
+        snapshot = await query.limit(10000).get();
         allProducts = [];
         for (var doc in snapshot.docs) {
           try {
@@ -189,7 +191,7 @@ class ProductMatchingService {
       if (allProducts.isEmpty) {
         AppLogger.warning('⚠️ Collection gifts vide, fallback vers products...', 'Matching');
         query = _firestore.collection('products');
-        snapshot = await query.limit(1000).get();
+        snapshot = await query.limit(10000).get();
         allProducts = snapshot.docs.map((doc) {
           final data = doc.data();
           data['id'] = doc.id;
@@ -261,8 +263,24 @@ class ProductMatchingService {
       // Filtrer les produits avec score d'exclusion (-10000) SAUF en mode discovery
       var relevantProducts = scoredProducts;
       if (filteringMode != "discovery") {
+        // Compter les produits exclus pour debug
+        final excludedProducts = scoredProducts.where((p) => (p['_matchScore'] as double) <= -1000).toList();
+        AppLogger.warning('⚠️ EXCLUS: ${excludedProducts.length} produits avec score <= -1000', 'Matching');
+
+        // Log sample de produits exclus pour debug
+        if (excludedProducts.isNotEmpty) {
+          final sample = excludedProducts.first;
+          AppLogger.debug('🔍 PRODUIT EXCLU: "${sample['name']}" score=${sample['_matchScore']}, tags=${sample['tags']}', 'Matching');
+        }
+
         relevantProducts = scoredProducts.where((p) => (p['_matchScore'] as double) > -1000).toList();
-        AppLogger.info('📊 Filtrage par score: ${relevantProducts.length} produits après exclusion', 'Matching');
+        AppLogger.info('📊 Filtrage par score: ${relevantProducts.length} produits après exclusion (${excludedProducts.length} exclus)', 'Matching');
+
+        // Log sample de produits gardés pour debug
+        if (relevantProducts.isNotEmpty) {
+          final sample = relevantProducts.first;
+          AppLogger.debug('✅ PRODUIT GARDÉ: "${sample['name']}" score=${sample['_matchScore']}, tags=${sample['tags']}', 'Matching');
+        }
       } else {
         AppLogger.info('📊 Mode discovery: AUCUN filtrage par score, ${relevantProducts.length} produits disponibles', 'Matching');
       }
@@ -282,6 +300,13 @@ class ProductMatchingService {
       shuffledProducts.shuffle(random);
 
       AppLogger.debug('🎲 Shuffle effectué: top ${topCount} produits + ${middleProducts.length} produits mélangés', 'Matching');
+
+      // ⚠️ VÉRIFICATION CRITIQUE: Y a-t-il des produits à ce stade ?
+      if (shuffledProducts.isEmpty) {
+        AppLogger.error('❌ AUCUN PRODUIT après shuffle ! Tous exclus par scoring ou filtres.', 'Matching');
+        return [];
+      }
+      AppLogger.success('✅ ${shuffledProducts.length} produits disponibles pour sélection finale', 'Matching');
 
       // 🎯 DÉDUPLICATION ET DIVERSITÉ DES MARQUES (max 20% d'une même marque)
       final selectedProducts = <Map<String, dynamic>>[];
@@ -338,22 +363,9 @@ class ProductMatchingService {
           continue; // Skip, trop de produits de cette catégorie
         }
 
-        // 6️⃣ Vérifier correspondance sexe - SEULEMENT EN MODE HOME
-        // En mode HOME (page accueil), filtre strict pour cadeaux adaptés à SOI-MÊME
-        // En mode PERSON/DISCOVERY, on laisse passer pour innovation et variété (scoring favorisera)
-        if (filteringMode == "home" && genderFilter != null) {
-          final productTags = (product['tags'] as List?)?.cast<String>() ?? [];
-          // Accepter les produits qui ont le bon tag OU qui sont mixtes OU qui n'ont pas de tag genre
-          final hasGenderTag = productTags.any((t) => t.toLowerCase().startsWith('gender_'));
-          final isCorrectGender = productTags.contains(genderFilter.toLowerCase());
-          final isMixte = productTags.contains('gender_mixte');
-
-          if (hasGenderTag && !isCorrectGender && !isMixte) {
-            // Ce produit a un tag de genre mais pas le bon → on le skip
-            continue;
-          }
-          // Sinon on accepte (pas de tag genre = OK, mixte = OK, bon genre = OK)
-        }
+        // 6️⃣ SUPPRIMÉ: Filtrage par genre (redondant avec scoring qui fait déjà exclusion -10000)
+        // Le scoring _calculateMatchScore() gère déjà l'exclusion par genre
+        // Pas besoin de filtrer une 2ème fois ici
 
         // 7️⃣ Vérifier correspondance catégorie - FILTRAGE STRICT si catégorie sélectionnée
         // Si l'utilisateur a cliqué sur une catégorie (Tech, Mode, etc.), montrer UNIQUEMENT cette catégorie
@@ -621,7 +633,10 @@ class ProductMatchingService {
     String filteringMode = "home",
     String? categoryFilter, // Filtre de catégorie actif (null = pas de filtre)
   }) {
-    double score = 0.0;
+    // ⭐ BONUS DE BASE: +150 points pour TOUS les produits
+    // Garantit qu'un produit avec quelques pénalités aura quand même un score positif
+    // Évite que tous les produits aient scores négatifs et soient filtrés
+    double score = 150.0;
 
     // Déterminer si un filtre de catégorie est actif
     final hasCategoryFilter = categoryFilter != null &&
