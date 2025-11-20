@@ -92,6 +92,7 @@ class ProductMatchingService {
       // FILTRAGE FIREBASE STRICT (MODE HOME UNIQUEMENT)
       // ========================================================================
       bool firebaseFilterApplied = false;
+      String? genderFilter; // Variable pour stocker le filtre genre à réutiliser
 
       if (filteringMode == "home") {
         // MODE HOME: Filtrage Firebase STRICT sur genre ET âge
@@ -113,6 +114,7 @@ class ProductMatchingService {
           if (genderTag != null) {
             query = query.where('tags', arrayContains: genderTag);
             firebaseFilterApplied = true;
+            genderFilter = genderTag; // Stocker pour réutilisation plus tard
             AppLogger.firebase('🔒 Filtrage Firebase STRICT par genre: $genderTag', 'Matching');
           }
         }
@@ -203,11 +205,16 @@ class ProductMatchingService {
         AppLogger.warning('⚠️ Aucun produit avec filtres Firebase, retry SANS filtre...', 'Matching');
         query = _firestore.collection('gifts');
         snapshot = await query.limit(1000).get();
-        allProducts = snapshot.docs.map((doc) {
-          final data = doc.data();
-          data['id'] = doc.id;
-          return data;
-        }).toList();
+        allProducts = [];
+        for (var doc in snapshot.docs) {
+          try {
+            final data = doc.data();
+            data['id'] = doc.id;
+            allProducts.add(data);
+          } catch (e) {
+            AppLogger.warning('⚠️ Erreur parsing produit ${doc.id}: $e', 'Matching');
+          }
+        }
         AppLogger.firebase('📦 ${allProducts.length} produits chargés SANS filtre Firebase', 'Matching');
       }
 
@@ -368,10 +375,16 @@ class ProductMatchingService {
         // En mode PERSON/DISCOVERY, on laisse passer pour innovation et variété (scoring favorisera)
         if (filteringMode == "home" && genderFilter != null) {
           final productTags = (product['tags'] as List?)?.cast<String>() ?? [];
-          if (!productTags.contains(genderFilter)) {
-            // Ce produit n'a pas le bon tag de sexe, on le skip en mode HOME
+          // Accepter les produits qui ont le bon tag OU qui sont mixtes OU qui n'ont pas de tag genre
+          final hasGenderTag = productTags.any((t) => t.toLowerCase().startsWith('gender_'));
+          final isCorrectGender = productTags.contains(genderFilter.toLowerCase());
+          final isMixte = productTags.contains('gender_mixte');
+
+          if (hasGenderTag && !isCorrectGender && !isMixte) {
+            // Ce produit a un tag de genre mais pas le bon → on le skip
             continue;
           }
+          // Sinon on accepte (pas de tag genre = OK, mixte = OK, bon genre = OK)
         }
 
         // 7️⃣ Vérifier correspondance catégorie - FILTRAGE STRICT si catégorie sélectionnée
@@ -655,7 +668,7 @@ class ProductMatchingService {
     // RÈGLES STRICTES - EXCLUSION OU PÉNALITÉ SELON MODE
     // ========================================================================
 
-    // 🔒 1. GENRE (TOUJOURS STRICT sauf discovery)
+    // 🔒 1. GENRE (STRICT en home, SCORING STRICT en person, souple en discovery)
     final userGenderTags = searchTags.where((t) => t.startsWith('gender_')).toList();
     if (userGenderTags.isNotEmpty) {
       final userGender = userGenderTags.first;
@@ -679,15 +692,19 @@ class ProductMatchingService {
           // Discovery: pénalité légère
           print('⚠️ GENRE NE CORRESPOND PAS (discovery): ${productGenderTags.join(", ")} => Pénalité -30');
           score -= 30.0;
-        } else {
-          // Home/Person: EXCLUSION TOTALE
-          print('❌ GENRE NE CORRESPOND PAS: $userGender ≠ ${productGenderTags.join(", ")} => EXCLUSION');
+        } else if (isHomeMode) {
+          // Home: EXCLUSION TOTALE
+          print('❌ GENRE NE CORRESPOND PAS (home): $userGender ≠ ${productGenderTags.join(", ")} => EXCLUSION');
           return -10000.0;
+        } else {
+          // Person: FORTE pénalité mais pas exclusion (permet diversité)
+          print('⚠️ GENRE NE CORRESPOND PAS (person): $userGender ≠ ${productGenderTags.join(", ")} => Grosse pénalité -80 (scoring mode)');
+          score -= 80.0;
         }
       }
     }
 
-    // 🔒 2. ÂGE (STRICT en home/person, ignoré en discovery)
+    // 🔒 2. ÂGE (STRICT en home, SCORING en person, ignoré en discovery)
     final age = userTags['age'] ?? userTags['recipientAge'];
     if (age != null && !isDiscoveryMode) {
       final ageInt = int.tryParse(age.toString()) ?? 0;
@@ -719,15 +736,15 @@ class ProductMatchingService {
               print('❌ ÂGE NE CORRESPOND PAS: $userAgeTag ≠ ${productAgeTags.join(", ")} => EXCLUSION');
               return -10000.0;
             } else {
-              // Person: grosse pénalité mais pas exclusion
-              print('⚠️ ÂGE NE CORRESPOND PAS: $userAgeTag ≠ ${productAgeTags.join(", ")} => Pénalité -40');
-              score -= 40.0;
+              // Person: SCORING au lieu d'exclusion (pénalité modérée)
+              print('⚠️ ÂGE NE CORRESPOND PAS: $userAgeTag ≠ ${productAgeTags.join(", ")} => Pénalité -25 (scoring mode)');
+              score -= 25.0;
             }
           }
         } else {
-          // Produit sans tag d'âge => léger bonus (universel)
-          print('📝 Produit sans tag âge (universel): +10');
-          score += 10.0;
+          // Produit sans tag d'âge => bonus car universel
+          print('📝 Produit sans tag âge (universel): +15');
+          score += 15.0;
         }
       }
     }
