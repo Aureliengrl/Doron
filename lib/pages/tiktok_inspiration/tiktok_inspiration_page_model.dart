@@ -119,22 +119,10 @@ class TikTokInspirationPageModel extends ChangeNotifier {
 
       // Convertir au format TikTok et ajouter URLs intelligentes
       final products = rawProducts.take(20).map((product) {
-        // 🔍 Chercher l'image dans tous les champs possibles
-        final imageUrl = product['image'] as String? ??
-                         product['imageUrl'] as String? ??
-                         product['photo'] as String? ??
-                         product['img'] as String? ??
-                         product['product_photo'] as String? ??
-                         '';
+        // ✅ ProductMatchingService a déjà normalisé le champ 'image'
+        final imageUrl = product['image'] as String? ?? 'https://via.placeholder.com/400x400/8A2BE2/FFFFFF?text=🎁';
 
-        // 🐛 DEBUG: Logger si l'image est vide
-        if (imageUrl.isEmpty) {
-          print('⚠️ TikTok Inspiration: Image vide pour "${product['name']}"');
-          print('   Champs disponibles: ${product.keys.toList()}');
-        } else {
-          print('✅ TikTok Inspiration: Image OK pour "${product['name']}"');
-          print('   Image URL: ${imageUrl.substring(0, imageUrl.length > 60 ? 60 : imageUrl.length)}...');
-        }
+        print('✅ TikTok Inspiration: "${product['name']}" - Image: ${imageUrl.substring(0, imageUrl.length > 60 ? 60 : imageUrl.length)}...');
 
         return {
           'id': product['id'],

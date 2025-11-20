@@ -167,7 +167,7 @@ class _OnboardingGiftsResultWidgetState
           'name': product['name'] ?? 'Produit',
           'brand': product['brand'] ?? 'Amazon',
           'price': product['price'] ?? 0,
-          'image': product['image'] ?? product['imageUrl'] ?? '',
+          'image': product['image'] ?? 'https://via.placeholder.com/400x400/8A2BE2/FFFFFF?text=🎁', // ProductMatchingService normalise déjà ce champ
           'url': ProductUrlService.generateProductUrl(product),
           'categories': product['categories'] ?? [],
           'match': ((product['_matchScore'] ?? 0.0) as double).toInt().clamp(0, 100),

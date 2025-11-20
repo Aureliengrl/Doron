@@ -9,6 +9,57 @@ import '/utils/app_logger.dart';
 class ProductMatchingService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  /// Extrait l'URL de l'image d'un produit en cherchant dans TOUS les champs possibles
+  /// Retourne une URL par défaut si aucune image n'est trouvée
+  static String _extractImageUrl(Map<String, dynamic> product) {
+    // Liste EXHAUSTIVE de tous les champs possibles pour une image
+    final possibleFields = [
+      'image',
+      'imageUrl',
+      'image_url',
+      'photo',
+      'img',
+      'product_photo',
+      'product_image',
+      'productPhoto',
+      'productImage',
+      'picture',
+      'thumbnail',
+      'main_image',
+      'mainImage',
+      'cover',
+      'coverImage',
+      'image1',
+      'images', // Parfois c'est un array
+    ];
+
+    // Essayer chaque champ
+    for (var field in possibleFields) {
+      final value = product[field];
+
+      // Si c'est une string non vide
+      if (value is String && value.isNotEmpty && value.startsWith('http')) {
+        AppLogger.debug('🖼️ Image trouvée dans champ "$field": ${value.substring(0, value.length > 50 ? 50 : value.length)}...', 'Matching');
+        return value;
+      }
+
+      // Si c'est un array, prendre le premier élément
+      if (value is List && value.isNotEmpty) {
+        final firstImage = value.first;
+        if (firstImage is String && firstImage.isNotEmpty && firstImage.startsWith('http')) {
+          AppLogger.debug('🖼️ Image trouvée dans array "$field": ${firstImage.substring(0, firstImage.length > 50 ? 50 : firstImage.length)}...', 'Matching');
+          return firstImage;
+        }
+      }
+    }
+
+    // Aucune image trouvée - logger pour debug
+    AppLogger.warning('⚠️ AUCUNE IMAGE trouvée pour produit "${product['name']}" - Champs disponibles: ${product.keys.join(", ")}', 'Matching');
+
+    // Retourner une image placeholder par défaut (icône cadeau générique)
+    return 'https://via.placeholder.com/400x400/8A2BE2/FFFFFF?text=🎁';
+  }
+
   /// Génère des produits personnalisés en matchant les tags utilisateur avec la base de produits
   ///
   /// Mode de filtrage:
@@ -331,6 +382,24 @@ class ProductMatchingService {
       for (var product in selectedProducts) {
         product.remove('_matchScore');
       }
+
+      // 🖼️ EXTRACTION ROBUSTE DES IMAGES - Ajouter le champ 'image' standardisé
+      AppLogger.info('🖼️ Extraction des URLs d\'images pour ${selectedProducts.length} produits...', 'Matching');
+      int imagesFound = 0;
+      int imagesPlaceholder = 0;
+
+      for (var product in selectedProducts) {
+        final imageUrl = _extractImageUrl(product);
+        product['image'] = imageUrl; // Ajouter/remplacer le champ 'image' standardisé
+
+        if (imageUrl.contains('placeholder')) {
+          imagesPlaceholder++;
+        } else {
+          imagesFound++;
+        }
+      }
+
+      AppLogger.success('🖼️ Images extraites: $imagesFound URLs valides, $imagesPlaceholder placeholders', 'Matching');
 
       AppLogger.success('${selectedProducts.length} produits matchés et retournés', 'Matching');
       AppLogger.info('📊 Diversité des marques: ${brandCounts.length} marques différentes', 'Matching');
