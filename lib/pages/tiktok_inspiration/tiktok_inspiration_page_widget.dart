@@ -199,25 +199,41 @@ class _TikTokInspirationPageWidgetState
       value: _model,
       child: Scaffold(
         backgroundColor: Colors.black,
-        body: Consumer<TikTokInspirationPageModel>(
-          builder: (context, model, child) {
-            // État de chargement
-            if (model.isLoading) {
-              return _buildLoadingState();
-            }
+        body: SafeArea(
+          child: Consumer<TikTokInspirationPageModel>(
+            builder: (context, model, child) {
+              // 🔍 LOGS DÉTAILLÉS pour diagnostic
+              print('🎬 [INSPIRATION BUILD] État du modèle:');
+              print('   - isLoading: ${model.isLoading}');
+              print('   - hasError: ${model.hasError}');
+              print('   - products.length: ${model.products.length}');
+              print('   - products.isEmpty: ${model.products.isEmpty}');
+              if (model.hasError) {
+                print('   - errorMessage: ${model.errorMessage}');
+                print('   - errorDetails: ${model.errorDetails}');
+              }
 
-            // État d'erreur
-            if (model.hasError) {
-              return _buildErrorState(model);
-            }
+              // État de chargement
+              if (model.isLoading) {
+                print('   → Affichage LOADING STATE');
+                return _buildLoadingState();
+              }
 
-            // Aucun produit
-            if (model.products.isEmpty) {
-              return _buildEmptyState();
-            }
+              // État d'erreur
+              if (model.hasError) {
+                print('   → Affichage ERROR STATE');
+                return _buildErrorState(model);
+              }
 
-            // PageView vertical plein écran
-            return Stack(
+              // Aucun produit
+              if (model.products.isEmpty) {
+                print('   → Affichage EMPTY STATE');
+                return _buildEmptyState();
+              }
+
+              // PageView vertical plein écran
+              print('   → Affichage PRODUCTS (${model.products.length} produits)');
+              return Stack(
               children: [
                 PageView.builder(
                   controller: _pageController,
@@ -298,42 +314,62 @@ class _TikTokInspirationPageWidgetState
                 ),
               ],
             );
-          },
+            },
+          ),
         ),
       ),
     );
   }
 
   Widget _buildLoadingState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(
-            color: violetColor,
-            strokeWidth: 3,
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Chargement des inspirations...',
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
+    return Container(
+      color: Colors.black, // ✅ Fond noir explicite
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Animation de chargement visible
+            SizedBox(
+              width: 80,
+              height: 80,
+              child: CircularProgressIndicator(
+                color: violetColor,
+                strokeWidth: 5,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 32),
+            Text(
+              'Chargement des inspirations...',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '🎁 Recherche de cadeaux tendance',
+              style: GoogleFonts.poppins(
+                color: Colors.white.withOpacity(0.7),
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildErrorState(TikTokInspirationPageModel model) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+    return Container(
+      color: Colors.black, // ✅ Fond noir explicite
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
             // Icône d'erreur
             Container(
               width: 80,
@@ -426,12 +462,15 @@ class _TikTokInspirationPageWidgetState
           ],
         ),
       ),
+    ),
     );
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
+    return Container(
+      color: Colors.black, // ✅ Fond noir explicite
+      child: Center(
+        child: Padding(
         padding: const EdgeInsets.all(40),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -463,6 +502,7 @@ class _TikTokInspirationPageWidgetState
           ],
         ),
       ),
+    ),
     );
   }
 

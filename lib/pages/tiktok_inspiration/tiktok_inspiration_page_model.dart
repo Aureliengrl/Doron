@@ -9,7 +9,7 @@ import '/utils/app_logger.dart';
 /// Model pour la page TikTok Inspiration (BÊTA)
 class TikTokInspirationPageModel extends ChangeNotifier {
   List<Map<String, dynamic>> _products = [];
-  bool _isLoading = false;
+  bool _isLoading = true; // ✅ DÉMARRER EN LOADING pour garantir un loader initial
   bool _hasError = false;
   String _errorMessage = '';
   String _errorDetails = '';
