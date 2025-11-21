@@ -113,10 +113,21 @@ class _VoiceAnalysisPageWidgetState extends State<VoiceAnalysisPageWidget> {
         body: SafeArea(
           child: Consumer<VoiceAnalysisPageModel>(
             builder: (context, model, _) {
+              // 🔍 LOGS DÉTAILLÉS pour diagnostic
+              print('🤖 [VOICE ANALYSIS BUILD] État du modèle:');
+              print('   - isAnalyzing: ${model.isAnalyzing}');
+              print('   - hasError: ${model.hasError}');
+              print('   - analysisResult: ${model.analysisResult != null ? "PRESENT" : "NULL"}');
               if (model.hasError) {
+                print('   - errorMessage: ${model.errorMessage}');
+              }
+
+              if (model.hasError) {
+                print('   → Affichage ERROR STATE');
                 return _buildErrorState(model);
               }
 
+              print('   → Affichage LOADING STATE (analyse en cours)');
               return _buildLoadingState();
             },
           ),

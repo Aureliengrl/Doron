@@ -59,6 +59,16 @@ class _VoiceListeningPageWidgetState extends State<VoiceListeningPageWidget> {
         body: SafeArea(
           child: Consumer<VoiceListeningPageModel>(
             builder: (context, model, _) {
+              // 🔍 LOGS DÉTAILLÉS pour diagnostic
+              print('🎤 [VOICE LISTENING BUILD] État du modèle:');
+              print('   - isListening: ${model.isListening}');
+              print('   - hasError: ${model.hasError}');
+              print('   - transcript.length: ${model.transcript.length}');
+              print('   - canProceed: ${model.canProceed()}');
+              if (model.hasError) {
+                print('   - errorMessage: ${model.errorMessage}');
+              }
+
               return Column(
                 children: [
                   // Instructions
