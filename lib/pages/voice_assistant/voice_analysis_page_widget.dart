@@ -34,12 +34,15 @@ class _VoiceAnalysisPageWidgetState extends State<VoiceAnalysisPageWidget> {
   }
 
   void _onModelChanged() async {
+    print('🔄 Voice Analysis: Listener déclenché - hasNavigated=$_hasNavigated, isAnalyzing=${_model.isAnalyzing}, hasError=${_model.hasError}, analysisResult=${_model.analysisResult != null ? "PRESENT" : "NULL"}');
+
     if (!_hasNavigated &&
         !_model.isAnalyzing &&
         !_model.hasError &&
         _model.analysisResult != null) {
       // Marquer comme ayant navigué pour éviter les navigations multiples
       _hasNavigated = true;
+      print('🎯 Voice Analysis: CONDITIONS VALIDÉES - Préparation navigation vers génération');
 
       // Convertir l'analyse en profil de cadeau
       final giftProfile = OpenAIVoiceAnalysisService.convertToGiftProfile(
@@ -47,12 +50,16 @@ class _VoiceAnalysisPageWidgetState extends State<VoiceAnalysisPageWidget> {
       );
       giftProfile['rawTranscript'] = widget.transcript;
 
-      print('✅ Profil cadeau généré depuis l\'assistant vocal: $giftProfile');
+      print('✅ Profil cadeau généré depuis l\'assistant vocal:');
+      print('   - Nom: ${giftProfile['name'] ?? giftProfile['recipientName'] ?? "Non défini"}');
+      print('   - Genre: ${giftProfile['gender'] ?? "Non défini"}');
+      print('   - Budget: ${giftProfile['budget'] ?? "Non défini"}');
+      print('   - Intérêts: ${(giftProfile['interests'] ?? giftProfile['recipientHobbies'] ?? []).length} items');
 
       // Sauvegarder le profil pour la génération (optionnel, pour tracking)
       try {
         await FirebaseDataService.saveGiftProfile(giftProfile);
-        print('✅ Profil sauvegardé dans Firebase');
+        print('✅ Profil sauvegardé dans Firebase pour tracking');
       } catch (e) {
         print('⚠️ Erreur sauvegarde profil (non bloquant): $e');
       }
@@ -60,13 +67,18 @@ class _VoiceAnalysisPageWidgetState extends State<VoiceAnalysisPageWidget> {
       // Navigation automatique vers la génération de cadeaux
       Future.delayed(const Duration(milliseconds: 500), () {
         if (mounted) {
-          print('🎁 Navigation vers génération de cadeaux avec profil vocal');
+          print('🚀 NAVIGATION vers /onboarding-gifts-result avec profil vocal');
+          print('   Ceci va générer les cadeaux comme après l\'onboarding !');
           context.pushReplacement(
             '/onboarding-gifts-result',
             extra: giftProfile,
           );
+        } else {
+          print('❌ Navigation annulée: widget non monté');
         }
       });
+    } else {
+      print('⏸️ Voice Analysis: Conditions non remplies, attente...');
     }
   }
 

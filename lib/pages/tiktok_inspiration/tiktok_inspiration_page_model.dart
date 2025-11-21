@@ -40,91 +40,36 @@ class TikTokInspirationPageModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Charger les tags du profil utilisateur
-      print('🏷️ TikTok Inspiration: Chargement des tags utilisateur...');
+      // Charger les tags du profil utilisateur (comme home_pinterest)
       final userProfileTags = await FirebaseDataService.loadUserProfileTags();
-      print('🏷️ TikTok Inspiration: Tags chargés: $userProfileTags');
 
-      // ⚠️ FALLBACK: Si pas de tags, créer des tags par défaut pour mode découverte
-      final tagsToUse = userProfileTags ?? {
-        'interests': ['découverte', 'variété'],
-        'style': 'Moderne',
-        'gender': 'Non spécifié', // Ajout pour éviter les problèmes de filtrage
-      };
+      // ✅ TOUJOURS utiliser les tags, même vides (ProductMatchingService gère ça)
+      final tagsToUse = userProfileTags ?? {};
 
-      print('🎯 TikTok Inspiration: Tags utilisés pour matching: $tagsToUse');
+      print('📋 TikTok Inspiration: Tags utilisés pour matching: $tagsToUse');
 
       // Charger les IDs des produits déjà vus
       final prefs = await SharedPreferences.getInstance();
-      var seenProductIds = prefs.getStringList('seen_inspiration_product_ids')
+      final seenProductIds = prefs.getStringList('seen_inspiration_product_ids')
           ?.map((s) => int.tryParse(s) ?? 0).toList() ?? [];
 
       print('📋 TikTok Inspiration: ${seenProductIds.length} produits déjà vus');
 
-      // 🔄 Si trop de produits ont été vus (>50), réinitialiser complètement
-      if (seenProductIds.length > 50) {
-        print('♻️ TikTok Inspiration: RESET COMPLET des produits vus (${seenProductIds.length} > 50)');
-        await prefs.remove('seen_inspiration_product_ids');
-        seenProductIds = [];
-      }
-
-      AppLogger.info('🎬 Chargement TikTok Inspiration (exclusion de ${seenProductIds.length} produits déjà vus)', 'TikTok');
-
-      // 🧪 TEST: Vérifier que Firebase a bien des produits
-      try {
-        print('🧪 TikTok Inspiration: Test direct Firebase...');
-        final testSnapshot = await FirebaseFirestore.instance
-            .collection('gifts')
-            .limit(5)
-            .get();
-        print('🧪 Firebase gifts: ${testSnapshot.docs.length} produits trouvés directement');
-        if (testSnapshot.docs.isEmpty) {
-          print('❌ ERREUR CRITIQUE: Firebase collection "gifts" est VIDE !');
-        }
-      } catch (e) {
-        print('❌ Erreur test Firebase: $e');
-      }
-
-      // 🎯 Générer les produits via ProductMatchingService
-      // Prefetch 30 produits pour un scroll fluide (on en affichera 20 à la fois)
-      print('🔄 TikTok Inspiration: Appel ProductMatchingService (mode discovery)...');
-
-      // Si trop de produits exclus, on ignore la liste d'exclusion pour forcer du contenu
-      final effectiveExcludeIds = seenProductIds.length > 30 ? [] : seenProductIds;
-      if (seenProductIds.length > 30 && effectiveExcludeIds.isEmpty) {
-        print('⚠️ TikTok Inspiration: Trop de produits exclus (${seenProductIds.length}), on ignore les exclusions');
-      }
+      // 🎯 Générer les produits via ProductMatchingService (Firebase-first)
+      print('🔄 TikTok Inspiration: Appel ProductMatchingService...');
 
       final rawProducts = await ProductMatchingService.getPersonalizedProducts(
         userTags: tagsToUse,
-        count: 30,
-        excludeProductIds: effectiveExcludeIds,
+        count: 30, // Prefetch 30 pour scroll fluide
+        excludeProductIds: seenProductIds,
         filteringMode: "discovery", // Mode DISCOVERY: Très souple, variété maximale
       );
 
       print('✅ TikTok Inspiration: ProductMatchingService retourné ${rawProducts.length} produits');
 
       if (rawProducts.isEmpty) {
-        print('⚠️ TikTok Inspiration: Aucun produit retourné');
-        print('⚠️ Tags utilisés: $tagsToUse');
-        print('⚠️ IDs exclus: ${effectiveExcludeIds.length}');
-
-        // Message d'erreur plus détaillé
-        _errorMessage = '📦 Aucun produit disponible';
-
-        // Vérifier la cause probable
-        if (effectiveExcludeIds.length > 20) {
-          _errorDetails = 'Tu as déjà vu tous les produits disponibles !\n\n'
-                          'Reviens plus tard pour découvrir de nouveaux produits.';
-        } else {
-          _errorDetails = 'La base de produits est actuellement vide ou en cours de chargement.\n\n'
-                          'Cela peut arriver si :\n'
-                          '• Les produits Firebase ne sont pas encore importés\n'
-                          '• Les filtres sont trop restrictifs\n'
-                          '• Il y a un problème de connexion\n\n'
-                          'Utilise le bouton "Reset complet" ci-dessous pour recharger.';
-        }
-
+        _errorMessage = '📦 Aucune inspiration pour le moment';
+        _errorDetails = 'Reviens plus tard pour découvrir de nouveaux produits !';
         _hasError = true;
         _isLoading = false;
         notifyListeners();
@@ -133,17 +78,12 @@ class TikTokInspirationPageModel extends ChangeNotifier {
 
       // Convertir au format TikTok et ajouter URLs intelligentes
       final products = rawProducts.take(20).map((product) {
-        // ✅ ProductMatchingService a déjà normalisé le champ 'image'
-        final imageUrl = product['image'] as String? ?? 'https://via.placeholder.com/400x400/8A2BE2/FFFFFF?text=🎁';
-
-        print('✅ TikTok Inspiration: "${product['name']}" - Image: ${imageUrl.substring(0, imageUrl.length > 60 ? 60 : imageUrl.length)}...');
-
         return {
           'id': product['id'],
           'name': product['name'] ?? 'Produit',
           'brand': product['brand'] ?? '',
           'price': product['price'] ?? 0,
-          'image': imageUrl,
+          'image': product['image'] ?? product['imageUrl'] ?? '',
           'url': ProductUrlService.generateProductUrl(product),
           'source': product['source'] ?? 'Amazon',
           'categories': product['categories'] ?? [],
@@ -151,15 +91,14 @@ class TikTokInspirationPageModel extends ChangeNotifier {
         };
       }).toList();
 
+      print('📦 ${products.length} produits convertis pour affichage');
+
       // Mettre à jour le cache des produits vus
-      final newSeenIds = seenProductIds.map((id) => id.toString()).toList();
+      final newSeenIds = <String>[...seenProductIds.map((id) => id.toString())];
       for (var product in products) {
-        final id = product['id'];
-        if (id != null) {
-          final idStr = id.toString();
-          if (!newSeenIds.contains(idStr)) {
-            newSeenIds.add(idStr);
-          }
+        final productId = product['id']?.toString() ?? '';
+        if (productId.isNotEmpty && !newSeenIds.contains(productId)) {
+          newSeenIds.add(productId);
         }
       }
       // Limiter à 200 derniers produits vus
@@ -167,15 +106,17 @@ class TikTokInspirationPageModel extends ChangeNotifier {
         newSeenIds.removeRange(0, newSeenIds.length - 200);
       }
       await prefs.setStringList('seen_inspiration_product_ids', newSeenIds);
+      print('💾 ${newSeenIds.length} produits dans le cache (${products.length} nouveaux ajoutés)');
 
       _products = products;
       _isLoading = false;
       _hasError = false;
       notifyListeners();
 
-      print('✅ TikTok Inspiration: État final - ${_products.length} produits, isLoading: $_isLoading, hasError: $_hasError');
-      AppLogger.success('TikTok Inspiration: ${products.length} produits chargés (Firebase + matching local)', 'TikTok');
+      print('✅ TikTok Inspiration: ${_products.length} produits chargés avec succès');
+      AppLogger.success('TikTok Inspiration: ${products.length} produits chargés', 'TikTok');
     } catch (e) {
+      print('❌ Erreur chargement TikTok Inspiration: $e');
       AppLogger.error('Erreur chargement TikTok Inspiration', 'TikTok', e);
 
       // Parser l'erreur pour extraire des détails utiles
@@ -188,11 +129,8 @@ class TikTokInspirationPageModel extends ChangeNotifier {
       } else if (errorDetails.contains('firebase') || errorDetails.contains('Firestore')) {
         _errorMessage = '🔥 Erreur Firebase';
         _errorDetails = 'Impossible de charger les produits. Réessaye plus tard.';
-      } else if (errorDetails.contains('Aucun produit')) {
-        _errorMessage = '📦 Pas de nouveaux produits';
-        _errorDetails = 'Tous les produits disponibles ont déjà été vus. Reviens plus tard !';
       } else {
-        _errorMessage = 'Erreur de chargement';
+        _errorMessage = '⚠️ Erreur de chargement';
         _errorDetails = 'Une erreur est survenue lors du chargement des produits.';
       }
 
