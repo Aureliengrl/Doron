@@ -83,8 +83,36 @@ class _TikTokInspirationPageWidgetState
 
   /// Toggle favorite avec sauvegarde Firebase
   Future<void> _toggleFavorite(Map<String, dynamic> product) async {
+    // ✅ VÉRIFICATION D'AUTHENTIFICATION
+    if (currentUserReference == null) {
+      print('⚠️ Utilisateur non connecté, impossible de liker');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '🔐 Veuillez vous connecter pour ajouter aux favoris',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: Colors.orange[700],
+            duration: const Duration(seconds: 3),
+            action: SnackBarAction(
+              label: 'Se connecter',
+              textColor: Colors.white,
+              onPressed: () {
+                Navigator.of(context).pushNamed('/authentification');
+              },
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
     final productName = product['name'] as String? ?? '';
     final isCurrentlyLiked = _model.likedProductTitles.contains(productName);
+
+    print('💗 Toggle favori (Inspiration) AVANT: isLiked=$isCurrentlyLiked, Produit=$productName');
+    print('💗 UID: $currentUserUid');
 
     setState(() {
       if (isCurrentlyLiked) {
@@ -93,6 +121,9 @@ class _TikTokInspirationPageWidgetState
         _model.likedProductTitles.add(productName);
       }
     });
+
+    // Haptic feedback
+    HapticFeedback.mediumImpact();
 
     try {
       if (isCurrentlyLiked) {
@@ -106,11 +137,14 @@ class _TikTokInspirationPageWidgetState
         for (var fav in favorites) {
           if (!fav.hasPersonId() || fav.personId == null || fav.personId!.isEmpty) {
             await fav.reference.delete();
+            print('✅ Favori supprimé: ${fav.reference.id}');
           }
         }
+
+        print('✅ Retiré des favoris: $productName');
       } else {
         // Ajouter aux favoris
-        await FavouritesRecord.collection.add(
+        final docRef = await FavouritesRecord.collection.add(
           createFavouritesRecordData(
             uid: currentUserReference,
             platform: "amazon",
@@ -129,6 +163,8 @@ class _TikTokInspirationPageWidgetState
           ),
         );
 
+        print('✅ Ajouté aux favoris: $productName (ID: ${docRef.id})');
+
         // Haptic feedback
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -143,8 +179,9 @@ class _TikTokInspirationPageWidgetState
           );
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('❌ Erreur toggle favori: $e');
+      print('Stack trace: $stackTrace');
       // Revenir à l'état précédent
       setState(() {
         if (isCurrentlyLiked) {

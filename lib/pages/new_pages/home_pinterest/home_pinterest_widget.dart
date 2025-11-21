@@ -304,12 +304,38 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
 
   /// Toggle favorite avec sauvegarde Firebase
   Future<void> _toggleFavorite(Map<String, dynamic> product) async {
+    // ✅ VÉRIFICATION D'AUTHENTIFICATION
+    if (FirebaseAuth.instance.currentUser == null) {
+      print('⚠️ Utilisateur non connecté, impossible de liker');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '🔐 Veuillez vous connecter pour ajouter aux favoris',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: Colors.orange[700],
+            duration: const Duration(seconds: 3),
+            action: SnackBarAction(
+              label: 'Se connecter',
+              textColor: Colors.white,
+              onPressed: () {
+                context.go('/authentification');
+              },
+            ),
+          ),
+        );
+      }
+      return;
+    }
+
     final productId = product['id'] as int;
     final productTitle = product['name'] ?? '';
     final isCurrentlyLiked = _model.likedProductTitles.contains(productTitle);
 
     print('💗 Toggle favori AVANT: isLiked=$isCurrentlyLiked, ID=$productId, Titre=$productTitle');
     print('💗 likedProductTitles AVANT: ${_model.likedProductTitles}');
+    print('💗 UID: ${FirebaseAuth.instance.currentUser?.uid}');
 
     // Haptic feedback
     HapticFeedback.mediumImpact();
@@ -334,13 +360,14 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
         for (var fav in favorites) {
           if (!fav.hasPersonId() || fav.personId == null || fav.personId!.isEmpty) {
             await fav.reference.delete();
+            print('✅ Favori supprimé: ${fav.reference.id}');
           }
         }
 
         print('✅ Retiré des favoris: ${product['name']}');
       } else {
         // Ajouter aux favoris Firebase
-        await FavouritesRecord.collection.add(
+        final docRef = await FavouritesRecord.collection.add(
           createFavouritesRecordData(
             uid: currentUserReference,
             platform: "amazon",
@@ -359,7 +386,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           ),
         );
 
-        print('✅ Ajouté aux favoris: ${product['name']}');
+        print('✅ Ajouté aux favoris: ${product['name']} (ID: ${docRef.id})');
 
         // Afficher une confirmation
         if (mounted) {
@@ -375,8 +402,9 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           );
         }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('❌ Erreur toggle favori: $e');
+      print('Stack trace: $stackTrace');
       // Revenir à l'état précédent en cas d'erreur (rollback)
       if (mounted) {
         setState(() {
