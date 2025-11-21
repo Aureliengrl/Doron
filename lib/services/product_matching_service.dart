@@ -694,17 +694,22 @@ class ProductMatchingService {
         score += 70.0;
       } else {
         // Genre ne correspond PAS
-        if (hasCategoryFilter) {
-          // Si filtre de catégorie actif -> PÉNALITÉ uniquement (pas d'exclusion)
+        if (isPersonMode) {
+          // 🔒 MODE PERSON: TOUJOURS EXCLUSION STRICTE (même avec filtre catégorie)
+          // Si on cherche un cadeau pour un homme, JAMAIS montrer des produits pour femmes
+          print('❌ GENRE NE CORRESPOND PAS (person): $userGender ≠ ${productGenderTags.join(", ")} => EXCLUSION STRICTE');
+          return -10000.0;
+        } else if (hasCategoryFilter && !isHomeMode) {
+          // Si filtre de catégorie actif (et pas HOME) -> PÉNALITÉ uniquement
           print('⚠️ GENRE NE CORRESPOND PAS (filtre catégorie actif): $userGender ≠ ${productGenderTags.join(", ")} => Pénalité -30');
           score -= 30.0;
         } else if (isDiscoveryMode) {
           // Discovery: très petite pénalité
           print('⚠️ GENRE NE CORRESPOND PAS (discovery): ${productGenderTags.join(", ")} => Pénalité -10');
           score -= 10.0;
-        } else if (isPersonMode || isHomeMode) {
-          // 🔒 EXCLUSION STRICTE pour mode PERSON et HOME
-          print('❌ GENRE NE CORRESPOND PAS (${filteringMode}): $userGender ≠ ${productGenderTags.join(", ")} => EXCLUSION');
+        } else if (isHomeMode) {
+          // 🔒 HOME MODE: EXCLUSION STRICTE
+          print('❌ GENRE NE CORRESPOND PAS (home): $userGender ≠ ${productGenderTags.join(", ")} => EXCLUSION');
           return -10000.0;
         } else {
           // Fallback: pénalité forte

@@ -52,6 +52,26 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
 
   /// Charge les favoris depuis Firebase (FlutterFlow system)
   Future<void> _loadFavorites() async {
+    // Vérifier si l'utilisateur est connecté
+    if (FirebaseAuth.instance.currentUser == null) {
+      print('⚠️ Utilisateur non connecté, favoris non chargés');
+      // Charger les favoris locaux depuis SharedPreferences
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final localFavorites = prefs.getStringList('local_favorite_titles') ?? [];
+        if (mounted && localFavorites.isNotEmpty) {
+          setState(() {
+            _model.likedProductTitles.clear();
+            _model.likedProductTitles.addAll(localFavorites);
+          });
+          print('✅ ${localFavorites.length} favoris chargés depuis local storage');
+        }
+      } catch (e) {
+        print('❌ Erreur chargement favoris locaux: $e');
+      }
+      return;
+    }
+
     try {
       // Charger les favoris FlutterFlow (sans personId = favoris "en vrac")
       final favorites = await queryFavouritesRecordOnce(
@@ -74,7 +94,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
         print('✅ ${_model.likedProductTitles.length} favoris chargés depuis Firebase');
       }
     } catch (e) {
-      print('❌ Erreur chargement favoris: $e');
+      print('❌ Erreur chargement favoris Firebase: $e');
     }
   }
 
@@ -303,36 +323,12 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
     }
   }
 
-  /// Toggle favorite avec sauvegarde Firebase
+  /// Toggle favorite avec sauvegarde Firebase ou locale
   Future<void> _toggleFavorite(Map<String, dynamic> product) async {
-    // ✅ VÉRIFICATION D'AUTHENTIFICATION
-    if (FirebaseAuth.instance.currentUser == null) {
-      print('⚠️ Utilisateur non connecté, impossible de liker');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '🔐 Veuillez vous connecter pour ajouter aux favoris',
-              style: GoogleFonts.poppins(),
-            ),
-            backgroundColor: Colors.orange[700],
-            duration: const Duration(seconds: 3),
-            action: SnackBarAction(
-              label: 'Se connecter',
-              textColor: Colors.white,
-              onPressed: () {
-                context.go('/authentification');
-              },
-            ),
-          ),
-        );
-      }
-      return;
-    }
-
     final productId = product['id'] as int;
     final productTitle = product['name'] ?? '';
     final isCurrentlyLiked = _model.likedProductTitles.contains(productTitle);
+    final isLoggedIn = FirebaseAuth.instance.currentUser != null;
 
     print('💗 Toggle favori AVANT: isLiked=$isCurrentlyLiked, ID=$productId, Titre=$productTitle');
     print('💗 likedProductTitles AVANT: ${_model.likedProductTitles}');
@@ -349,6 +345,50 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
       });
     }
 
+    // Sauvegarder toujours en local (pour persistance même sans connexion)
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final localFavorites = prefs.getStringList('local_favorite_titles') ?? [];
+      if (isCurrentlyLiked) {
+        localFavorites.remove(productTitle);
+      } else {
+        if (!localFavorites.contains(productTitle)) {
+          localFavorites.add(productTitle);
+        }
+      }
+      await prefs.setStringList('local_favorite_titles', localFavorites);
+      print('💾 Favoris locaux mis à jour: ${localFavorites.length} favoris');
+    } catch (e) {
+      print('❌ Erreur sauvegarde favoris locaux: $e');
+    }
+
+    // Si non connecté, afficher un message suggérant la connexion
+    if (!isLoggedIn) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              isCurrentlyLiked
+                ? '💔 Retiré des favoris (connectez-vous pour synchroniser)'
+                : '❤️ Ajouté aux favoris (connectez-vous pour synchroniser)',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: isCurrentlyLiked ? Colors.grey[600] : const Color(0xFF10B981),
+            duration: const Duration(seconds: 2),
+            action: SnackBarAction(
+              label: 'Connexion',
+              textColor: Colors.white,
+              onPressed: () {
+                context.go('/authentification');
+              },
+            ),
+          ),
+        );
+      }
+      return; // Ne pas tenter de sauvegarder sur Firebase
+    }
+
+    // Sauvegarder sur Firebase si connecté
     try {
       if (isCurrentlyLiked) {
         // Retirer des favoris Firebase
@@ -361,11 +401,11 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
         for (var fav in favorites) {
           if (!fav.hasPersonId() || fav.personId == null || fav.personId!.isEmpty) {
             await fav.reference.delete();
-            print('✅ Favori supprimé: ${fav.reference.id}');
+            print('✅ Favori supprimé de Firebase: ${fav.reference.id}');
           }
         }
 
-        print('✅ Retiré des favoris: ${product['name']}');
+        print('✅ Retiré des favoris Firebase: ${product['name']}');
       } else {
         // Ajouter aux favoris Firebase
         final docRef = await FavouritesRecord.collection.add(
@@ -387,7 +427,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           ),
         );
 
-        print('✅ Ajouté aux favoris: ${product['name']} (ID: ${docRef.id})');
+        print('✅ Ajouté aux favoris Firebase: ${product['name']} (ID: ${docRef.id})');
 
         // Afficher une confirmation
         if (mounted) {
@@ -404,22 +444,17 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
         }
       }
     } catch (e, stackTrace) {
-      print('❌ Erreur toggle favori: $e');
+      print('❌ Erreur toggle favori Firebase: $e');
       print('Stack trace: $stackTrace');
-      // Revenir à l'état précédent en cas d'erreur (rollback)
+      // Ne PAS rollback l'état local - le favori reste localement
       if (mounted) {
-        setState(() {
-          _model.toggleLike(productId, productTitle); // Re-toggle pour revenir en arrière
-          print('🔄 Rollback: likedProductTitles après erreur: ${_model.likedProductTitles}');
-        });
-        // Afficher un message d'erreur à l'utilisateur
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '❌ Impossible de modifier les favoris. Vérifiez votre connexion.',
+              '⚠️ Favori sauvegardé localement (erreur sync Firebase)',
               style: GoogleFonts.poppins(),
             ),
-            backgroundColor: Colors.red[700],
+            backgroundColor: Colors.orange[700],
             duration: const Duration(seconds: 3),
           ),
         );
