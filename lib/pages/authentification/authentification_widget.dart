@@ -1200,19 +1200,27 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
 
                                                                 print('✅ INSCRIPTION: Compte Firebase créé - UID: ${user.uid}');
 
-                                                                print('🔄 INSCRIPTION: Mise à jour du displayName dans Firestore...');
-                                                                await UsersRecord
-                                                                    .collection
-                                                                    .doc(user.uid)
-                                                                    .update(
-                                                                        createUsersRecordData(
-                                                                      displayName:
-                                                                          _model
-                                                                              .displayNameTextController
-                                                                              .text,
-                                                                    ));
-
-                                                                print('✅ INSCRIPTION: DisplayName mis à jour dans Firestore');
+                                                                // Mise à jour du displayName - NON BLOQUANT
+                                                                try {
+                                                                  print('🔄 INSCRIPTION: Mise à jour du displayName dans Firestore...');
+                                                                  await UsersRecord
+                                                                      .collection
+                                                                      .doc(user.uid)
+                                                                      .set(
+                                                                          createUsersRecordData(
+                                                                        displayName:
+                                                                            _model
+                                                                                .displayNameTextController
+                                                                                .text,
+                                                                        email: _model.emailAddressCreateTextController.text,
+                                                                        uid: user.uid,
+                                                                        createdTime: DateTime.now(),
+                                                                      ), SetOptions(merge: true));
+                                                                  print('✅ INSCRIPTION: DisplayName mis à jour dans Firestore');
+                                                                } catch (firestoreError) {
+                                                                  // Erreur Firestore NON BLOQUANTE - l'auth a réussi
+                                                                  print('⚠️ INSCRIPTION: Erreur Firestore (non bloquante): $firestoreError');
+                                                                }
 
                                                                 FFAppState()
                                                                         .firstTime =
