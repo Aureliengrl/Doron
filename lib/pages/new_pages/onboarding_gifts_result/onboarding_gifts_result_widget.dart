@@ -168,18 +168,39 @@ class _OnboardingGiftsResultWidgetState
       );
 
       // Convertir les produits au format attendu et ajouter les URLs intelligentes
+      // FIX Bug 5: Améliorer le mapping d'image et filtrer les produits sans image
       final gifts = rawGifts.map((product) {
+        // FIX: Récupérer l'image depuis plusieurs clés possibles
+        String imageUrl = '';
+        for (final key in ['image', 'imageUrl', 'photo', 'productPhoto', 'product_photo', 'img', 'thumbnail']) {
+          if (product[key] != null && product[key].toString().isNotEmpty) {
+            imageUrl = product[key].toString();
+            break;
+          }
+        }
+
         return {
           'id': product['id'],
           'name': product['name'] ?? 'Produit',
           'brand': product['brand'] ?? 'Amazon',
           'price': product['price'] ?? 0,
-          'image': product['image'] ?? 'https://via.placeholder.com/400x400/8A2BE2/FFFFFF?text=🎁', // ProductMatchingService normalise déjà ce champ
+          'image': imageUrl, // FIX: Utiliser imageUrl trouvé (pas de placeholder qui ne marche pas)
           'url': ProductUrlService.generateProductUrl(product),
           'categories': product['categories'] ?? [],
           'match': ((product['_matchScore'] ?? 0.0) as double).toInt().clamp(0, 100),
         };
-      }).toList();
+      })
+      // FIX Bug 5: Filtrer les produits sans image valide
+      .where((product) {
+        final hasImage = product['image'] != null &&
+                         product['image'].toString().isNotEmpty &&
+                         product['image'].toString().startsWith('http');
+        if (!hasImage) {
+          print('⚠️ Produit "${product['name']}" filtré: pas d\'image valide');
+        }
+        return hasImage;
+      })
+      .toList();
 
       // Mettre à jour le cache des produits vus
       if (forceRefresh) {
@@ -638,7 +659,7 @@ class _OnboardingGiftsResultWidgetState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Image du produit
+                // Image du produit - FIX Bug 5: Améliorer le loading et l'erreur
                 ClipRRect(
                   borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(24),
@@ -649,24 +670,63 @@ class _OnboardingGiftsResultWidgetState
                     height: 250,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
+                    // FIX: Loader visible pendant le chargement (pas de gris)
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
                       return Container(
                         height: 250,
-                        color: Colors.grey[100],
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              violetColor.withOpacity(0.1),
+                              const Color(0xFFEC4899).withOpacity(0.1),
+                            ],
+                          ),
+                        ),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                            color: violetColor,
+                            strokeWidth: 3,
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                    loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        ),
+                      );
+                    },
+                    // FIX: Widget d'erreur avec style violet (pas gris)
+                    errorBuilder: (context, error, stackTrace) {
+                      print('❌ Erreur chargement image cadeau: $error');
+                      return Container(
+                        height: 250,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              violetColor.withOpacity(0.1),
+                              const Color(0xFFEC4899).withOpacity(0.1),
+                            ],
+                          ),
+                        ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.card_giftcard,
-                              color: violetColor.withOpacity(0.3),
+                              color: violetColor.withOpacity(0.5),
                               size: 60,
                             ),
                             const SizedBox(height: 12),
                             Text(
-                              'Image non disponible',
+                              'Image en cours de chargement',
                               style: GoogleFonts.poppins(
-                                color: Colors.grey[400],
+                                color: violetColor.withOpacity(0.7),
                                 fontSize: 14,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ],
