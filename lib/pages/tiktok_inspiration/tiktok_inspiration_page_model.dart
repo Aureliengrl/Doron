@@ -78,6 +78,12 @@ class TikTokInspirationPageModel extends ChangeNotifier {
 
       // Convertir au format TikTok et ajouter URLs intelligentes
       final products = rawProducts.take(20).map((product) {
+        // ✅ FIX: Conversion sécurisée du score (peut être int ou double)
+        final matchScore = product['_matchScore'];
+        final matchScoreDouble = matchScore is int
+            ? matchScore.toDouble()
+            : (matchScore as double? ?? 0.0);
+
         return {
           'id': product['id'],
           'name': product['name'] ?? 'Produit',
@@ -87,7 +93,7 @@ class TikTokInspirationPageModel extends ChangeNotifier {
           'url': ProductUrlService.generateProductUrl(product),
           'source': product['source'] ?? 'Amazon',
           'categories': product['categories'] ?? [],
-          'match': ((product['_matchScore'] ?? 0.0) as double).toInt().clamp(0, 100),
+          'match': matchScoreDouble.toInt().clamp(0, 100),
         };
       }).toList();
 

@@ -22,6 +22,7 @@ class VoiceAnalysisPageWidget extends StatefulWidget {
 class _VoiceAnalysisPageWidgetState extends State<VoiceAnalysisPageWidget> {
   late VoiceAnalysisPageModel _model;
   bool _hasNavigated = false;
+  bool _showSuccess = false; // ✅ État de succès avant navigation
 
   @override
   void initState() {
@@ -56,6 +57,13 @@ class _VoiceAnalysisPageWidgetState extends State<VoiceAnalysisPageWidget> {
       _hasNavigated = true;
       print('🎯 Voice Analysis: CONDITIONS VALIDÉES - Préparation navigation vers génération');
 
+      // ✅ Afficher l'état de succès
+      if (mounted) {
+        setState(() {
+          _showSuccess = true;
+        });
+      }
+
       // Convertir l'analyse en profil de cadeau
       final giftProfile = OpenAIVoiceAnalysisService.convertToGiftProfile(
         _model.analysisResult!,
@@ -68,16 +76,15 @@ class _VoiceAnalysisPageWidgetState extends State<VoiceAnalysisPageWidget> {
       print('   - Budget: ${giftProfile['budget'] ?? "Non défini"}');
       print('   - Intérêts: ${(giftProfile['interests'] ?? giftProfile['recipientHobbies'] ?? []).length} items');
 
-      // Sauvegarder le profil pour la génération (optionnel, pour tracking)
-      try {
-        await FirebaseDataService.saveGiftProfile(giftProfile);
+      // Sauvegarder le profil pour la génération (non bloquant)
+      FirebaseDataService.saveGiftProfile(giftProfile).then((_) {
         print('✅ Profil sauvegardé dans Firebase pour tracking');
-      } catch (e) {
+      }).catchError((e) {
         print('⚠️ Erreur sauvegarde profil (non bloquant): $e');
-      }
+      });
 
-      // Navigation automatique vers la génération de cadeaux
-      Future.delayed(const Duration(milliseconds: 500), () {
+      // Navigation automatique vers la génération de cadeaux après délai visuel
+      Future.delayed(const Duration(milliseconds: 1000), () {
         if (mounted) {
           print('🚀 NAVIGATION vers /onboarding-gifts-result avec profil vocal');
           print('   Ceci va générer les cadeaux comme après l\'onboarding !');
@@ -129,9 +136,16 @@ class _VoiceAnalysisPageWidgetState extends State<VoiceAnalysisPageWidget> {
               print('🤖 [VOICE ANALYSIS BUILD] État du modèle:');
               print('   - isAnalyzing: ${model.isAnalyzing}');
               print('   - hasError: ${model.hasError}');
+              print('   - showSuccess: $_showSuccess');
               print('   - analysisResult: ${model.analysisResult != null ? "PRESENT" : "NULL"}');
               if (model.hasError) {
                 print('   - errorMessage: ${model.errorMessage}');
+              }
+
+              // ✅ État de succès avant navigation
+              if (_showSuccess) {
+                print('   → Affichage SUCCESS STATE');
+                return _buildSuccessState();
               }
 
               if (model.hasError) {
@@ -144,6 +158,97 @@ class _VoiceAnalysisPageWidgetState extends State<VoiceAnalysisPageWidget> {
             },
           ),
         ),
+      ),
+    );
+  }
+
+  /// ✅ État de succès - affiché avant navigation
+  Widget _buildSuccessState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Cercle de succès animé
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFF10B981),
+                  Color(0xFF059669),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF10B981).withOpacity(0.5),
+                  blurRadius: 30,
+                  spreadRadius: 5,
+                ),
+              ],
+            ),
+            child: const Icon(
+              Icons.check,
+              size: 60,
+              color: Colors.white,
+            ),
+          )
+              .animate()
+              .scale(
+                duration: const Duration(milliseconds: 400),
+                begin: const Offset(0.5, 0.5),
+                end: const Offset(1.0, 1.0),
+                curve: Curves.elasticOut,
+              ),
+
+          const SizedBox(height: 32),
+
+          // Texte de succès
+          Text(
+            'Analyse terminée !',
+            style: TextStyle(
+              fontFamily: 'Outfit',
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+            ),
+          )
+              .animate()
+              .fadeIn(duration: const Duration(milliseconds: 300)),
+
+          const SizedBox(height: 16),
+
+          Text(
+            'Génération des cadeaux en cours...',
+            style: TextStyle(
+              fontFamily: 'Outfit',
+              color: Colors.white.withOpacity(0.6),
+              fontSize: 16,
+              fontWeight: FontWeight.w400,
+            ),
+          )
+              .animate()
+              .fadeIn(
+                duration: const Duration(milliseconds: 300),
+                delay: const Duration(milliseconds: 200),
+              ),
+
+          const SizedBox(height: 32),
+
+          // Indicateur de chargement pour la navigation
+          const CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF10B981)),
+            strokeWidth: 3,
+          )
+              .animate()
+              .fadeIn(
+                duration: const Duration(milliseconds: 300),
+                delay: const Duration(milliseconds: 400),
+              ),
+        ],
       ),
     );
   }

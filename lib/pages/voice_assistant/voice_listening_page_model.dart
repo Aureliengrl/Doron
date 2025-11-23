@@ -21,6 +21,10 @@ class VoiceListeningPageModel extends ChangeNotifier {
   Future<void> initialize() async {
     print('🎤 Initializing voice listening page...');
 
+    // ✅ FIX: Reset les anciens callbacks avant de configurer les nouveaux
+    // (évite les callbacks stales si la page est recréée)
+    _voiceService.reset();
+
     // Setup callbacks
     _voiceService.onTranscriptUpdate = (text) {
       _transcript = text;

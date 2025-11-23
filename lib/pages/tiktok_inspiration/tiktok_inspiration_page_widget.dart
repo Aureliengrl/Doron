@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:go_router/go_router.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/backend/backend.dart';
 import '/backend/schema/structs/index.dart';
@@ -140,7 +141,8 @@ class _TikTokInspirationPageWidgetState
               label: 'Se connecter',
               textColor: Colors.white,
               onPressed: () {
-                Navigator.of(context).pushNamed('/authentification');
+                // ✅ FIX: Utiliser GoRouter au lieu de Navigator pour la cohérence
+                context.push('/authentification');
               },
             ),
           ),
