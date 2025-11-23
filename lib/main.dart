@@ -2,6 +2,8 @@ import '/custom_code/actions/index.dart' as actions;
 import 'package:provider/provider.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:ui';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -17,8 +19,120 @@ import 'package:google_fonts/google_fonts.dart';
 import 'flutter_flow/nav/nav.dart';
 import 'index.dart';
 
+/// Service de logging d'erreurs global pour capturer les crashs en release
+class ErrorLogService {
+  static final List<String> _errorLogs = [];
+  static const int _maxLogs = 50;
+
+  static void logError(String source, dynamic error, StackTrace? stack) {
+    final timestamp = DateTime.now().toIso8601String();
+    final logEntry = '''
+[$timestamp] $source
+Error: $error
+Stack: ${stack?.toString().split('\n').take(10).join('\n') ?? 'No stack'}
+---''';
+
+    _errorLogs.add(logEntry);
+    if (_errorLogs.length > _maxLogs) {
+      _errorLogs.removeAt(0);
+    }
+
+    // Print pour debug console (visible dans Xcode logs)
+    print('🔴 ERROR CAPTURED [$source]: $error');
+    if (stack != null) {
+      print('Stack trace:\n${stack.toString().split('\n').take(15).join('\n')}');
+    }
+  }
+
+  static List<String> get logs => List.unmodifiable(_errorLogs);
+  static String get logsAsString => _errorLogs.join('\n\n');
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ============================================
+  // FIX CRITIQUE: Capture d'erreurs globale
+  // Pour voir les crashs en mode release sur iOS
+  // ============================================
+
+  // 1. Capture les erreurs de framework Flutter (widget build errors, etc.)
+  FlutterError.onError = (FlutterErrorDetails details) {
+    ErrorLogService.logError(
+      'FlutterError',
+      details.exceptionAsString(),
+      details.stack,
+    );
+    // En debug, afficher normalement
+    if (kDebugMode) {
+      FlutterError.presentError(details);
+    }
+  };
+
+  // 2. Capture les erreurs async non-gérées (Future/Stream errors)
+  PlatformDispatcher.instance.onError = (error, stack) {
+    ErrorLogService.logError('PlatformDispatcher', error, stack);
+    return true; // Indique qu'on a géré l'erreur
+  };
+
+  // 3. Widget d'erreur personnalisé - AU LIEU d'un écran gris
+  // Affiche l'erreur réelle pour pouvoir la diagnostiquer
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return Container(
+      color: Colors.red.shade900,
+      padding: const EdgeInsets.all(16),
+      child: Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white, size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                'ERREUR WIDGET',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  decoration: TextDecoration.none,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  details.exceptionAsString(),
+                  style: const TextStyle(
+                    color: Colors.yellow,
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                    decoration: TextDecoration.none,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Stack: ${details.stack?.toString().split('\n').take(5).join('\n') ?? 'N/A'}',
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 10,
+                  fontFamily: 'monospace',
+                  decoration: TextDecoration.none,
+                ),
+                textAlign: TextAlign.left,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  };
+
   GoRouter.optionURLReflectsImperativeAPIs = true;
   usePathUrlStrategy();
 

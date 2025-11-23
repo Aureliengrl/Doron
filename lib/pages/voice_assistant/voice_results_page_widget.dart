@@ -259,6 +259,23 @@ class _VoiceResultsPageWidgetState extends State<VoiceResultsPageWidget> {
                     padding: EdgeInsets.symmetric(horizontal: 16),
                     sliver: SliverProductGridSkeleton(itemCount: 12),
                   )
+                else if (model.products.isEmpty)
+                  // FIX CRASH: Vérification si la liste est vide
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Center(
+                        child: Text(
+                          'Aucun produit trouvé',
+                          style: TextStyle(
+                            fontFamily: 'Outfit',
+                            color: Colors.grey[600],
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
                 else
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -271,8 +288,37 @@ class _VoiceResultsPageWidgetState extends State<VoiceResultsPageWidget> {
                       ),
                       delegate: SliverChildBuilderDelegate(
                         (context, index) {
-                          final product = model.products[index];
-                          return _buildProductCard(product, context);
+                          // FIX CRASH: Try-catch pour capturer erreurs du builder
+                          try {
+                            // Vérifier bounds
+                            if (index < 0 || index >= model.products.length) {
+                              print('❌ [VOICE] Index out of bounds: $index / ${model.products.length}');
+                              return Container(
+                                color: Colors.red.shade100,
+                                child: const Center(child: Text('Index Error')),
+                              );
+                            }
+
+                            final product = model.products[index];
+                            return _buildProductCard(product, context);
+                          } catch (e, stackTrace) {
+                            print('❌ [VOICE] CRASH dans builder: $e');
+                            print('   Stack: ${stackTrace.toString().split('\n').take(5).join('\n')}');
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: Colors.red.shade100,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              padding: const EdgeInsets.all(8),
+                              child: Center(
+                                child: Text(
+                                  'Erreur: ${e.toString().substring(0, e.toString().length > 50 ? 50 : e.toString().length)}',
+                                  style: const TextStyle(color: Colors.red, fontSize: 10),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            );
+                          }
                         },
                         childCount: model.products.length,
                       ),
@@ -292,17 +338,50 @@ class _VoiceResultsPageWidgetState extends State<VoiceResultsPageWidget> {
   }
 
   Widget _buildProductCard(Map<String, dynamic> product, BuildContext context) {
+    // FIX CRASH: Extraire les valeurs avec sécurité maximale
+    final String productName = (product['name'] ?? 'Produit').toString();
+    final String productBrand = (product['brand'] ?? '').toString();
+    final String productImage = (product['image'] ?? '').toString();
+
+    // Prix: conversion sécurisée
+    String productPrice;
+    final priceRaw = product['price'];
+    if (priceRaw is int) {
+      productPrice = '$priceRaw';
+    } else if (priceRaw is double) {
+      productPrice = '${priceRaw.toInt()}';
+    } else if (priceRaw is String) {
+      productPrice = priceRaw.replaceAll('€', '');
+    } else {
+      productPrice = '0';
+    }
+
+    // Match score: conversion sécurisée
+    int matchScore;
+    final matchRaw = product['match'];
+    if (matchRaw is int) {
+      matchScore = matchRaw;
+    } else if (matchRaw is double) {
+      matchScore = matchRaw.toInt();
+    } else {
+      matchScore = 85;
+    }
+
     return GestureDetector(
       onTap: () async {
         // Navigation vers les détails du produit
-        final url = ProductUrlService.generateProductUrl(product);
-        if (url.isNotEmpty) {
-          final uri = Uri.parse(url);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-          } else {
-            print('❌ Cannot launch URL: $url');
+        try {
+          final url = ProductUrlService.generateProductUrl(product);
+          if (url.isNotEmpty) {
+            final uri = Uri.parse(url);
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(uri, mode: LaunchMode.externalApplication);
+            } else {
+              print('❌ Cannot launch URL: $url');
+            }
           }
+        } catch (e) {
+          print('❌ Error launching URL: $e');
         }
       },
       child: Container(
@@ -320,24 +399,24 @@ class _VoiceResultsPageWidgetState extends State<VoiceResultsPageWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image - FIX: Ajout du borderRadius pour cohérence visuelle
+            // Image - FIX: Utiliser variable sécurisée
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               child: ProductImage(
-                imageUrl: product['image'] ?? '',
+                imageUrl: productImage,
                 height: 180,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               ),
             ),
 
-            // Contenu
+            // Contenu - FIX: Utiliser variables sécurisées
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Match score
+                    // Match score - FIX: utiliser variable sécurisée
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -357,7 +436,7 @@ class _VoiceResultsPageWidgetState extends State<VoiceResultsPageWidget> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${product['match'] ?? 85}% Match',
+                            '$matchScore% Match',
                             style: const TextStyle(
                               fontFamily: 'Outfit',
                               color: Color(0xFFFF6B9D),
@@ -371,9 +450,9 @@ class _VoiceResultsPageWidgetState extends State<VoiceResultsPageWidget> {
 
                     const SizedBox(height: 8),
 
-                    // Nom du produit
+                    // Nom du produit - FIX: utiliser variable sécurisée
                     Text(
-                      product['name'] ?? 'Produit',
+                      productName,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -387,12 +466,12 @@ class _VoiceResultsPageWidgetState extends State<VoiceResultsPageWidget> {
 
                     const Spacer(),
 
-                    // Prix et marque
+                    // Prix et marque - FIX: utiliser variables sécurisées
                     Row(
                       children: [
                         Expanded(
                           child: Text(
-                            '${product['price'] ?? 0}€',
+                            '${productPrice}€',
                             style: const TextStyle(
                               fontFamily: 'Outfit',
                               color: Color(0xFFFF6B9D),
@@ -401,10 +480,10 @@ class _VoiceResultsPageWidgetState extends State<VoiceResultsPageWidget> {
                             ),
                           ),
                         ),
-                        if (product['brand'] != null)
+                        if (productBrand.isNotEmpty)
                           Flexible(
                             child: Text(
-                              product['brand'],
+                              productBrand,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(

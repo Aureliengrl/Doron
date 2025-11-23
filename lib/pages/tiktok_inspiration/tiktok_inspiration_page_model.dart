@@ -20,6 +20,44 @@ class TikTokInspirationPageModel extends ChangeNotifier {
   // Liked products (pour l'affichage du coeur)
   Set<String> likedProductTitles = {};
 
+  // DEBUG: Données hardcodées pour tester si le crash est Data vs UI
+  static const bool _USE_HARDCODED_DATA = false; // Mettre true pour tester UI
+  static final List<Map<String, dynamic>> _hardcodedProducts = [
+    {
+      'id': 'test-1',
+      'name': 'Produit Test 1 - Casque Audio',
+      'brand': 'TestBrand',
+      'price': 49,
+      'image': 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800',
+      'url': 'https://amazon.fr',
+      'source': 'Amazon',
+      'categories': ['tech'],
+      'match': 85,
+    },
+    {
+      'id': 'test-2',
+      'name': 'Produit Test 2 - Montre',
+      'brand': 'TestBrand',
+      'price': 99,
+      'image': 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800',
+      'url': 'https://amazon.fr',
+      'source': 'Amazon',
+      'categories': ['accessoires'],
+      'match': 92,
+    },
+    {
+      'id': 'test-3',
+      'name': 'Produit Test 3 - Plante',
+      'brand': 'TestBrand',
+      'price': 29,
+      'image': 'https://images.unsplash.com/photo-1485955900006-10f4d324d411?w=800',
+      'url': 'https://amazon.fr',
+      'source': 'Amazon',
+      'categories': ['maison'],
+      'match': 78,
+    },
+  ];
+
   // Getters
   List<Map<String, dynamic>> get products => _products;
   bool get isLoading => _isLoading;
@@ -38,6 +76,18 @@ class TikTokInspirationPageModel extends ChangeNotifier {
     _errorMessage = '';
     _errorDetails = '';
     notifyListeners();
+
+    // DEBUG: Utiliser données hardcodées pour tester si c'est Data vs UI
+    if (_USE_HARDCODED_DATA) {
+      print('🧪 DEBUG MODE: Utilisation de données hardcodées');
+      await Future.delayed(const Duration(milliseconds: 500)); // Simuler latence
+      _products = List<Map<String, dynamic>>.from(_hardcodedProducts);
+      _isLoading = false;
+      _hasError = false;
+      notifyListeners();
+      print('✅ DEBUG: ${_products.length} produits hardcodés chargés');
+      return;
+    }
 
     try {
       // Charger les tags du profil utilisateur (comme home_pinterest)

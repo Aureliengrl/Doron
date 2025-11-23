@@ -289,6 +289,13 @@ class _TikTokInspirationPageWidgetState
 
               // PageView vertical plein écran
               print('   → Affichage PRODUCTS (${model.products.length} produits)');
+
+              // FIX CRASH: Vérification de sécurité avant d'afficher les produits
+              if (model.products.isEmpty) {
+                print('   ⚠️ FALLBACK: products vide après vérification');
+                return _buildEmptyState();
+              }
+
               return Stack(
               children: [
                 PageView.builder(
@@ -299,8 +306,76 @@ class _TikTokInspirationPageWidgetState
                     model.setCurrentProductIndex(index);
                   },
                   itemBuilder: (context, index) {
-                    final product = model.products[index];
-                    return _buildFullscreenProductCard(product);
+                    // FIX CRASH: Try-catch pour capturer l'erreur exacte du builder
+                    try {
+                      // Vérifier index bounds
+                      if (index < 0 || index >= model.products.length) {
+                        print('❌ [INSPIRATION] Index out of bounds: $index / ${model.products.length}');
+                        return Container(
+                          color: Colors.red.shade900,
+                          child: Center(
+                            child: Text(
+                              'Index Error: $index / ${model.products.length}',
+                              style: const TextStyle(color: Colors.white, fontSize: 16),
+                            ),
+                          ),
+                        );
+                      }
+
+                      final product = model.products[index];
+
+                      // Vérifier que le produit n'est pas null
+                      if (product == null) {
+                        print('❌ [INSPIRATION] Product is null at index $index');
+                        return Container(
+                          color: Colors.red.shade900,
+                          child: const Center(
+                            child: Text(
+                              'Product is null',
+                              style: TextStyle(color: Colors.white, fontSize: 16),
+                            ),
+                          ),
+                        );
+                      }
+
+                      return _buildFullscreenProductCard(product);
+                    } catch (e, stackTrace) {
+                      // FIX: Capturer et afficher l'erreur exacte
+                      print('❌ [INSPIRATION] CRASH dans itemBuilder:');
+                      print('   Error: $e');
+                      print('   Stack: ${stackTrace.toString().split('\n').take(10).join('\n')}');
+
+                      return Container(
+                        color: Colors.red.shade900,
+                        padding: const EdgeInsets.all(20),
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.error, color: Colors.white, size: 50),
+                              const SizedBox(height: 16),
+                              const Text(
+                                'CRASH CAPTURÉ',
+                                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 12),
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.black54,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  e.toString(),
+                                  style: const TextStyle(color: Colors.yellow, fontSize: 12, fontFamily: 'monospace'),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
                   },
                 ),
 
@@ -566,14 +641,36 @@ class _TikTokInspirationPageWidgetState
   }
 
   Widget _buildFullscreenProductCard(Map<String, dynamic> product) {
-    final isLiked = _model.likedProductTitles.contains(product['name'] ?? '');
+    // FIX CRASH: Extraire les valeurs avec sécurité maximale
+    final String productName = (product['name'] ?? 'Produit').toString();
+    final String productBrand = (product['brand'] ?? '').toString();
+    final String productImage = (product['image'] ?? '').toString();
+    final String productUrl = (product['url'] ?? '').toString();
+
+    // Prix: conversion sécurisée (peut être int, double, ou String)
+    String productPrice;
+    final priceRaw = product['price'];
+    if (priceRaw is int) {
+      productPrice = '$priceRaw';
+    } else if (priceRaw is double) {
+      productPrice = '${priceRaw.toInt()}';
+    } else if (priceRaw is String) {
+      productPrice = priceRaw.replaceAll('€', '');
+    } else {
+      productPrice = '0';
+    }
+
+    final isLiked = _model.likedProductTitles.contains(productName);
+
+    // Log pour debug
+    print('🎴 [CARD] Affichage: name=$productName, brand=$productBrand, image=${productImage.length > 50 ? "${productImage.substring(0, 50)}..." : productImage}');
 
     return Stack(
       fit: StackFit.expand,
       children: [
         // Image en plein écran
         FullscreenProductImage(
-          imageUrl: product['image'] as String? ?? '',
+          imageUrl: productImage,
           height: double.infinity,
           borderRadius: BorderRadius.zero,
         ),
@@ -608,30 +705,31 @@ class _TikTokInspirationPageWidgetState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Marque
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: violetColor.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      product['brand'] as String? ?? '',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                  // Marque - FIX: utiliser variable sécurisée
+                  if (productBrand.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: violetColor.withOpacity(0.9),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        productBrand,
+                        style: GoogleFonts.poppins(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
+                  if (productBrand.isNotEmpty) const SizedBox(height: 12),
 
-                  // Nom du produit
+                  // Nom du produit - FIX: utiliser variable sécurisée
                   Text(
-                    product['name'] as String? ?? '',
+                    productName,
                     style: GoogleFonts.poppins(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -643,9 +741,9 @@ class _TikTokInspirationPageWidgetState
                   ),
                   const SizedBox(height: 8),
 
-                  // Prix
+                  // Prix - FIX: utiliser variable sécurisée
                   Text(
-                    '${product['price']}€',
+                    '${productPrice}€',
                     style: GoogleFonts.poppins(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -654,24 +752,21 @@ class _TikTokInspirationPageWidgetState
                   ),
                   const SizedBox(height: 20),
 
-                  // Bouton Voir le produit
+                  // Bouton Voir le produit - FIX: utiliser variable sécurisée
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () async {
-                        final url = product['url'] as String? ?? '';
-                        if (url.isNotEmpty) {
-                          try {
-                            final uri = Uri.parse(url);
-                            await launchUrl(
-                              uri,
-                              mode: LaunchMode.externalApplication,
-                            );
-                          } catch (e) {
-                            print('❌ Erreur ouverture URL: $e');
-                          }
+                      onPressed: productUrl.isNotEmpty ? () async {
+                        try {
+                          final uri = Uri.parse(productUrl);
+                          await launchUrl(
+                            uri,
+                            mode: LaunchMode.externalApplication,
+                          );
+                        } catch (e) {
+                          print('❌ Erreur ouverture URL: $e');
                         }
-                      },
+                      } : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: violetColor,
                         padding: const EdgeInsets.symmetric(vertical: 16),
@@ -708,7 +803,7 @@ class _TikTokInspirationPageWidgetState
           ),
         ),
 
-        // Bouton coeur à droite
+        // Bouton coeur à droite - FIX: utiliser variable sécurisée
         SafeArea(
           child: Positioned(
             right: 20,
@@ -718,7 +813,15 @@ class _TikTokInspirationPageWidgetState
               child: InkWell(
                 onTap: () {
                   HapticFeedback.mediumImpact();
-                  _toggleFavorite(product);
+                  // FIX: Passer le produit complet mais utiliser les valeurs sécurisées
+                  _toggleFavorite({
+                    ...product,
+                    'name': productName,
+                    'brand': productBrand,
+                    'price': productPrice,
+                    'image': productImage,
+                    'url': productUrl,
+                  });
                 },
                 borderRadius: BorderRadius.circular(50),
                 child: AnimatedContainer(
