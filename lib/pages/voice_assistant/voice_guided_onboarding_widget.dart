@@ -146,18 +146,20 @@ class _VoiceGuidedOnboardingWidgetState
                                     onPlay: (controller) => controller.repeat(),
                                   )
                                   .scale(
+                                    // FIX CRASH: Duration.zero cause NaN/Infinity avec repeat()
                                     duration: model.isListening
                                         ? const Duration(milliseconds: 1000)
-                                        : Duration.zero,
+                                        : const Duration(milliseconds: 1), // FIX: Pas Duration.zero!
                                     begin: const Offset(1.0, 1.0),
                                     end: const Offset(1.08, 1.08),
                                     curve: Curves.easeInOut,
                                   )
                                   .then()
                                   .scale(
+                                    // FIX CRASH: Duration.zero cause NaN/Infinity avec repeat()
                                     duration: model.isListening
                                         ? const Duration(milliseconds: 1000)
-                                        : Duration.zero,
+                                        : const Duration(milliseconds: 1), // FIX: Pas Duration.zero!
                                     begin: const Offset(1.08, 1.08),
                                     end: const Offset(1.0, 1.0),
                                     curve: Curves.easeInOut,

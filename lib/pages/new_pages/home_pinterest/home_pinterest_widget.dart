@@ -715,6 +715,9 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
   }
 
   Widget _buildInspirationButton() {
+    // FIX CRASH: Suppression des animations .repeat() qui causent NaN/Infinity
+    // Les animations chaînées avec .repeat() + .then() peuvent provoquer
+    // des erreurs de calcul dans flutter_animate
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Material(
@@ -748,7 +751,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
             ),
             child: Row(
               children: [
-                // Icône avec animation rotate
+                // Icône - FIX: Animation simple sans repeat
                 Container(
                   width: 56,
                   height: 56,
@@ -761,13 +764,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                     color: Colors.white,
                     size: 28,
                   ),
-                )
-                    .animate(onPlay: (controller) => controller.repeat())
-                    .shimmer(
-                      duration: 2000.ms,
-                      color: Colors.white.withOpacity(0.3),
-                    )
-                    .then(delay: 2000.ms),
+                ),
                 const SizedBox(width: 16),
                 // Texte
                 Expanded(
@@ -785,6 +782,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                             ),
                           ),
                           const SizedBox(width: 8),
+                          // Badge BÊTA - FIX: Animation simple sans repeat
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
@@ -803,12 +801,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                                 letterSpacing: 0.5,
                               ),
                             ),
-                          )
-                              .animate(onPlay: (controller) => controller.repeat())
-                              .fadeIn(duration: 1000.ms)
-                              .then(delay: 500.ms)
-                              .fadeOut(duration: 1000.ms)
-                              .then(delay: 500.ms),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 4),
@@ -823,38 +816,21 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                     ],
                   ),
                 ),
-                // Flèche avec animation
+                // Flèche - FIX: Pas d'animation repeat
                 const Icon(
                   Icons.arrow_forward_ios,
                   color: Colors.white,
                   size: 18,
-                )
-                    .animate(onPlay: (controller) => controller.repeat())
-                    .moveX(begin: 0, end: 4, duration: 1000.ms, curve: Curves.easeInOut)
-                    .then()
-                    .moveX(begin: 4, end: 0, duration: 1000.ms, curve: Curves.easeInOut),
+                ),
               ],
             ),
           )
+              // FIX: Animation d'entrée simple, sans repeat
               .animate()
               .fadeIn(duration: 400.ms, curve: Curves.easeOut)
               .slideY(begin: 0.3, end: 0, duration: 400.ms, curve: Curves.easeOut),
         ),
-      )
-          .animate(onPlay: (controller) => controller.repeat())
-          .scale(
-            begin: const Offset(1.0, 1.0),
-            end: const Offset(1.02, 1.02),
-            duration: 2000.ms,
-            curve: Curves.easeInOut,
-          )
-          .then()
-          .scale(
-            begin: const Offset(1.02, 1.02),
-            end: const Offset(1.0, 1.0),
-            duration: 2000.ms,
-            curve: Curves.easeInOut,
-          ),
+      ),
     );
   }
 
