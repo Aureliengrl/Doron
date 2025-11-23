@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:doron/services/openai_voice_analysis_service.dart';
 import 'package:doron/services/openai_service.dart';
 import 'package:doron/services/firebase_data_service.dart';
+import 'package:doron/services/product_matching_service.dart';
+import 'package:doron/services/product_url_service.dart';
 
 /// Model pour la page de résultats vocaux
 class VoiceResultsPageModel extends ChangeNotifier {
@@ -35,32 +37,67 @@ class VoiceResultsPageModel extends ChangeNotifier {
   }
 
   /// Génère les produits basés sur l'analyse
+  /// FIX: Utiliser ProductMatchingService (Firebase) au lieu d'OpenAI pour avoir des images réelles
   Future<void> generateProducts() async {
     _isGeneratingProducts = true;
     _hasError = false;
     notifyListeners();
 
     try {
-      print('🎁 Generating products with OpenAI...');
+      print('🎁 Generating products with ProductMatchingService (Firebase)...');
 
-      // Convertir l'analyse vocale en format onboardingAnswers
-      final onboardingAnswers = _convertToOnboardingFormat();
+      // Convertir l'analyse vocale en format userTags pour ProductMatchingService
+      final userTags = _convertToOnboardingFormat();
 
-      // Appeler OpenAI pour générer des produits
-      final result = await OpenAIService.generateGiftSuggestions(
-        onboardingAnswers: onboardingAnswers,
-        count: 12, // Générer 12 produits
+      // FIX: Utiliser ProductMatchingService pour avoir des produits avec images RÉELLES de Firebase
+      final rawProducts = await ProductMatchingService.getPersonalizedProducts(
+        userTags: userTags,
+        count: 20, // Charger plus pour filtrer ceux sans images
+        filteringMode: "person", // Mode personne pour cadeaux personnalisés
       );
 
-      if (result.isNotEmpty) {
-        print('✅ Generated ${result.length} products');
-        _products = result;
+      // FIX: Mapper les produits et filtrer ceux sans images valides
+      final productsWithImages = rawProducts.map((product) {
+        // Extraire l'image depuis plusieurs clés possibles
+        String imageUrl = '';
+        for (final key in ['image', 'imageUrl', 'photo', 'productPhoto', 'product_photo', 'img', 'thumbnail']) {
+          if (product[key] != null && product[key].toString().isNotEmpty) {
+            imageUrl = product[key].toString();
+            break;
+          }
+        }
+
+        return {
+          'id': product['id'],
+          'name': product['name'] ?? 'Produit',
+          'brand': product['brand'] ?? 'Amazon',
+          'price': product['price'] ?? 0,
+          'image': imageUrl,
+          'url': ProductUrlService.generateProductUrl(product),
+          'match': ((product['_matchScore'] ?? 0.0) as num).toInt().clamp(0, 100),
+        };
+      })
+      .where((product) {
+        final hasImage = product['image'] != null &&
+                         product['image'].toString().isNotEmpty &&
+                         product['image'].toString().startsWith('http');
+        if (!hasImage) {
+          print('⚠️ Produit "${product['name']}" filtré: pas d\'image valide');
+        }
+        return hasImage;
+      })
+      .take(12) // Limiter à 12 produits
+      .toList();
+
+      if (productsWithImages.isNotEmpty) {
+        print('✅ Generated ${productsWithImages.length} products with valid images from Firebase');
+        _products = productsWithImages;
         _isGeneratingProducts = false;
         _hasError = false;
       } else {
-        print('❌ No products generated');
+        print('❌ No products with valid images found');
         _hasError = true;
-        _errorMessage = 'Impossible de générer des suggestions. Veuillez réessayer.';
+        _errorMessage = 'Impossible de charger les suggestions. Veuillez réessayer.';
         _isGeneratingProducts = false;
       }
 
@@ -68,7 +105,7 @@ class VoiceResultsPageModel extends ChangeNotifier {
     } catch (e) {
       print('❌ Error generating products: $e');
       _hasError = true;
-      _errorMessage = 'Une erreur est survenue lors de la génération des cadeaux.';
+      _errorMessage = 'Une erreur est survenue lors du chargement des cadeaux.';
       _isGeneratingProducts = false;
       notifyListeners();
     }

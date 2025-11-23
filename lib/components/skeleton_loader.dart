@@ -55,9 +55,9 @@ class _SkeletonLoaderState extends State<SkeletonLoader>
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
               colors: [
-                Colors.grey[300]!,
-                Colors.grey[200]!,
-                Colors.grey[300]!,
+                const Color(0xFF8A2BE2).withOpacity(0.15),
+                const Color(0xFFEC4899).withOpacity(0.08),
+                const Color(0xFF8A2BE2).withOpacity(0.15),
               ],
               stops: [
                 _animation.value - 0.3,

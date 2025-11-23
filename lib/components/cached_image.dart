@@ -44,7 +44,16 @@ class CachedImage extends StatelessWidget {
               Container(
                 width: width,
                 height: height,
-                color: placeholderColor ?? Colors.grey[200],
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      const Color(0xFF8A2BE2).withOpacity(0.1),
+                      const Color(0xFFEC4899).withOpacity(0.1),
+                    ],
+                  ),
+                ),
                 child: Center(
                   child: SizedBox(
                     width: 30,
@@ -52,7 +61,7 @@ class CachedImage extends StatelessWidget {
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        placeholderColor?.withOpacity(0.5) ?? Colors.grey[400]!,
+                        const Color(0xFF8A2BE2).withOpacity(0.7),
                       ),
                     ),
                   ),
@@ -77,6 +86,9 @@ class CachedImage extends StatelessWidget {
   }
 
   Widget _buildErrorWidget() {
+    const violetColor = Color(0xFF8A2BE2);
+    const pinkColor = Color(0xFFEC4899);
+
     return Container(
       width: width,
       height: height,
@@ -85,8 +97,8 @@ class CachedImage extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.grey[100]!,
-            Colors.grey[200]!,
+            violetColor.withOpacity(0.1),
+            pinkColor.withOpacity(0.1),
           ],
         ),
         borderRadius: borderRadius ?? BorderRadius.zero,
@@ -96,16 +108,16 @@ class CachedImage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.image_not_supported_outlined,
+              Icons.card_giftcard,
               size: width != null && width! < 100 ? 40 : 60,
-              color: Colors.grey[400],
+              color: violetColor.withOpacity(0.5),
             ),
             if (width == null || width! >= 100) ...[
               const SizedBox(height: 8),
               Text(
-                'Image non disponible',
+                'Chargement...',
                 style: TextStyle(
-                  color: Colors.grey[500],
+                  color: violetColor.withOpacity(0.7),
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
                 ),
@@ -132,15 +144,58 @@ class ProductImage extends StatelessWidget {
     this.borderRadius,
   });
 
+  static const _violetColor = Color(0xFF8A2BE2);
+  static const _pinkColor = Color(0xFFEC4899);
+
   @override
   Widget build(BuildContext context) {
+    // FIX: Si URL vide ou invalide, afficher placeholder violet au lieu de gris
+    if (imageUrl.isEmpty || !imageUrl.startsWith('http')) {
+      return Container(
+        height: height,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              _violetColor.withOpacity(0.1),
+              _pinkColor.withOpacity(0.1),
+            ],
+          ),
+          borderRadius: borderRadius ?? BorderRadius.circular(12),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.card_giftcard,
+                size: 50,
+                color: _violetColor.withOpacity(0.5),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Image en cours...',
+                style: TextStyle(
+                  color: _violetColor.withOpacity(0.7),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return CachedImage(
       imageUrl: imageUrl,
       height: height,
       width: double.infinity,
       fit: BoxFit.cover, // ✅ COVER pour remplir les cadres sans bandes blanches ni étirement
       borderRadius: borderRadius,
-      placeholderColor: Colors.grey[100],
+      // FIX: Ne plus utiliser de placeholderColor gris - le CachedImage utilise maintenant un gradient violet par défaut
     );
   }
 }

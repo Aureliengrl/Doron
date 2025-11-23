@@ -318,12 +318,13 @@ class _VoiceResultsPageWidgetState extends State<VoiceResultsPageWidget> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image
+            // Image - FIX: Ajout du borderRadius pour cohérence visuelle
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               child: ProductImage(
                 imageUrl: product['image'] ?? '',
                 height: 180,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
               ),
             ),
 
