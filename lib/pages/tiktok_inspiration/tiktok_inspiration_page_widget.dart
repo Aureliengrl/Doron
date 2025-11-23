@@ -350,7 +350,10 @@ class _TikTokInspirationPageWidgetState
                       ),
                       child: FractionallySizedBox(
                         alignment: Alignment.topCenter,
-                        heightFactor: (model.currentProductIndex + 1) / model.products.length,
+                        // FIX: Éviter division par zéro si products.length == 0
+                        heightFactor: model.products.isNotEmpty
+                            ? (model.currentProductIndex + 1) / model.products.length
+                            : 0.0,
                         child: Container(
                           decoration: BoxDecoration(
                             gradient: const LinearGradient(

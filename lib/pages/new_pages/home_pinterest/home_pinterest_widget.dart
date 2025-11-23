@@ -192,7 +192,10 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           'url': ProductUrlService.generateProductUrl(product),
           'source': product['source'] ?? 'Amazon',
           'categories': product['categories'] ?? [],
-          'match': ((product['_matchScore'] ?? 0.0) as double).toInt().clamp(0, 100),
+          // FIX CRASH: matchScore peut être int ou double
+          'match': (product['_matchScore'] is int
+              ? product['_matchScore'] as int
+              : (product['_matchScore'] is double ? (product['_matchScore'] as double).toInt() : 0)).clamp(0, 100),
         };
       }).toList();
 
@@ -287,7 +290,10 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           'url': ProductUrlService.generateProductUrl(product),
           'source': product['source'] ?? 'Amazon',
           'categories': product['categories'] ?? [],
-          'match': ((product['_matchScore'] ?? 0.0) as double).toInt().clamp(0, 100),
+          // FIX CRASH: matchScore peut être int ou double
+          'match': (product['_matchScore'] is int
+              ? product['_matchScore'] as int
+              : (product['_matchScore'] is double ? (product['_matchScore'] as double).toInt() : 0)).clamp(0, 100),
         };
       }).toList();
 

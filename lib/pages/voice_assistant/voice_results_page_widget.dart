@@ -253,9 +253,11 @@ class _VoiceResultsPageWidgetState extends State<VoiceResultsPageWidget> {
                     child: _buildErrorState(model),
                   )
                 else if (model.isGeneratingProducts)
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    sliver: ProductGridSkeleton(itemCount: 12),
+                  // FIX: Utiliser SliverProductGridSkeleton au lieu de ProductGridSkeleton
+                  // ProductGridSkeleton retourne un GridView (pas un Sliver) → CRASH
+                  const SliverPadding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    sliver: SliverProductGridSkeleton(itemCount: 12),
                   )
                 else
                   SliverPadding(

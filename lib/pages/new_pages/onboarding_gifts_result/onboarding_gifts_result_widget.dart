@@ -179,6 +179,12 @@ class _OnboardingGiftsResultWidgetState
           }
         }
 
+        // FIX CRASH: Conversion sécurisée du score (peut être int ou double)
+        final matchScore = product['_matchScore'];
+        final matchScoreInt = matchScore is int
+            ? matchScore
+            : (matchScore is double ? matchScore.toInt() : 0);
+
         return {
           'id': product['id'],
           'name': product['name'] ?? 'Produit',
@@ -187,7 +193,7 @@ class _OnboardingGiftsResultWidgetState
           'image': imageUrl, // FIX: Utiliser imageUrl trouvé (pas de placeholder qui ne marche pas)
           'url': ProductUrlService.generateProductUrl(product),
           'categories': product['categories'] ?? [],
-          'match': ((product['_matchScore'] ?? 0.0) as double).toInt().clamp(0, 100),
+          'match': matchScoreInt.clamp(0, 100),
         };
       })
       // FIX Bug 5: Filtrer les produits sans image valide

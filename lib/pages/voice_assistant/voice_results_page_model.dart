@@ -67,6 +67,12 @@ class VoiceResultsPageModel extends ChangeNotifier {
           }
         }
 
+        // FIX CRASH: Conversion sécurisée du score (peut être int ou double)
+        final matchScore = product['_matchScore'];
+        final matchScoreInt = matchScore is int
+            ? matchScore
+            : (matchScore is double ? matchScore.toInt() : 0);
+
         return {
           'id': product['id'],
           'name': product['name'] ?? 'Produit',
@@ -74,7 +80,7 @@ class VoiceResultsPageModel extends ChangeNotifier {
           'price': product['price'] ?? 0,
           'image': imageUrl,
           'url': ProductUrlService.generateProductUrl(product),
-          'match': ((product['_matchScore'] ?? 0.0) as num).toInt().clamp(0, 100),
+          'match': matchScoreInt.clamp(0, 100),
         };
       })
       .where((product) {

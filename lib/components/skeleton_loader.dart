@@ -124,7 +124,7 @@ class ProductCardSkeleton extends StatelessWidget {
   }
 }
 
-/// Grid de skeletons pour la page d'accueil
+/// Grid de skeletons pour la page d'accueil (widget normal)
 class ProductGridSkeleton extends StatelessWidget {
   final int itemCount;
 
@@ -147,6 +147,33 @@ class ProductGridSkeleton extends StatelessWidget {
       ),
       itemCount: itemCount,
       itemBuilder: (context, index) => const ProductCardSkeleton(),
+    );
+  }
+}
+
+/// VERSION SLIVER du grid de skeletons - À UTILISER dans CustomScrollView/SliverPadding
+/// FIX: Cette version retourne un Sliver au lieu d'un widget normal
+class SliverProductGridSkeleton extends StatelessWidget {
+  final int itemCount;
+
+  const SliverProductGridSkeleton({
+    super.key,
+    this.itemCount = 6,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SliverGrid(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        childAspectRatio: 0.65,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+      ),
+      delegate: SliverChildBuilderDelegate(
+        (context, index) => const ProductCardSkeleton(),
+        childCount: itemCount,
+      ),
     );
   }
 }
