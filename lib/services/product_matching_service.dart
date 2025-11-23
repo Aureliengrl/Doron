@@ -57,8 +57,9 @@ class ProductMatchingService {
     // Aucune image trouvée - logger pour debug
     AppLogger.warning('⚠️ AUCUNE IMAGE trouvée pour produit "${product['name']}" - Champs disponibles: ${product.keys.join(", ")}', 'Matching');
 
-    // Retourner une image placeholder par défaut (icône cadeau générique)
-    return 'https://via.placeholder.com/400x400/8A2BE2/FFFFFF?text=🎁';
+    // FIX Bug 1: Retourner une chaîne vide au lieu d'un placeholder qui ne marche pas sur iOS
+    // Les produits sans image seront filtrés par les widgets appelants
+    return '';
   }
 
   /// Génère des produits personnalisés en matchant les tags utilisateur avec la base de produits

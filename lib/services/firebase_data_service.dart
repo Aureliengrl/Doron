@@ -753,11 +753,57 @@ class FirebaseDataService {
           AppLogger.debug('Added local person to list: ${localPerson['id']}', 'Firebase');
         }
       }
-      return firebasePeople;
+
+      // FIX Bug 3: Déduplication par nom pour éviter les doubles cercles
+      final deduplicatedPeople = _deduplicatePeopleByName(firebasePeople);
+      return deduplicatedPeople;
     }
 
-    // Si Firebase vide ou non connecté, retourner les personnes locales
-    return localPeople;
+    // Si Firebase vide ou non connecté, retourner les personnes locales (dédupliquées)
+    return _deduplicatePeopleByName(localPeople);
+  }
+
+  /// FIX Bug 3: Déduplique les personnes par nom (garde la plus récente)
+  static List<Map<String, dynamic>> _deduplicatePeopleByName(List<Map<String, dynamic>> people) {
+    final seenNames = <String, Map<String, dynamic>>{};
+
+    for (var person in people) {
+      final tags = person['tags'] as Map<String, dynamic>? ?? {};
+      // Extraire le nom depuis plusieurs clés possibles
+      final name = (tags['name'] as String? ??
+                   tags['personName'] as String? ??
+                   tags['recipient'] as String? ??
+                   '').toLowerCase().trim();
+
+      // Si le nom est vide, utiliser l'ID comme clé unique
+      if (name.isEmpty) {
+        seenNames[person['id'].toString()] = person;
+        continue;
+      }
+
+      // Si on a déjà vu ce nom, comparer les dates pour garder le plus récent
+      if (seenNames.containsKey(name)) {
+        final existingMeta = seenNames[name]!['meta'] as Map<String, dynamic>? ?? {};
+        final newMeta = person['meta'] as Map<String, dynamic>? ?? {};
+
+        final existingDate = existingMeta['createdAt']?.toString() ?? '';
+        final newDate = newMeta['createdAt']?.toString() ?? '';
+
+        // Garder le plus récent (date plus grande = plus récent)
+        if (newDate.compareTo(existingDate) > 0) {
+          AppLogger.debug('🔄 Doublon trouvé pour "$name": remplacement par version plus récente', 'Firebase');
+          seenNames[name] = person;
+        }
+      } else {
+        seenNames[name] = person;
+      }
+    }
+
+    final result = seenNames.values.toList();
+    if (result.length < people.length) {
+      AppLogger.success('✅ Déduplication: ${people.length} → ${result.length} personnes', 'Firebase');
+    }
+    return result;
   }
 
   /// Charge la première personne avec isPendingFirstGen=true
