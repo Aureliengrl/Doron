@@ -43,10 +43,28 @@ class _TikTokInspirationPageWidgetState
     // Effacer le contexte de personne
     FirebaseDataService.setCurrentPersonContext(null);
 
+    // ✅ IMPORTANT: Ajouter un listener pour forcer le rebuild quand le modèle change
+    _model.addListener(_onModelChanged);
+
     // Charger les favoris existants pour pré-remplir les coeurs
     _loadExistingFavorites();
 
-    _model.loadProducts();
+    // Charger les produits après le premier frame pour garantir que le widget est monté
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _model.loadProducts();
+      }
+    });
+  }
+
+  /// Callback appelé quand le modèle change - force le rebuild
+  void _onModelChanged() {
+    if (mounted) {
+      setState(() {
+        // Force rebuild avec les nouvelles données du modèle
+        print('🔄 [INSPIRATION] Model changed - forcing rebuild');
+      });
+    }
   }
 
   /// Charge les favoris existants pour afficher les coeurs correctement
@@ -76,6 +94,7 @@ class _TikTokInspirationPageWidgetState
 
   @override
   void dispose() {
+    _model.removeListener(_onModelChanged);
     _pageController.dispose();
     _model.dispose();
     super.dispose();

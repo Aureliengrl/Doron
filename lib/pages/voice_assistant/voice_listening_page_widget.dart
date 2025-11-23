@@ -19,11 +19,30 @@ class _VoiceListeningPageWidgetState extends State<VoiceListeningPageWidget> {
   void initState() {
     super.initState();
     _model = VoiceListeningPageModel();
-    _model.initialize();
+
+    // ✅ IMPORTANT: Ajouter un listener pour forcer le rebuild quand le modèle change
+    _model.addListener(_onModelChanged);
+
+    // Initialiser après le premier frame pour garantir que le widget est monté
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _model.initialize();
+      }
+    });
+  }
+
+  /// Callback appelé quand le modèle change - force le rebuild
+  void _onModelChanged() {
+    if (mounted) {
+      setState(() {
+        // Force rebuild avec les nouvelles données du modèle
+      });
+    }
   }
 
   @override
   void dispose() {
+    _model.removeListener(_onModelChanged);
     _model.dispose();
     super.dispose();
   }

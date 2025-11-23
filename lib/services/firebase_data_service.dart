@@ -702,6 +702,8 @@ class FirebaseDataService {
 
   /// Charge toutes les personnes
   static Future<List<Map<String, dynamic>>> loadPeople() async {
+    List<Map<String, dynamic>>? firebasePeople;
+
     // Essayer Firebase si connecté
     if (isLoggedIn) {
       try {
@@ -714,7 +716,7 @@ class FirebaseDataService {
 
         if (snapshot.docs.isNotEmpty) {
           AppLogger.firebase('Loaded ${snapshot.docs.length} people from Firebase');
-          return snapshot.docs.map((doc) {
+          firebasePeople = snapshot.docs.map((doc) {
             return {
               'id': doc.id,
               ...doc.data(),
@@ -726,20 +728,36 @@ class FirebaseDataService {
       }
     }
 
-    // Fallback local
+    // Charger aussi depuis le stockage local
+    List<Map<String, dynamic>> localPeople = [];
     try {
       final prefs = await SharedPreferences.getInstance();
       final peopleJson = prefs.getString('local_people') ?? '[]';
-      final people = (json.decode(peopleJson) as List)
+      localPeople = (json.decode(peopleJson) as List)
           .map((e) => e as Map<String, dynamic>)
           .toList();
-
-      AppLogger.success('Loaded ${people.length} people from local storage', 'Firebase');
-      return people;
+      if (localPeople.isNotEmpty) {
+        AppLogger.success('Loaded ${localPeople.length} people from local storage', 'Firebase');
+      }
     } catch (e) {
       AppLogger.error('Error loading people locally', 'Firebase', e);
-      return [];
     }
+
+    // Fusionner: Firebase a priorité, mais ajouter les personnes locales non présentes dans Firebase
+    if (firebasePeople != null && firebasePeople.isNotEmpty) {
+      // Ajouter les personnes locales qui ne sont pas dans Firebase
+      final firebaseIds = firebasePeople.map((p) => p['id']).toSet();
+      for (var localPerson in localPeople) {
+        if (!firebaseIds.contains(localPerson['id'])) {
+          firebasePeople.add(localPerson);
+          AppLogger.debug('Added local person to list: ${localPerson['id']}', 'Firebase');
+        }
+      }
+      return firebasePeople;
+    }
+
+    // Si Firebase vide ou non connecté, retourner les personnes locales
+    return localPeople;
   }
 
   /// Charge la première personne avec isPendingFirstGen=true

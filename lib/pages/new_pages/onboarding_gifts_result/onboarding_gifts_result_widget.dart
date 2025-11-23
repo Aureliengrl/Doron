@@ -146,6 +146,13 @@ class _OnboardingGiftsResultWidgetState
         profileForGeneration = userProfile;
       }
 
+      // ✅ VÉRIFICATION: S'assurer qu'on a un profil valide
+      if (profileForGeneration == null || profileForGeneration.isEmpty) {
+        print('⚠️ Aucun profil trouvé pour la génération - utilisation du mode découverte');
+        // Utiliser un profil vide mais continuer la génération en mode découverte
+        profileForGeneration = {};
+      }
+
       // Charger les IDs des produits déjà vus pour refresh intelligent
       final prefs = await SharedPreferences.getInstance();
       final seenProductIds = prefs.getStringList('seen_gift_product_ids')
