@@ -77,25 +77,50 @@ class TikTokInspirationPageModel extends ChangeNotifier {
       }
 
       // Convertir au format TikTok et ajouter URLs intelligentes
-      final products = rawProducts.take(20).map((product) {
+      // FIX Bug 4: Améliorer le mapping d'image et filtrer les produits sans image
+      final products = rawProducts.take(30).map((product) {
         // ✅ FIX: Conversion sécurisée du score (peut être int ou double)
         final matchScore = product['_matchScore'];
         final matchScoreDouble = matchScore is int
             ? matchScore.toDouble()
             : (matchScore as double? ?? 0.0);
 
+        // FIX Bug 4: Récupérer l'image depuis plusieurs clés possibles
+        String imageUrl = '';
+        for (final key in ['image', 'imageUrl', 'photo', 'productPhoto', 'product_photo', 'img', 'thumbnail']) {
+          if (product[key] != null && product[key].toString().isNotEmpty) {
+            imageUrl = product[key].toString();
+            break;
+          }
+        }
+
+        // Log pour debug
+        print('🖼️ Produit "${product['name']}": imageUrl = "$imageUrl"');
+
         return {
           'id': product['id'],
           'name': product['name'] ?? 'Produit',
           'brand': product['brand'] ?? '',
           'price': product['price'] ?? 0,
-          'image': product['image'] ?? product['imageUrl'] ?? '',
+          'image': imageUrl, // FIX: Utiliser imageUrl trouvé
           'url': ProductUrlService.generateProductUrl(product),
           'source': product['source'] ?? 'Amazon',
           'categories': product['categories'] ?? [],
           'match': matchScoreDouble.toInt().clamp(0, 100),
         };
-      }).toList();
+      })
+      // FIX Bug 4: Filtrer les produits sans image valide
+      .where((product) {
+        final hasImage = product['image'] != null &&
+                         product['image'].toString().isNotEmpty &&
+                         product['image'].toString().startsWith('http');
+        if (!hasImage) {
+          print('⚠️ Produit "${product['name']}" filtré: pas d\'image valide');
+        }
+        return hasImage;
+      })
+      .take(20) // Garder max 20 produits avec images valides
+      .toList();
 
       print('📦 ${products.length} produits convertis pour affichage');
 

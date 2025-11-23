@@ -146,6 +146,7 @@ class ProductImage extends StatelessWidget {
 }
 
 /// Widget optimisé pour le mode Inspirations (plein écran)
+/// FIX Bug 4: Amélioration du placeholder et de la gestion d'erreur
 class FullscreenProductImage extends StatelessWidget {
   final String imageUrl;
   final double height;
@@ -160,13 +161,124 @@ class FullscreenProductImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CachedImage(
-      imageUrl: imageUrl,
-      height: height,
-      width: double.infinity,
-      fit: BoxFit.cover, // ✅ COVER pour remplir l'écran (Inspirations TikTok)
-      borderRadius: borderRadius,
-      placeholderColor: Colors.grey[900],
+    // FIX Bug 4: Log l'URL pour debug
+    print('🖼️ FullscreenProductImage: chargement de "$imageUrl"');
+
+    // FIX Bug 4: Si URL vide ou invalide, afficher message d'erreur clair
+    if (imageUrl.isEmpty || !imageUrl.startsWith('http')) {
+      print('❌ FullscreenProductImage: URL invalide - "$imageUrl"');
+      return Container(
+        height: height,
+        width: double.infinity,
+        color: Colors.black,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.image_not_supported_outlined,
+                size: 80,
+                color: Colors.white.withOpacity(0.5),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Image non disponible',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: borderRadius ?? BorderRadius.zero,
+      child: CachedNetworkImage(
+        imageUrl: imageUrl,
+        height: height,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        // FIX Bug 4: Placeholder avec loader visible (pas juste gris)
+        placeholder: (context, url) {
+          return Container(
+            height: height,
+            width: double.infinity,
+            color: Colors.black,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SizedBox(
+                    width: 50,
+                    height: 50,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        const Color(0xFF8A2BE2), // Violet de l'app
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Chargement...',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+        // FIX Bug 4: Widget d'erreur visible avec message explicite
+        errorWidget: (context, url, error) {
+          print('❌ FullscreenProductImage: Erreur chargement - $url - $error');
+          return Container(
+            height: height,
+            width: double.infinity,
+            color: Colors.black,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 60,
+                    color: Colors.red.withOpacity(0.7),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Erreur de chargement',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Swipe pour voir le suivant',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.5),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+        fadeInDuration: const Duration(milliseconds: 300),
+        fadeOutDuration: const Duration(milliseconds: 100),
+        maxWidthDiskCache: 1200,
+        maxHeightDiskCache: 1600,
+        memCacheWidth: 1000,
+        memCacheHeight: 1400,
+      ),
     );
   }
 }

@@ -186,27 +186,40 @@ class _TikTokInspirationPageWidgetState
 
         print('✅ Retiré des favoris: $productName');
       } else {
-        // Ajouter aux favoris
+        // FIX: Récupérer l'image depuis plusieurs clés possibles
+        String productImage = '';
+        for (final key in ['image', 'imageUrl', 'photo', 'productPhoto', 'product_photo']) {
+          if (product[key] != null && product[key].toString().isNotEmpty) {
+            productImage = product[key].toString();
+            break;
+          }
+        }
+
+        // Récupérer la marque/source
+        final brandOrSource = product['brand'] ?? product['source'] ?? 'Amazon';
+
+        // Ajouter aux favoris avec toutes les données correctes
         final docRef = await FavouritesRecord.collection.add(
           createFavouritesRecordData(
             uid: currentUserReference,
-            platform: "amazon",
+            platform: brandOrSource.toString().toLowerCase(),
             timeStamp: DateTime.now(),
             personId: null,
             product: ProductsStruct(
               productTitle: productName,
               productPrice: '${product['price'] ?? 0}€',
               productUrl: product['url'] ?? '',
-              productPhoto: product['image'] ?? '',
+              productPhoto: productImage, // FIX: Utiliser productImage trouvé
               productStarRating: '',
               productOriginalPrice: '',
               productNumRatings: 0,
-              platform: "amazon",
+              platform: brandOrSource.toString().toLowerCase(),
             ),
           ),
         );
 
         print('✅ Ajouté aux favoris: $productName (ID: ${docRef.id})');
+        print('✅ Image sauvegardée: $productImage');
 
         // Haptic feedback
         if (mounted) {
