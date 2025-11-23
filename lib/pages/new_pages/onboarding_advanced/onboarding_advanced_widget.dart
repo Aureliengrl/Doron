@@ -379,42 +379,64 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
     final placeholder = stepData['placeholder'] as String? ?? '';
     final currentValue = _model.answers[field] as String? ?? '';
 
+    // FIX Bug 1: Utiliser un ScrollController pour s'assurer que le champ soit visible
+    // quand le clavier s'ouvre
+    final scrollController = ScrollController();
+
+    // Déclencher le scroll automatique après le build pour montrer le champ
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Petit délai pour laisser le clavier s'ouvrir
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (scrollController.hasClients) {
+          scrollController.animateTo(
+            scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
+        }
+      });
+    });
+
     return SingleChildScrollView(
+      controller: scrollController,
+      // Padding réduit en haut, plus de padding en bas pour le clavier
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom + 40,
+        top: 16,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 60,
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          SizedBox(height: MediaQuery.of(context).size.height * 0.15),
+          // Espace réduit en haut (au lieu de 15% de l'écran)
+          const SizedBox(height: 20),
           Text(
             stepData['icon'] as String,
-            style: const TextStyle(fontSize: 80),
+            style: const TextStyle(fontSize: 60), // Taille réduite pour gagner de l'espace
           ),
-          const SizedBox(height: 32),
+          const SizedBox(height: 20),
           Text(
             stepData['question'] as String,
             textAlign: TextAlign.center,
             style: GoogleFonts.poppins(
-              fontSize: 28,
+              fontSize: 24, // Taille réduite pour s'adapter au clavier
               fontWeight: FontWeight.bold,
               color: violetColor,
             ),
           ),
           if (stepData['subtitle'] != null) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Text(
               stepData['subtitle'] as String,
               textAlign: TextAlign.center,
               style: GoogleFonts.poppins(
-                fontSize: 16,
+                fontSize: 14,
                 color: Colors.grey[600],
               ),
             ),
           ],
-          const SizedBox(height: 40),
+          const SizedBox(height: 24),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
+            padding: const EdgeInsets.symmetric(horizontal: 32),
             child: TextFormField(
               key: ValueKey('${field}_${currentValue.hashCode}'),
               initialValue: currentValue,
@@ -455,6 +477,8 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
             ),
           ),
         ),
+        // Espace supplémentaire en bas pour s'assurer que le champ reste visible
+        const SizedBox(height: 40),
         ],
       ),
     );
@@ -743,11 +767,15 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
           ),
         ),
         child: ElevatedButton(
-          onPressed: canProceed
-              ? () {
-                  setState(() {
-                    _model.handleNext(steps, context, skipUserQuestions: skipUserQuestions, returnTo: returnTo, onlyUserQuestions: onlyUserQuestions);
-                  });
+          // FIX Bug 2: Désactiver le bouton si navigation en cours
+          onPressed: (canProceed && !_model.isNavigating)
+              ? () async {
+                  // Attendre correctement handleNext (async)
+                  await _model.handleNext(steps, context, skipUserQuestions: skipUserQuestions, returnTo: returnTo, onlyUserQuestions: onlyUserQuestions);
+                  // Rafraîchir l'UI après la navigation
+                  if (mounted) {
+                    setState(() {});
+                  }
                 }
               : null,
           style: ElevatedButton.styleFrom(

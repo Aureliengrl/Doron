@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class OnboardingAdvancedModel {
   int currentStep = 0;
+  // FIX Bug 2: Variable pour empêcher les doubles clics
+  bool isNavigating = false;
   Map<String, dynamic> answers = {
     // Onboarding "Toi"
     'firstName': '',
@@ -490,7 +492,14 @@ class OnboardingAdvancedModel {
         (fieldValue is! double || fieldValue > 0);
   }
 
-  void handleNext(List<Map<String, dynamic>> steps, BuildContext context, {bool skipUserQuestions = false, String? returnTo, bool onlyUserQuestions = false}) async {
+  Future<void> handleNext(List<Map<String, dynamic>> steps, BuildContext context, {bool skipUserQuestions = false, String? returnTo, bool onlyUserQuestions = false}) async {
+    // FIX Bug 2: Empêcher les doubles clics
+    if (isNavigating) {
+      print('⚠️ Navigation déjà en cours, ignoré');
+      return;
+    }
+    isNavigating = true;
+
     final currentStepData = steps[currentStep];
 
     // ==================== NOUVELLE ARCHITECTURE ====================
@@ -537,6 +546,7 @@ class OnboardingAdvancedModel {
             context.go('/home-pinterest');
           }
         }
+        isNavigating = false; // Reset le flag avant de return
         return; // Arrêter ici, ne pas créer de personne
       }
     }
@@ -544,6 +554,8 @@ class OnboardingAdvancedModel {
 
     if (currentStep < steps.length - 1) {
       currentStep++;
+      isNavigating = false; // FIX Bug 2: Reset le flag après l'incrémentation
+      print('✅ Step avancé: $currentStep');
     } else {
       // Onboarding terminé (fin de l'Étape B)
       print('✅ Onboarding terminé: $answers');
@@ -622,6 +634,7 @@ class OnboardingAdvancedModel {
         }
       } catch (e) {
         print('❌ Erreur sauvegarde onboarding: $e');
+        isNavigating = false; // Reset le flag en cas d'erreur
         // Même en cas d'erreur, on navigue
         if (context.mounted) {
           if (returnTo != null && returnTo.isNotEmpty) {

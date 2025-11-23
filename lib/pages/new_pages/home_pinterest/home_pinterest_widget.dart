@@ -324,23 +324,44 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
   }
 
   /// Toggle favorite avec sauvegarde Firebase ou locale
+  /// FIX Bug 3: Amélioration de la sauvegarde des favoris avec les bonnes données
   Future<void> _toggleFavorite(Map<String, dynamic> product) async {
-    final productId = product['id'] as int;
-    final productTitle = product['name'] ?? '';
+    final productId = product['id'];
+    final productTitle = product['name'] ?? product['title'] ?? '';
     final isCurrentlyLiked = _model.likedProductTitles.contains(productTitle);
     final isLoggedIn = FirebaseAuth.instance.currentUser != null;
 
+    // FIX Bug 3: Récupérer l'image depuis plusieurs clés possibles
+    String productImage = '';
+    for (final key in ['image', 'imageUrl', 'photo', 'productPhoto', 'product_photo']) {
+      if (product[key] != null && product[key].toString().isNotEmpty) {
+        productImage = product[key].toString();
+        break;
+      }
+    }
+
     print('💗 Toggle favori AVANT: isLiked=$isCurrentlyLiked, ID=$productId, Titre=$productTitle');
+    print('💗 Image trouvée: $productImage');
     print('💗 likedProductTitles AVANT: ${_model.likedProductTitles}');
     print('💗 UID: ${FirebaseAuth.instance.currentUser?.uid}');
 
     // Haptic feedback
     HapticFeedback.mediumImpact();
 
+    // FIX Bug 3: Convertir productId en int si nécessaire
+    int productIdInt = 0;
+    if (productId is int) {
+      productIdInt = productId;
+    } else if (productId != null) {
+      productIdInt = int.tryParse(productId.toString()) ?? productTitle.hashCode;
+    } else {
+      productIdInt = productTitle.hashCode; // Fallback sur le hash du titre
+    }
+
     // Toggle l'état local immédiatement pour l'UI
     if (mounted) {
       setState(() {
-        _model.toggleLike(productId, productTitle);
+        _model.toggleLike(productIdInt, productTitle);
         print('💗 likedProductTitles APRÈS toggle: ${_model.likedProductTitles}');
       });
     }
@@ -407,27 +428,36 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
 
         print('✅ Retiré des favoris Firebase: ${product['name']}');
       } else {
-        // Ajouter aux favoris Firebase
+        // FIX Bug 3: Ajouter aux favoris Firebase avec les bonnes données
+        // S'assurer que l'URL est correcte
+        final productUrl = product['url'] ??
+            ProductUrlService.generateProductUrl(product);
+
+        // Récupérer la marque/source
+        final brandOrSource = product['brand'] ?? product['source'] ?? 'Amazon';
+
+        // Créer le favori avec toutes les données correctes
         final docRef = await FavouritesRecord.collection.add(
           createFavouritesRecordData(
             uid: currentUserReference,
-            platform: "amazon",
+            platform: brandOrSource.toString().toLowerCase(),
             timeStamp: DateTime.now(),
             personId: null, // Favoris "en vrac" sans personne
             product: ProductsStruct(
-              productTitle: product['name'] ?? '',
+              productTitle: productTitle,
               productPrice: '${product['price'] ?? 0}€',
-              productUrl: product['url'] ?? '',
-              productPhoto: product['image'] ?? '',
+              productUrl: productUrl,
+              productPhoto: productImage, // FIX: Utiliser productImage trouvé
               productStarRating: '',
               productOriginalPrice: '',
               productNumRatings: 0,
-              platform: "amazon",
+              platform: brandOrSource.toString().toLowerCase(),
             ),
           ),
         );
 
-        print('✅ Ajouté aux favoris Firebase: ${product['name']} (ID: ${docRef.id})');
+        print('✅ Ajouté aux favoris Firebase: $productTitle (ID: ${docRef.id})');
+        print('✅ Image sauvegardée: $productImage');
 
         // Afficher une confirmation
         if (mounted) {
