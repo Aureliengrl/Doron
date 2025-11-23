@@ -69,6 +69,26 @@ class _TikTokInspirationPageWidgetState
 
   /// Charge les favoris existants pour afficher les coeurs correctement
   Future<void> _loadExistingFavorites() async {
+    // ✅ Vérifier si l'utilisateur est connecté avant de charger les favoris Firebase
+    if (currentUserReference == null) {
+      print('⚠️ Utilisateur non connecté - chargement favoris locaux uniquement');
+      // Charger depuis SharedPreferences si non connecté
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final localFavorites = prefs.getStringList('local_favorite_titles') ?? [];
+        if (mounted && localFavorites.isNotEmpty) {
+          setState(() {
+            _model.likedProductTitles.clear();
+            _model.likedProductTitles.addAll(localFavorites);
+          });
+          print('✅ ${localFavorites.length} favoris locaux chargés');
+        }
+      } catch (e) {
+        print('⚠️ Erreur chargement favoris locaux: $e');
+      }
+      return;
+    }
+
     try {
       final favorites = await queryFavouritesRecordOnce(
         queryBuilder: (favoritesRecord) => favoritesRecord
@@ -76,19 +96,21 @@ class _TikTokInspirationPageWidgetState
             .where('personId', isNull: true),
       );
 
-      setState(() {
-        _model.likedProductTitles.clear();
-        for (var fav in favorites) {
-          final productTitle = fav.product.productTitle;
-          if (productTitle.isNotEmpty) {
-            _model.likedProductTitles.add(productTitle);
+      if (mounted) {
+        setState(() {
+          _model.likedProductTitles.clear();
+          for (var fav in favorites) {
+            final productTitle = fav.product.productTitle;
+            if (productTitle.isNotEmpty) {
+              _model.likedProductTitles.add(productTitle);
+            }
           }
-        }
-      });
+        });
+      }
 
-      print('✅ ${_model.likedProductTitles.length} favoris existants chargés');
+      print('✅ ${_model.likedProductTitles.length} favoris Firebase chargés');
     } catch (e) {
-      print('⚠️ Erreur chargement favoris existants: $e');
+      print('⚠️ Erreur chargement favoris Firebase: $e');
     }
   }
 

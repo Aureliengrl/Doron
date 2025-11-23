@@ -27,14 +27,26 @@ class _VoiceAnalysisPageWidgetState extends State<VoiceAnalysisPageWidget> {
   void initState() {
     super.initState();
     _model = VoiceAnalysisPageModel();
-    _model.initialize(widget.transcript);
 
-    // Écouter les changements pour naviguer automatiquement
+    // ✅ IMPORTANT: Ajouter le listener AVANT d'initialiser
+    // pour ne pas manquer les notifications
     _model.addListener(_onModelChanged);
+
+    // Initialiser après le premier frame pour garantir que le widget est monté
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _model.initialize(widget.transcript);
+      }
+    });
   }
 
   void _onModelChanged() async {
     print('🔄 Voice Analysis: Listener déclenché - hasNavigated=$_hasNavigated, isAnalyzing=${_model.isAnalyzing}, hasError=${_model.hasError}, analysisResult=${_model.analysisResult != null ? "PRESENT" : "NULL"}');
+
+    // ✅ Forcer le rebuild pour mettre à jour l'UI
+    if (mounted) {
+      setState(() {});
+    }
 
     if (!_hasNavigated &&
         !_model.isAnalyzing &&
