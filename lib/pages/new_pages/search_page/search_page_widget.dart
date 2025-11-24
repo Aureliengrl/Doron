@@ -784,7 +784,10 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                         onTap: () {
                           if (mounted) {
                             setState(() {
-                              _model.toggleLike(product['id'] as int);
+                              // FIX: Cast sécurisé - ID peut être String ou int
+                              final idRaw = product['id'];
+                              final productId = idRaw is int ? idRaw : (int.tryParse(idRaw.toString()) ?? 0);
+                              _model.toggleLike(productId);
                             });
                             Navigator.pop(context);
                             _showProductDetail(product);
@@ -944,58 +947,6 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                     letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 10),
-
-        // Bouton Assistant Vocal condensé
-        OutlinedButton(
-          onPressed: () {
-            context.push('/voiceListening');
-          },
-          style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(28),
-            ),
-            side: BorderSide(color: violetColor, width: 2),
-            backgroundColor: Colors.white,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.mic, color: violetColor, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'Assistant vocal',
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: violetColor,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 6,
-                  vertical: 2,
-                ),
-                decoration: BoxDecoration(
-                  color: violetColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  'BÊTA',
-                  style: GoogleFonts.poppins(
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    color: violetColor,
-                    letterSpacing: 0.3,
                   ),
                 ),
               ),

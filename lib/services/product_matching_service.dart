@@ -277,12 +277,20 @@ class ProductMatchingService {
         relevantProducts = scoredProducts.where((p) => (p['_matchScore'] as double) > -1000).toList();
         AppLogger.info('📊 Filtrage par score: ${relevantProducts.length} produits après exclusion (${excludedProducts.length} exclus)', 'Matching');
 
-        // 🆘 FALLBACK CRITIQUE: Si TOUS les produits sont exclus, on prend quand même les meilleurs
-        // Ça arrive si l'utilisateur est homme et TOUS les produits Firebase sont pour femme (ou inverse)
+        // 🆘 FALLBACK CRITIQUE: Si TOUS les produits sont exclus
+        // ⚠️ EN MODE PERSON: PAS DE FALLBACK - On préfère 0 produits plutôt que des produits du mauvais genre
         if (relevantProducts.isEmpty && scoredProducts.isNotEmpty) {
-          AppLogger.error('⚠️ TOUS LES PRODUITS EXCLUS ! Fallback: on prend les ${count} meilleurs scores quand même', 'Matching');
-          relevantProducts = scoredProducts.take(count * 3).toList(); // Prendre 3x plus pour avoir du choix après shuffle
-          AppLogger.warning('🆘 FALLBACK ACTIVÉ: ${relevantProducts.length} produits avec meilleurs scores (même négatifs)', 'Matching');
+          if (filteringMode == "person") {
+            AppLogger.error('❌ TOUS LES PRODUITS EXCLUS en mode PERSON - PAS de fallback pour garantir pertinence genre', 'Matching');
+            AppLogger.warning('📝 Vérifiez que la base Firebase contient des produits pour ce genre', 'Matching');
+            // On retourne une liste vide - l'utilisateur verra "Aucun produit trouvé"
+            // C'est mieux que de montrer des produits du mauvais genre
+          } else {
+            // En mode home/discovery, on peut faire un fallback
+            AppLogger.error('⚠️ TOUS LES PRODUITS EXCLUS ! Fallback: on prend les ${count} meilleurs scores quand même', 'Matching');
+            relevantProducts = scoredProducts.take(count * 3).toList(); // Prendre 3x plus pour avoir du choix après shuffle
+            AppLogger.warning('🆘 FALLBACK ACTIVÉ: ${relevantProducts.length} produits avec meilleurs scores (même négatifs)', 'Matching');
+          }
         }
 
         // Log sample de produits gardés pour debug
@@ -682,9 +690,46 @@ class ProductMatchingService {
       final productGenderTags = allProductTags.where((t) => t.toLowerCase().startsWith('gender_')).map((t) => t.toLowerCase()).toList();
 
       if (productGenderTags.isEmpty) {
-        // Produit sans tag de genre => considéré universel, très bon
-        print('⚠️ Produit sans genre, considéré comme universel: +80');
-        score += 80.0;
+        // Produit sans tag de genre
+        if (isPersonMode) {
+          // 🔒 MODE PERSON STRICT: Essayer de deviner le genre depuis le nom/catégories
+          final productName = (product['name'] ?? '').toString().toLowerCase();
+          final productCategories = (product['categories'] as List?)?.cast<String>().join(' ').toLowerCase() ?? '';
+          final allText = '$productName $productCategories';
+
+          // Mots-clés pour femmes (robes, bijoux, maquillage, etc.)
+          final feminineKeywords = ['robe', 'dress', 'jupe', 'skirt', 'talons', 'heels', 'sac à main', 'handbag',
+            'maquillage', 'makeup', 'rouge à lèvres', 'lipstick', 'mascara', 'vernis', 'nail',
+            'lingerie', 'soutien-gorge', 'bra', 'culotte', 'panty', 'collant', 'tights',
+            'bijou femme', 'women jewelry', 'boucles d\'oreilles', 'earrings', 'bracelet femme',
+            'parfum femme', 'women perfume', 'soin visage femme', 'crème anti-rides'];
+
+          // Mots-clés pour hommes
+          final masculineKeywords = ['cravate', 'tie', 'costume homme', 'men suit', 'rasoir', 'razor', 'shaver',
+            'barbe', 'beard', 'after shave', 'aftershave', 'montre homme', 'men watch',
+            'portefeuille homme', 'men wallet', 'ceinture homme', 'men belt',
+            'parfum homme', 'men cologne', 'eau de toilette homme'];
+
+          final isFeminine = feminineKeywords.any((kw) => allText.contains(kw));
+          final isMasculine = masculineKeywords.any((kw) => allText.contains(kw));
+
+          if (userGender == 'gender_homme' && isFeminine && !isMasculine) {
+            print('❌ PRODUIT FÉMININ DÉTECTÉ pour recherche homme: "$productName" => EXCLUSION');
+            return -10000.0;
+          }
+          if (userGender == 'gender_femme' && isMasculine && !isFeminine) {
+            print('❌ PRODUIT MASCULIN DÉTECTÉ pour recherche femme: "$productName" => EXCLUSION');
+            return -10000.0;
+          }
+
+          // Si pas de mot-clé détecté, on accepte avec un petit bonus (universel)
+          print('⚠️ Produit sans genre détectable, considéré universel: +30');
+          score += 30.0;
+        } else {
+          // Autres modes: considéré universel avec bonus
+          print('⚠️ Produit sans genre, considéré comme universel: +80');
+          score += 80.0;
+        }
       } else if (productGenderTags.contains(userGender)) {
         // Match exact du genre
         print('✅ GENRE MATCH: $userGender = +100 points');

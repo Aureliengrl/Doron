@@ -305,7 +305,9 @@ $allBrandsString
   /// Cadeaux de secours si OpenAI échoue
   static List<Map<String, dynamic>> _getFallbackGifts(
       Map<String, dynamic> answers) {
-    final budget = (answers['budget'] ?? 50) as double;
+    // FIX: Cast sécurisé - budget peut être int, double ou String
+    final budgetRaw = answers['budget'] ?? 50;
+    final budget = budgetRaw is double ? budgetRaw : (budgetRaw is int ? budgetRaw.toDouble() : 50.0);
 
     return [
       {

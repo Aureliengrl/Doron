@@ -338,7 +338,9 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
 
   Widget _buildGiftCard(Map<String, dynamic> gift, int index) {
     final isLiked = _model.likedGifts.contains(gift['id']);
-    final matchPercent = gift['match'] as int;
+    // FIX: Cast sécurisé pour éviter crash si type inattendu
+    final matchRaw = gift['match'];
+    final matchPercent = matchRaw is int ? matchRaw : (matchRaw is double ? matchRaw.toInt() : 85);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -484,7 +486,10 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
                               child: InkWell(
                                 onTap: () {
                                   setState(() {
-                                    _model.toggleLike(gift['id'] as int);
+                                    // FIX: Cast sécurisé - ID peut être int, String ou autre
+                                    final idRaw = gift['id'];
+                                    final giftId = idRaw is int ? idRaw : (int.tryParse(idRaw.toString()) ?? 0);
+                                    _model.toggleLike(giftId);
                                   });
                                 },
                                 borderRadius: BorderRadius.circular(50),
@@ -570,7 +575,9 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
 
   void _showGiftDetail(Map<String, dynamic> gift) {
     final isLiked = _model.likedGifts.contains(gift['id']);
-    final matchPercent = gift['match'] as int;
+    // FIX: Cast sécurisé pour éviter crash
+    final matchRaw = gift['match'];
+    final matchPercent = matchRaw is int ? matchRaw : (matchRaw is double ? matchRaw.toInt() : 85);
 
     showDialog(
       context: context,
@@ -740,7 +747,10 @@ class _GiftResultsWidgetState extends State<GiftResultsWidget>
                             onPressed: () {
                               if (mounted) {
                                 setState(() {
-                                  _model.toggleLike(gift['id'] as int);
+                                  // FIX: Cast sécurisé
+                                  final idRaw = gift['id'];
+                                  final giftId = idRaw is int ? idRaw : (int.tryParse(idRaw.toString()) ?? 0);
+                                  _model.toggleLike(giftId);
                                 });
                                 context.pop();
                               }
