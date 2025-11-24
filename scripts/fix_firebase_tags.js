@@ -165,13 +165,14 @@ function detectCategory(productName, productDescription, existingCategories) {
 
 /**
  * Calcule le tag de budget basé sur le prix
+ * IMPORTANT: Doit correspondre EXACTEMENT aux tags de l'app
+ * Voir lib/services/tags_definitions.dart ligne 33-38
  */
 function getBudgetTag(price) {
   if (price < 50) return 'budget_0_50';
   if (price < 100) return 'budget_50_100';
   if (price < 200) return 'budget_100_200';
-  if (price < 500) return 'budget_200_500';
-  return 'budget_500_plus';
+  return 'budget_200+';  // ← EXACTEMENT comme dans l'app
 }
 
 /**
@@ -262,11 +263,22 @@ async function processProduct(doc) {
     } else if (existingBudgetTags.length > 0 && price > 0) {
       // Vérifier si le budget est cohérent avec le prix
       const correctBudget = getBudgetTag(price);
-      if (!existingBudgetTags.includes(correctBudget)) {
+
+      // IMPORTANT: Corriger les anciens formats incorrects
+      // budget_200_500, budget_500_plus → budget_200+
+      const needsCorrection = existingBudgetTags.some(tag =>
+        tag === 'budget_200_500' ||
+        tag === 'budget_500_plus' ||
+        tag === 'budget_500+' ||
+        !existingBudgetTags.includes(correctBudget)
+      );
+
+      if (needsCorrection) {
         existingBudgetTags.forEach(tag => newTags.delete(tag));
         newTags.add(correctBudget);
         modified = true;
-        issuesFound.push(`Correction budget: ${existingBudgetTags[0]} → ${correctBudget}`);
+        issuesFound.push(`Correction budget: ${existingBudgetTags[0]} → ${correctBudget} (${price}€)`);
+        console.log(`  💰 "${productName}" → ${correctBudget} (était ${existingBudgetTags[0]}, prix: ${price}€)`);
       }
     }
 
