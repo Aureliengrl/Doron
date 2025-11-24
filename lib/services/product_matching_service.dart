@@ -277,19 +277,24 @@ class ProductMatchingService {
         relevantProducts = scoredProducts.where((p) => (p['_matchScore'] as double) > -1000).toList();
         AppLogger.info('📊 Filtrage par score: ${relevantProducts.length} produits après exclusion (${excludedProducts.length} exclus)', 'Matching');
 
-        // 🆘 FALLBACK CRITIQUE: Si TOUS les produits sont exclus
-        // ⚠️ EN MODE PERSON: PAS DE FALLBACK - On préfère 0 produits plutôt que des produits du mauvais genre
+        // 🆘 FALLBACK: Si TOUS les produits sont exclus (score <= -1000)
+        // Cela signifie que TOUS ont le mauvais genre explicite
         if (relevantProducts.isEmpty && scoredProducts.isNotEmpty) {
-          if (filteringMode == "person") {
-            AppLogger.error('❌ TOUS LES PRODUITS EXCLUS en mode PERSON - PAS de fallback pour garantir pertinence genre', 'Matching');
-            AppLogger.warning('📝 Vérifiez que la base Firebase contient des produits pour ce genre', 'Matching');
-            // On retourne une liste vide - l'utilisateur verra "Aucun produit trouvé"
-            // C'est mieux que de montrer des produits du mauvais genre
+          AppLogger.warning('⚠️ TOUS LES PRODUITS EXCLUS par filtrage genre strict', 'Matching');
+          AppLogger.warning('📝 Prendre les meilleurs scores parmi les non-exclus ou les produits universels', 'Matching');
+
+          // Chercher les produits avec score > -5000 (exclus mais pas pour genre explicite)
+          // Les produits à -10000 ont un tag genre_homme/gender_femme explicite qui ne correspond pas
+          // Les produits neutres/universels auront un score positif
+          final lessStrictProducts = scoredProducts.where((p) => (p['_matchScore'] as double) > -5000).toList();
+
+          if (lessStrictProducts.isNotEmpty) {
+            relevantProducts = lessStrictProducts;
+            AppLogger.info('🆘 FALLBACK: ${relevantProducts.length} produits avec score > -5000', 'Matching');
           } else {
-            // En mode home/discovery, on peut faire un fallback
-            AppLogger.error('⚠️ TOUS LES PRODUITS EXCLUS ! Fallback: on prend les ${count} meilleurs scores quand même', 'Matching');
-            relevantProducts = scoredProducts.take(count * 3).toList(); // Prendre 3x plus pour avoir du choix après shuffle
-            AppLogger.warning('🆘 FALLBACK ACTIVÉ: ${relevantProducts.length} produits avec meilleurs scores (même négatifs)', 'Matching');
+            // Vraiment aucun produit compatible - prendre les meilleurs quand même
+            relevantProducts = scoredProducts.take(count * 2).toList();
+            AppLogger.warning('🆘 FALLBACK ULTIME: ${relevantProducts.length} meilleurs produits (même mauvais genre)', 'Matching');
           }
         }
 
@@ -690,46 +695,33 @@ class ProductMatchingService {
       final productGenderTags = allProductTags.where((t) => t.toLowerCase().startsWith('gender_')).map((t) => t.toLowerCase()).toList();
 
       if (productGenderTags.isEmpty) {
-        // Produit sans tag de genre
-        if (isPersonMode) {
-          // 🔒 MODE PERSON STRICT: Essayer de deviner le genre depuis le nom/catégories
-          final productName = (product['name'] ?? '').toString().toLowerCase();
-          final productCategories = (product['categories'] as List?)?.cast<String>().join(' ').toLowerCase() ?? '';
-          final allText = '$productName $productCategories';
+        // Produit sans tag de genre explicite
+        // 🔒 On essaie de deviner le genre depuis le nom (MOTS-CLÉS TRÈS SPÉCIFIQUES uniquement)
+        final productName = (product['name'] ?? '').toString().toLowerCase();
 
-          // Mots-clés pour femmes (robes, bijoux, maquillage, etc.)
-          final feminineKeywords = ['robe', 'dress', 'jupe', 'skirt', 'talons', 'heels', 'sac à main', 'handbag',
-            'maquillage', 'makeup', 'rouge à lèvres', 'lipstick', 'mascara', 'vernis', 'nail',
-            'lingerie', 'soutien-gorge', 'bra', 'culotte', 'panty', 'collant', 'tights',
-            'bijou femme', 'women jewelry', 'boucles d\'oreilles', 'earrings', 'bracelet femme',
-            'parfum femme', 'women perfume', 'soin visage femme', 'crème anti-rides'];
+        // Mots-clés TRÈS SPÉCIFIQUES pour femmes (exclusion forte)
+        final strongFeminineKeywords = ['robe de soirée', 'jupe', 'lingerie', 'soutien-gorge',
+          'culotte femme', 'collant', 'maquillage', 'rouge à lèvres', 'mascara'];
 
-          // Mots-clés pour hommes
-          final masculineKeywords = ['cravate', 'tie', 'costume homme', 'men suit', 'rasoir', 'razor', 'shaver',
-            'barbe', 'beard', 'after shave', 'aftershave', 'montre homme', 'men watch',
-            'portefeuille homme', 'men wallet', 'ceinture homme', 'men belt',
-            'parfum homme', 'men cologne', 'eau de toilette homme'];
+        // Mots-clés TRÈS SPÉCIFIQUES pour hommes (exclusion forte)
+        final strongMasculineKeywords = ['cravate', 'rasoir électrique', 'tondeuse barbe',
+          'after shave', 'costume homme'];
 
-          final isFeminine = feminineKeywords.any((kw) => allText.contains(kw));
-          final isMasculine = masculineKeywords.any((kw) => allText.contains(kw));
+        final isStrongFeminine = strongFeminineKeywords.any((kw) => productName.contains(kw));
+        final isStrongMasculine = strongMasculineKeywords.any((kw) => productName.contains(kw));
 
-          if (userGender == 'gender_homme' && isFeminine && !isMasculine) {
-            print('❌ PRODUIT FÉMININ DÉTECTÉ pour recherche homme: "$productName" => EXCLUSION');
-            return -10000.0;
-          }
-          if (userGender == 'gender_femme' && isMasculine && !isFeminine) {
-            print('❌ PRODUIT MASCULIN DÉTECTÉ pour recherche femme: "$productName" => EXCLUSION');
-            return -10000.0;
-          }
-
-          // Si pas de mot-clé détecté, on accepte avec un petit bonus (universel)
-          print('⚠️ Produit sans genre détectable, considéré universel: +30');
-          score += 30.0;
-        } else {
-          // Autres modes: considéré universel avec bonus
-          print('⚠️ Produit sans genre, considéré comme universel: +80');
-          score += 80.0;
+        if (userGender == 'gender_homme' && isStrongFeminine) {
+          print('❌ PRODUIT CLAIREMENT FÉMININ pour recherche homme: "$productName" => EXCLUSION');
+          return -10000.0;
         }
+        if (userGender == 'gender_femme' && isStrongMasculine) {
+          print('❌ PRODUIT CLAIREMENT MASCULIN pour recherche femme: "$productName" => EXCLUSION');
+          return -10000.0;
+        }
+
+        // Sinon: produit sans genre clair = UNIVERSEL (bon score)
+        print('📝 Produit sans genre explicite, considéré universel: +50');
+        score += 50.0;
       } else if (productGenderTags.contains(userGender)) {
         // Match exact du genre
         print('✅ GENRE MATCH: $userGender = +100 points');
@@ -769,9 +761,9 @@ class ProductMatchingService {
       score += 50.0;
     }
 
-    // 🔒 2. ÂGE (SCORING uniquement, PLUS JAMAIS d'exclusion)
+    // 🔒 2. ÂGE (SCORING UNIQUEMENT - JAMAIS d'exclusion)
     final age = userTags['age'] ?? userTags['recipientAge'];
-    if (age != null && !isDiscoveryMode) {
+    if (age != null) {
       final ageInt = int.tryParse(age.toString()) ?? 0;
       if (ageInt > 0) {
         // Déterminer la tranche d'âge de l'utilisateur
@@ -791,29 +783,18 @@ class ProductMatchingService {
 
         if (productAgeTags.isNotEmpty) {
           if (productAgeTags.contains(userAgeTag)) {
-            // Match exact de la tranche d'âge
+            // Match exact de la tranche d'âge = BONUS
             print('✅ ÂGE MATCH: $userAgeTag ($ageInt ans) = +50 points');
             score += 50.0;
           } else {
-            // Âge ne correspond pas
-            if (isPersonMode) {
-              // Person: EXCLUSION STRICTE pour recherche de personne spécifique
-              print('❌ ÂGE NE CORRESPOND PAS (person): $userAgeTag ($ageInt ans) ≠ ${productAgeTags.join(", ")} => EXCLUSION');
-              return -10000.0;
-            } else if (isHomeMode) {
-              // Home: Pénalité importante mais pas d'exclusion
-              print('⚠️ ÂGE NE CORRESPOND PAS (home): $userAgeTag ≠ ${productAgeTags.join(", ")} => Pénalité -35');
-              score -= 35.0;
-            } else {
-              // Discovery: pénalité modérée
-              print('⚠️ ÂGE NE CORRESPOND PAS (discovery): $userAgeTag ≠ ${productAgeTags.join(", ")} => Pénalité -25');
-              score -= 25.0;
-            }
+            // Âge ne correspond pas = petite pénalité (PAS d'exclusion)
+            print('⚠️ ÂGE différent: $userAgeTag ≠ ${productAgeTags.join(", ")} => -15 points');
+            score -= 15.0;
           }
         } else {
-          // Produit sans tag d'âge => bonus car universel
-          print('📝 Produit sans tag âge (universel): +15');
-          score += 15.0;
+          // Produit sans tag d'âge => neutre
+          print('📝 Produit sans tag âge (universel): +10');
+          score += 10.0;
         }
       }
     }
