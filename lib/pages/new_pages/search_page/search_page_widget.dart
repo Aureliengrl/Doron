@@ -615,7 +615,7 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Image avec bouton coeur
+              // Image avec bouton coeur CLIQUABLE
               Stack(
                 children: [
                   ProductImage(
@@ -626,32 +626,52 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                       topRight: Radius.circular(20),
                     ),
                   ),
-                  // Bouton coeur - affiche rouge si déjà liké dans Firebase
-                  if (isLikedInFirebase)
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.favorite,
-                          color: Colors.white,
-                          size: 18,
+                  // Bouton coeur CLIQUABLE - toujours visible
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () async {
+                          // Récupérer l'ID du produit de manière sécurisée
+                          final idRaw = product['id'];
+                          final productId = idRaw is int ? idRaw : (int.tryParse(idRaw.toString()) ?? idRaw.hashCode);
+
+                          // Toggle le like avec les données du produit
+                          await _model.toggleLike(productId, product);
+
+                          // Rafraîchir l'UI
+                          if (mounted) {
+                            setState(() {});
+                          }
+                        },
+                        borderRadius: BorderRadius.circular(50),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: isLikedInFirebase
+                                ? Colors.red
+                                : Colors.white.withOpacity(0.95),
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            isLikedInFirebase ? Icons.favorite : Icons.favorite_border,
+                            color: isLikedInFirebase ? Colors.white : Colors.black54,
+                            size: 18,
+                          ),
                         ),
                       ),
                     ),
+                  ),
                 ],
               ),
 
@@ -728,7 +748,9 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
   }
 
   void _showProductDetail(Map<String, dynamic> product) {
-    final isLiked = _model.likedProducts.contains(product['id']);
+    // Vérifier si ce produit est dans les favoris Firebase (basé sur le titre)
+    final productName = product['name'] as String? ?? product['title'] as String? ?? '';
+    final isLiked = _model.isProductLiked(productName);
 
     showDialog(
       context: context,
@@ -781,14 +803,17 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        onTap: () {
+                        onTap: () async {
+                          // FIX: Cast sécurisé - ID peut être String ou int
+                          final idRaw = product['id'];
+                          final productId = idRaw is int ? idRaw : (int.tryParse(idRaw.toString()) ?? idRaw.hashCode);
+
+                          // Toggle le like avec les données du produit (async)
+                          await _model.toggleLike(productId, product);
+
+                          // Rafraîchir la page principale et le dialog
                           if (mounted) {
-                            setState(() {
-                              // FIX: Cast sécurisé - ID peut être String ou int
-                              final idRaw = product['id'];
-                              final productId = idRaw is int ? idRaw : (int.tryParse(idRaw.toString()) ?? 0);
-                              _model.toggleLike(productId);
-                            });
+                            setState(() {});
                             Navigator.pop(context);
                             _showProductDetail(product);
                           }
