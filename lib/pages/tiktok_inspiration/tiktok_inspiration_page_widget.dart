@@ -3,20 +3,16 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/backend/backend.dart';
 import '/backend/schema/structs/index.dart';
-import '/backend/schema/enums/enums.dart';
-import '/components/cached_image.dart';
-import '/services/firebase_data_service.dart';
 import 'tiktok_inspiration_page_model.dart';
 export 'tiktok_inspiration_page_model.dart';
 
-/// Page TikTok Inspiration (BÊTA)
-/// Swipe vertical entre produits, swipe horizontal entre photos
+/// Mode Inspiration - TikTok Style SIMPLIFIÉ
+/// Swipe vertical entre produits, clic pour voir la fiche
 class TikTokInspirationPageWidget extends StatefulWidget {
   const TikTokInspirationPageWidget({super.key});
 
@@ -24,16 +20,15 @@ class TikTokInspirationPageWidget extends StatefulWidget {
   static String routePath = '/inspiration';
 
   @override
-  State<TikTokInspirationPageWidget> createState() =>
-      _TikTokInspirationPageWidgetState();
+  State<TikTokInspirationPageWidget> createState() => _TikTokInspirationPageWidgetState();
 }
 
-class _TikTokInspirationPageWidgetState
-    extends State<TikTokInspirationPageWidget> {
+class _TikTokInspirationPageWidgetState extends State<TikTokInspirationPageWidget> {
   late TikTokInspirationPageModel _model;
   late PageController _pageController;
 
-  final Color violetColor = const Color(0xFF8A2BE2);
+  static const Color _violetColor = Color(0xFF8A2BE2);
+  static const Color _pinkColor = Color(0xFFEC4899);
 
   @override
   void initState() {
@@ -41,77 +36,20 @@ class _TikTokInspirationPageWidgetState
     _model = TikTokInspirationPageModel();
     _pageController = PageController();
 
-    // Effacer le contexte de personne
-    FirebaseDataService.setCurrentPersonContext(null);
-
-    // ✅ IMPORTANT: Ajouter un listener pour forcer le rebuild quand le modèle change
-    _model.addListener(_onModelChanged);
-
-    // Charger les favoris existants pour pré-remplir les coeurs
-    _loadExistingFavorites();
-
-    // Charger les produits après le premier frame pour garantir que le widget est monté
+    // Charger les produits après le premier frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _model.loadProducts();
       }
     });
+
+    // Écouter les changements du model
+    _model.addListener(_onModelChanged);
   }
 
-  /// Callback appelé quand le modèle change - force le rebuild
   void _onModelChanged() {
     if (mounted) {
-      setState(() {
-        // Force rebuild avec les nouvelles données du modèle
-        print('🔄 [INSPIRATION] Model changed - forcing rebuild');
-      });
-    }
-  }
-
-  /// Charge les favoris existants pour afficher les coeurs correctement
-  Future<void> _loadExistingFavorites() async {
-    // ✅ Vérifier si l'utilisateur est connecté avant de charger les favoris Firebase
-    if (currentUserReference == null) {
-      print('⚠️ Utilisateur non connecté - chargement favoris locaux uniquement');
-      // Charger depuis SharedPreferences si non connecté
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        final localFavorites = prefs.getStringList('local_favorite_titles') ?? [];
-        if (mounted && localFavorites.isNotEmpty) {
-          setState(() {
-            _model.likedProductTitles.clear();
-            _model.likedProductTitles.addAll(localFavorites);
-          });
-          print('✅ ${localFavorites.length} favoris locaux chargés');
-        }
-      } catch (e) {
-        print('⚠️ Erreur chargement favoris locaux: $e');
-      }
-      return;
-    }
-
-    try {
-      final favorites = await queryFavouritesRecordOnce(
-        queryBuilder: (favoritesRecord) => favoritesRecord
-            .where('uid', isEqualTo: currentUserReference)
-            .where('personId', isNull: true),
-      );
-
-      if (mounted) {
-        setState(() {
-          _model.likedProductTitles.clear();
-          for (var fav in favorites) {
-            final productTitle = fav.product.productTitle;
-            if (productTitle.isNotEmpty) {
-              _model.likedProductTitles.add(productTitle);
-            }
-          }
-        });
-      }
-
-      print('✅ ${_model.likedProductTitles.length} favoris Firebase chargés');
-    } catch (e) {
-      print('⚠️ Erreur chargement favoris Firebase: $e');
+      setState(() {});
     }
   }
 
@@ -123,370 +61,58 @@ class _TikTokInspirationPageWidgetState
     super.dispose();
   }
 
-  /// Toggle favorite avec sauvegarde Firebase
-  Future<void> _toggleFavorite(Map<String, dynamic> product) async {
-    // ✅ VÉRIFICATION D'AUTHENTIFICATION
-    if (currentUserReference == null) {
-      print('⚠️ Utilisateur non connecté, impossible de liker');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '🔐 Veuillez vous connecter pour ajouter aux favoris',
-              style: GoogleFonts.poppins(),
-            ),
-            backgroundColor: Colors.orange[700],
-            duration: const Duration(seconds: 3),
-            action: SnackBarAction(
-              label: 'Se connecter',
-              textColor: Colors.white,
-              onPressed: () {
-                // ✅ FIX: Utiliser GoRouter au lieu de Navigator pour la cohérence
-                context.push('/authentification');
-              },
-            ),
-          ),
-        );
-      }
-      return;
-    }
-
-    final productName = product['name'] as String? ?? '';
-    final isCurrentlyLiked = _model.likedProductTitles.contains(productName);
-
-    print('💗 Toggle favori (Inspiration) AVANT: isLiked=$isCurrentlyLiked, Produit=$productName');
-    print('💗 UID: $currentUserUid');
-
-    setState(() {
-      if (isCurrentlyLiked) {
-        _model.likedProductTitles.remove(productName);
-      } else {
-        _model.likedProductTitles.add(productName);
-      }
-    });
-
-    // Haptic feedback
-    HapticFeedback.mediumImpact();
-
-    try {
-      if (isCurrentlyLiked) {
-        // Retirer des favoris
-        final favorites = await queryFavouritesRecordOnce(
-          queryBuilder: (favoritesRecord) => favoritesRecord
-              .where('uid', isEqualTo: currentUserReference)
-              .where('product.product_title', isEqualTo: productName),
-        );
-
-        for (var fav in favorites) {
-          if (!fav.hasPersonId() || fav.personId == null || fav.personId!.isEmpty) {
-            await fav.reference.delete();
-            print('✅ Favori supprimé: ${fav.reference.id}');
-          }
-        }
-
-        print('✅ Retiré des favoris: $productName');
-      } else {
-        // FIX: Récupérer l'image depuis plusieurs clés possibles
-        String productImage = '';
-        for (final key in ['image', 'imageUrl', 'photo', 'productPhoto', 'product_photo']) {
-          if (product[key] != null && product[key].toString().isNotEmpty) {
-            productImage = product[key].toString();
-            break;
-          }
-        }
-
-        // Récupérer la marque/source
-        final brandOrSource = product['brand'] ?? product['source'] ?? 'Amazon';
-
-        // Ajouter aux favoris avec toutes les données correctes
-        final docRef = await FavouritesRecord.collection.add(
-          createFavouritesRecordData(
-            uid: currentUserReference,
-            platform: brandOrSource.toString().toLowerCase(),
-            timeStamp: DateTime.now(),
-            personId: null,
-            product: ProductsStruct(
-              productTitle: productName,
-              productPrice: '${product['price'] ?? 0}€',
-              productUrl: product['url'] ?? '',
-              productPhoto: productImage, // FIX: Utiliser productImage trouvé
-              productStarRating: '',
-              productOriginalPrice: '',
-              productNumRatings: 0,
-              platform: brandOrSource.toString().toLowerCase(),
-            ),
-          ),
-        );
-
-        print('✅ Ajouté aux favoris: $productName (ID: ${docRef.id})');
-        print('✅ Image sauvegardée: $productImage');
-
-        // Haptic feedback
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '❤️ Ajouté aux favoris !',
-                style: GoogleFonts.poppins(),
-              ),
-              backgroundColor: const Color(0xFF10B981),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      }
-    } catch (e, stackTrace) {
-      print('❌ Erreur toggle favori: $e');
-      print('Stack trace: $stackTrace');
-      // Revenir à l'état précédent
-      setState(() {
-        if (isCurrentlyLiked) {
-          _model.likedProductTitles.add(productName);
-        } else {
-          _model.likedProductTitles.remove(productName);
-        }
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider.value(
-      value: _model,
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: SafeArea(
-          child: Consumer<TikTokInspirationPageModel>(
-            builder: (context, model, child) {
-              // 🔍 LOGS DÉTAILLÉS pour diagnostic
-              print('🎬 [INSPIRATION BUILD] État du modèle:');
-              print('   - isLoading: ${model.isLoading}');
-              print('   - hasError: ${model.hasError}');
-              print('   - products.length: ${model.products.length}');
-              print('   - products.isEmpty: ${model.products.isEmpty}');
-              if (model.hasError) {
-                print('   - errorMessage: ${model.errorMessage}');
-                print('   - errorDetails: ${model.errorDetails}');
-              }
-
-              // État de chargement
-              if (model.isLoading) {
-                print('   → Affichage LOADING STATE');
-                return _buildLoadingState();
-              }
-
-              // État d'erreur
-              if (model.hasError) {
-                print('   → Affichage ERROR STATE');
-                return _buildErrorState(model);
-              }
-
-              // Aucun produit
-              if (model.products.isEmpty) {
-                print('   → Affichage EMPTY STATE');
-                return _buildEmptyState();
-              }
-
-              // PageView vertical plein écran
-              print('   → Affichage PRODUCTS (${model.products.length} produits)');
-
-              // FIX CRASH: Vérification de sécurité avant d'afficher les produits
-              if (model.products.isEmpty) {
-                print('   ⚠️ FALLBACK: products vide après vérification');
-                return _buildEmptyState();
-              }
-
-              return Stack(
-              children: [
-                PageView.builder(
-                  controller: _pageController,
-                  scrollDirection: Axis.vertical,
-                  itemCount: model.products.length,
-                  onPageChanged: (index) {
-                    model.setCurrentProductIndex(index);
-                  },
-                  itemBuilder: (context, index) {
-                    // FIX CRASH: Try-catch pour capturer l'erreur exacte du builder
-                    try {
-                      // Vérifier index bounds
-                      if (index < 0 || index >= model.products.length) {
-                        print('❌ [INSPIRATION] Index out of bounds: $index / ${model.products.length}');
-                        return Container(
-                          color: Colors.red.shade900,
-                          child: Center(
-                            child: Text(
-                              'Index Error: $index / ${model.products.length}',
-                              style: const TextStyle(color: Colors.white, fontSize: 16),
-                            ),
-                          ),
-                        );
-                      }
-
-                      final product = model.products[index];
-
-                      // Vérifier que le produit n'est pas null
-                      if (product == null) {
-                        print('❌ [INSPIRATION] Product is null at index $index');
-                        return Container(
-                          color: Colors.red.shade900,
-                          child: const Center(
-                            child: Text(
-                              'Product is null',
-                              style: TextStyle(color: Colors.white, fontSize: 16),
-                            ),
-                          ),
-                        );
-                      }
-
-                      return _buildFullscreenProductCard(product);
-                    } catch (e, stackTrace) {
-                      // FIX: Capturer et afficher l'erreur exacte
-                      print('❌ [INSPIRATION] CRASH dans itemBuilder:');
-                      print('   Error: $e');
-                      print('   Stack: ${stackTrace.toString().split('\n').take(10).join('\n')}');
-
-                      return Container(
-                        color: Colors.red.shade900,
-                        padding: const EdgeInsets.all(20),
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.error, color: Colors.white, size: 50),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'CRASH CAPTURÉ',
-                                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 12),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.black54,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  e.toString(),
-                                  style: const TextStyle(color: Colors.yellow, fontSize: 12, fontFamily: 'monospace'),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-                  },
-                ),
-
-                // Bouton retour en haut à gauche
-                SafeArea(
-                  child: Positioned(
-                    top: 16,
-                    left: 16,
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        onTap: () => Navigator.pop(context),
-                        borderRadius: BorderRadius.circular(50),
-                        child: Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.5),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: const Icon(
-                            Icons.arrow_back,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-
-                // Indicateur de progression sur le côté droit
-                SafeArea(
-                  child: Positioned(
-                    right: 12,
-                    top: 100,
-                    bottom: 100,
-                    child: Container(
-                      width: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                      child: FractionallySizedBox(
-                        alignment: Alignment.topCenter,
-                        // FIX: Éviter division par zéro si products.length == 0
-                        heightFactor: model.products.isNotEmpty
-                            ? (model.currentProductIndex + 1) / model.products.length
-                            : 0.0,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Color(0xFFEC4899),
-                                Color(0xFF8A2BE2),
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            );
-            },
-          ),
-        ),
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: _buildContent(),
       ),
     );
   }
 
+  Widget _buildContent() {
+    // État de chargement
+    if (_model.isLoading) {
+      return _buildLoadingState();
+    }
+
+    // État d'erreur
+    if (_model.hasError) {
+      return _buildErrorState();
+    }
+
+    // Liste vide
+    if (_model.products.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    // Affichage des produits
+    return _buildProductsView();
+  }
+
   Widget _buildLoadingState() {
     return Container(
-      color: Colors.black, // ✅ Fond noir explicite
+      color: Colors.black,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Animation de chargement visible
             SizedBox(
-              width: 80,
-              height: 80,
+              width: 60,
+              height: 60,
               child: CircularProgressIndicator(
-                color: violetColor,
-                strokeWidth: 5,
+                color: _violetColor,
+                strokeWidth: 4,
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
             Text(
               'Chargement des inspirations...',
               style: GoogleFonts.poppins(
                 color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '🎁 Recherche de cadeaux tendance',
-              style: GoogleFonts.poppins(
-                color: Colors.white.withOpacity(0.7),
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
@@ -495,187 +121,221 @@ class _TikTokInspirationPageWidgetState
     );
   }
 
-  Widget _buildErrorState(TikTokInspirationPageModel model) {
+  Widget _buildErrorState() {
     return Container(
-      color: Colors.black, // ✅ Fond noir explicite
+      color: Colors.black,
+      padding: const EdgeInsets.all(32),
       child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-            // Icône d'erreur
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.red[900]?.withOpacity(0.2),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.error_outline,
-                size: 50,
-                color: Colors.red[300],
-              ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.red[400],
             ),
-            const SizedBox(height: 20),
-
-            // Titre de l'erreur
+            const SizedBox(height: 16),
             Text(
-              model.errorMessage,
+              'Erreur de chargement',
               style: GoogleFonts.poppins(
+                color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _model.errorMessage,
+              style: GoogleFonts.poppins(
+                color: Colors.white70,
+                fontSize: 14,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 12),
-
-            // Détails de l'erreur
-            Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red[300]!.withOpacity(0.3), width: 1),
-              ),
-              child: Text(
-                model.errorDetails,
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  color: Colors.white.withOpacity(0.9),
-                  height: 1.5,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Bouton réessayer
+            const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () {
-                _model.loadProducts();
-              },
+              onPressed: () => _model.loadProducts(),
               icon: const Icon(Icons.refresh, color: Colors.white),
               label: Text(
                 'Réessayer',
-                style: GoogleFonts.poppins(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white,
-                ),
+                style: GoogleFonts.poppins(color: Colors.white),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: violetColor,
+                backgroundColor: _violetColor,
                 padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            // Bouton reset complet
-            TextButton.icon(
-              onPressed: () async {
-                // Reset complet des produits vus
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.remove('seen_inspiration_product_ids');
-                print('🔄 RESET MANUEL: Cache produits vus supprimé');
-                _model.loadProducts();
-              },
-              icon: const Icon(Icons.delete_sweep, color: Colors.white70, size: 20),
-              label: Text(
-                'Reset complet et recharger',
-                style: GoogleFonts.poppins(
-                  fontSize: 13,
-                  color: Colors.white70,
-                ),
+            const SizedBox(height: 16),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Retour',
+                style: GoogleFonts.poppins(color: Colors.white70),
               ),
             ),
           ],
         ),
       ),
-    ),
     );
   }
 
   Widget _buildEmptyState() {
     return Container(
-      color: Colors.black, // ✅ Fond noir explicite
+      color: Colors.black,
+      padding: const EdgeInsets.all(32),
       child: Center(
-        child: Padding(
-        padding: const EdgeInsets.all(40),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.card_giftcard,
-              size: 80,
+              size: 64,
               color: Colors.grey[600],
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
             Text(
-              'Aucune inspiration pour le moment',
+              'Aucune inspiration disponible',
               style: GoogleFonts.poppins(
                 color: Colors.white,
                 fontSize: 18,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.bold,
               ),
-              textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Tire vers le bas pour rafraîchir',
-              style: GoogleFonts.poppins(
-                color: Colors.grey[400],
-                fontSize: 14,
+            const SizedBox(height: 24),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Retour',
+                style: GoogleFonts.poppins(color: _violetColor),
               ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),
       ),
-    ),
     );
   }
 
-  Widget _buildFullscreenProductCard(Map<String, dynamic> product) {
-    // FIX CRASH: Extraire les valeurs avec sécurité maximale
-    final String productName = (product['name'] ?? 'Produit').toString();
-    final String productBrand = (product['brand'] ?? '').toString();
-    final String productImage = (product['image'] ?? '').toString();
-    final String productUrl = (product['url'] ?? '').toString();
+  Widget _buildProductsView() {
+    return Stack(
+      children: [
+        // PageView vertical pour swipe TikTok style
+        PageView.builder(
+          controller: _pageController,
+          scrollDirection: Axis.vertical,
+          itemCount: _model.products.length,
+          onPageChanged: (index) {
+            _model.setCurrentIndex(index);
+            HapticFeedback.selectionClick();
+          },
+          itemBuilder: (context, index) {
+            final product = _model.getProductAt(index);
+            if (product == null) {
+              return const SizedBox.shrink();
+            }
+            return _buildProductCard(product, index);
+          },
+        ),
 
-    // Prix: conversion sécurisée (peut être int, double, ou String)
-    String productPrice;
-    final priceRaw = product['price'];
-    if (priceRaw is int) {
-      productPrice = '$priceRaw';
-    } else if (priceRaw is double) {
-      productPrice = '${priceRaw.toInt()}';
-    } else if (priceRaw is String) {
-      productPrice = priceRaw.replaceAll('€', '');
-    } else {
-      productPrice = '0';
+        // Bouton retour
+        Positioned(
+          top: 16,
+          left: 16,
+          child: _buildBackButton(),
+        ),
+
+        // Indicateur de progression
+        Positioned(
+          right: 12,
+          top: 80,
+          bottom: 80,
+          child: _buildProgressIndicator(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBackButton() {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.mediumImpact();
+        Navigator.pop(context);
+      },
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.5),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white30, width: 1),
+        ),
+        child: const Icon(
+          Icons.arrow_back,
+          color: Colors.white,
+          size: 22,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgressIndicator() {
+    final total = _model.products.length;
+    final current = _model.currentIndex + 1;
+
+    // Calculer le ratio de façon sécurisée
+    double ratio = 0.0;
+    if (total > 0) {
+      ratio = current / total;
+      // Sécurité: s'assurer que le ratio est valide
+      if (ratio.isNaN || ratio.isInfinite) {
+        ratio = 0.0;
+      }
+      ratio = ratio.clamp(0.0, 1.0);
     }
 
-    final isLiked = _model.likedProductTitles.contains(productName);
+    return Container(
+      width: 4,
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(2),
+      ),
+      child: FractionallySizedBox(
+        alignment: Alignment.topCenter,
+        heightFactor: ratio,
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [_pinkColor, _violetColor],
+            ),
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+      ),
+    );
+  }
 
-    // Log pour debug
-    print('🎴 [CARD] Affichage: name=$productName, brand=$productBrand, image=${productImage.length > 50 ? "${productImage.substring(0, 50)}..." : productImage}');
+  Widget _buildProductCard(Map<String, dynamic> product, int index) {
+    // Extraire les données de façon sécurisée
+    final String name = product['name']?.toString() ?? 'Produit';
+    final String brand = product['brand']?.toString() ?? '';
+    final String image = product['image']?.toString() ?? '';
+    final String url = product['url']?.toString() ?? '';
+    final int price = product['price'] is int ? product['price'] : 0;
+    final int match = product['match'] is int ? product['match'] : 85;
+
+    final bool isLiked = _model.likedProductTitles.contains(name);
 
     return Stack(
       fit: StackFit.expand,
       children: [
         // Image en plein écran
-        FullscreenProductImage(
-          imageUrl: productImage,
-          height: double.infinity,
-          borderRadius: BorderRadius.zero,
-        ),
+        _buildProductImage(image),
 
-        // Gradient overlay en bas pour rendre le texte lisible
+        // Overlay gradient en bas
         Positioned.fill(
           child: DecoratedBox(
             decoration: BoxDecoration(
@@ -687,187 +347,299 @@ class _TikTokInspirationPageWidgetState
                   Colors.transparent,
                   Colors.black.withOpacity(0.8),
                 ],
-                stops: const [0.0, 0.6, 1.0],
+                stops: const [0.0, 0.5, 1.0],
               ),
             ),
           ),
         ),
 
-        // Info produit en bas
+        // Informations produit en bas
         Positioned(
           bottom: 0,
           left: 0,
-          right: 0,
-          child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Marque - FIX: utiliser variable sécurisée
-                  if (productBrand.isNotEmpty)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: violetColor.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        productBrand,
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
+          right: 70, // Laisser de la place pour le bouton coeur
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Badge marque
+                if (brand.isNotEmpty)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: _violetColor.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                  if (productBrand.isNotEmpty) const SizedBox(height: 12),
-
-                  // Nom du produit - FIX: utiliser variable sécurisée
-                  Text(
-                    productName,
-                    style: GoogleFonts.poppins(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      height: 1.2,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Prix - FIX: utiliser variable sécurisée
-                  Text(
-                    '${productPrice}€',
-                    style: GoogleFonts.poppins(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                    child: Text(
+                      brand,
+                      style: GoogleFonts.poppins(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                if (brand.isNotEmpty) const SizedBox(height: 8),
 
-                  // Bouton Voir le produit - FIX: utiliser variable sécurisée
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: productUrl.isNotEmpty ? () async {
-                        try {
-                          final uri = Uri.parse(productUrl);
-                          await launchUrl(
-                            uri,
-                            mode: LaunchMode.externalApplication,
-                          );
-                        } catch (e) {
-                          print('❌ Erreur ouverture URL: $e');
-                        }
-                      } : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: violetColor,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 8,
-                        shadowColor: violetColor.withOpacity(0.6),
+                // Nom du produit
+                Text(
+                  name,
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    height: 1.2,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 6),
+
+                // Prix
+                Text(
+                  '${price}€',
+                  style: GoogleFonts.poppins(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Bouton voir le produit
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: url.isNotEmpty ? () => _openProductUrl(url) : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _violetColor,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'Voir le produit',
-                            style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          const Icon(
-                            Icons.open_in_new,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Voir le produit',
+                          style: GoogleFonts.poppins(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
                             color: Colors.white,
-                            size: 20,
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.open_in_new, color: Colors.white, size: 18),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Bouton coeur à droite
+        Positioned(
+          right: 16,
+          bottom: 120,
+          child: _buildLikeButton(product, isLiked),
+        ),
+
+        // Indicateur de swipe (seulement sur la première carte)
+        if (index == 0)
+          Positioned(
+            bottom: 200,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.keyboard_arrow_up,
+                    color: Colors.white.withOpacity(0.7),
+                    size: 32,
+                  ),
+                  Text(
+                    'Swipe pour voir plus',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 12,
                     ),
                   ),
                 ],
               ),
             ),
           ),
-        ),
-
-        // Bouton coeur à droite - FIX: utiliser variable sécurisée
-        SafeArea(
-          child: Positioned(
-            right: 20,
-            bottom: 200,
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  HapticFeedback.mediumImpact();
-                  // FIX: Passer le produit complet mais utiliser les valeurs sécurisées
-                  _toggleFavorite({
-                    ...product,
-                    'name': productName,
-                    'brand': productBrand,
-                    'price': productPrice,
-                    'image': productImage,
-                    'url': productUrl,
-                  });
-                },
-                borderRadius: BorderRadius.circular(50),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: isLiked
-                        ? Colors.red
-                        : Colors.black.withOpacity(0.5),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
-                      width: 2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: isLiked
-                            ? Colors.red.withOpacity(0.5)
-                            : Colors.black.withOpacity(0.3),
-                        blurRadius: isLiked ? 20 : 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Icon(
-                    isLiked ? Icons.favorite : Icons.favorite_border,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                )
-                    .animate(
-                      key: ValueKey('heart_$isLiked'),
-                    )
-                    .scale(
-                      begin: const Offset(0.8, 0.8),
-                      end: const Offset(1.0, 1.0),
-                      duration: 200.ms,
-                      curve: Curves.elasticOut,
-                    ),
-              ),
-            ),
-          ),
-        ),
       ],
     );
   }
 
+  Widget _buildProductImage(String imageUrl) {
+    if (imageUrl.isEmpty) {
+      return Container(
+        color: Colors.grey[900],
+        child: Center(
+          child: Icon(
+            Icons.image_not_supported,
+            size: 64,
+            color: Colors.grey[700],
+          ),
+        ),
+      );
+    }
+
+    return CachedNetworkImage(
+      imageUrl: imageUrl,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      placeholder: (context, url) => Container(
+        color: Colors.grey[900],
+        child: const Center(
+          child: CircularProgressIndicator(
+            color: _violetColor,
+            strokeWidth: 3,
+          ),
+        ),
+      ),
+      errorWidget: (context, url, error) => Container(
+        color: Colors.grey[900],
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: Colors.grey[700]),
+              const SizedBox(height: 8),
+              Text(
+                'Image non disponible',
+                style: TextStyle(color: Colors.grey[600], fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLikeButton(Map<String, dynamic> product, bool isLiked) {
+    return GestureDetector(
+      onTap: () => _toggleFavorite(product),
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          color: isLiked ? Colors.red : Colors.black.withOpacity(0.5),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white30, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: isLiked ? Colors.red.withOpacity(0.4) : Colors.black.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Icon(
+          isLiked ? Icons.favorite : Icons.favorite_border,
+          color: Colors.white,
+          size: 26,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openProductUrl(String url) async {
+    try {
+      final uri = Uri.parse(url);
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      print('❌ Erreur ouverture URL: $e');
+    }
+  }
+
+  Future<void> _toggleFavorite(Map<String, dynamic> product) async {
+    HapticFeedback.mediumImpact();
+
+    final productName = product['name']?.toString() ?? '';
+    if (productName.isEmpty) return;
+
+    final isCurrentlyLiked = _model.likedProductTitles.contains(productName);
+
+    // Mise à jour locale immédiate
+    setState(() {
+      if (isCurrentlyLiked) {
+        _model.likedProductTitles.remove(productName);
+      } else {
+        _model.likedProductTitles.add(productName);
+      }
+    });
+
+    // Vérifier l'authentification
+    if (currentUserReference == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Connectez-vous pour sauvegarder vos favoris', style: GoogleFonts.poppins()),
+          backgroundColor: Colors.orange[700],
+        ),
+      );
+      return;
+    }
+
+    try {
+      if (isCurrentlyLiked) {
+        // Retirer des favoris
+        final favorites = await queryFavouritesRecordOnce(
+          queryBuilder: (q) => q
+              .where('uid', isEqualTo: currentUserReference)
+              .where('product.product_title', isEqualTo: productName),
+        );
+        for (var fav in favorites) {
+          await fav.reference.delete();
+        }
+      } else {
+        // Ajouter aux favoris
+        await FavouritesRecord.collection.add(
+          createFavouritesRecordData(
+            uid: currentUserReference,
+            platform: product['source']?.toString().toLowerCase() ?? 'amazon',
+            timeStamp: DateTime.now(),
+            product: ProductsStruct(
+              productTitle: productName,
+              productPrice: '${product['price'] ?? 0}€',
+              productUrl: product['url']?.toString() ?? '',
+              productPhoto: product['image']?.toString() ?? '',
+              productStarRating: '',
+              productOriginalPrice: '',
+              productNumRatings: 0,
+              platform: product['source']?.toString().toLowerCase() ?? 'amazon',
+            ),
+          ),
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Ajouté aux favoris', style: GoogleFonts.poppins()),
+              backgroundColor: Colors.green[700],
+              duration: const Duration(seconds: 1),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ Erreur toggle favori: $e');
+      // Revert local state on error
+      setState(() {
+        if (isCurrentlyLiked) {
+          _model.likedProductTitles.add(productName);
+        } else {
+          _model.likedProductTitles.remove(productName);
+        }
+      });
+    }
+  }
 }

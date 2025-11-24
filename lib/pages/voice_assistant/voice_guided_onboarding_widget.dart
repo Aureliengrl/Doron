@@ -99,7 +99,7 @@ class _VoiceGuidedOnboardingWidgetState
                           ),
                           const SizedBox(height: 32),
 
-                          // Microphone animé
+                          // Microphone animé - FIX: Animation simple sans repeat
                           Center(
                             child: GestureDetector(
                               onTap: () {
@@ -112,8 +112,8 @@ class _VoiceGuidedOnboardingWidgetState
                               },
                               child: AnimatedContainer(
                                 duration: const Duration(milliseconds: 300),
-                                width: 140,
-                                height: 140,
+                                width: model.isListening ? 160 : 140,
+                                height: model.isListening ? 160 : 140,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   gradient: LinearGradient(
@@ -141,29 +141,7 @@ class _VoiceGuidedOnboardingWidgetState
                                   size: 60,
                                   color: Colors.white,
                                 ),
-                              )
-                                  .animate(
-                                    onPlay: (controller) => controller.repeat(),
-                                  )
-                                  .scale(
-                                    // FIX CRASH: Duration.zero cause NaN/Infinity avec repeat()
-                                    duration: model.isListening
-                                        ? const Duration(milliseconds: 1000)
-                                        : const Duration(milliseconds: 1), // FIX: Pas Duration.zero!
-                                    begin: const Offset(1.0, 1.0),
-                                    end: const Offset(1.08, 1.08),
-                                    curve: Curves.easeInOut,
-                                  )
-                                  .then()
-                                  .scale(
-                                    // FIX CRASH: Duration.zero cause NaN/Infinity avec repeat()
-                                    duration: model.isListening
-                                        ? const Duration(milliseconds: 1000)
-                                        : const Duration(milliseconds: 1), // FIX: Pas Duration.zero!
-                                    begin: const Offset(1.08, 1.08),
-                                    end: const Offset(1.0, 1.0),
-                                    curve: Curves.easeInOut,
-                                  ),
+                              ),
                             ),
                           ),
                           const SizedBox(height: 20),

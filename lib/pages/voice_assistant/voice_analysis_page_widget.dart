@@ -254,79 +254,22 @@ class _VoiceAnalysisPageWidgetState extends State<VoiceAnalysisPageWidget> {
   }
 
   Widget _buildLoadingState() {
+    // FIX: Animation simple sans repeat() pour éviter NaN/Infinity
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Animation de cercles concentriques
+          // Animation simple - juste un cercle avec gradient et CircularProgressIndicator
           SizedBox(
-            width: 200,
-            height: 200,
+            width: 160,
+            height: 160,
             child: Stack(
               alignment: Alignment.center,
               children: [
-                // Cercle extérieur
+                // Cercle de fond avec gradient
                 Container(
-                  width: 200,
-                  height: 200,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFFFF6B9D).withOpacity(0.3),
-                      width: 2,
-                    ),
-                  ),
-                )
-                    .animate(
-                      onPlay: (controller) => controller.repeat(),
-                    )
-                    .scale(
-                      duration: const Duration(milliseconds: 2000),
-                      begin: const Offset(0.8, 0.8),
-                      end: const Offset(1.0, 1.0),
-                      curve: Curves.easeInOut,
-                    )
-                    .fadeIn(
-                      duration: const Duration(milliseconds: 1000),
-                    )
-                    .then()
-                    .fadeOut(
-                      duration: const Duration(milliseconds: 1000),
-                    ),
-
-                // Cercle moyen
-                Container(
-                  width: 140,
-                  height: 140,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: const Color(0xFFFF6B9D).withOpacity(0.5),
-                      width: 2,
-                    ),
-                  ),
-                )
-                    .animate(
-                      onPlay: (controller) => controller.repeat(),
-                    )
-                    .scale(
-                      duration: const Duration(milliseconds: 1500),
-                      begin: const Offset(0.8, 0.8),
-                      end: const Offset(1.0, 1.0),
-                      curve: Curves.easeInOut,
-                    )
-                    .fadeIn(
-                      duration: const Duration(milliseconds: 750),
-                    )
-                    .then()
-                    .fadeOut(
-                      duration: const Duration(milliseconds: 750),
-                    ),
-
-                // Cercle intérieur (icône)
-                Container(
-                  width: 80,
-                  height: 80,
+                  width: 120,
+                  height: 120,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     gradient: const LinearGradient(
@@ -339,7 +282,7 @@ class _VoiceAnalysisPageWidgetState extends State<VoiceAnalysisPageWidget> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFFF6B9D).withOpacity(0.5),
+                        color: const Color(0xFFFF6B9D).withOpacity(0.4),
                         blurRadius: 30,
                         spreadRadius: 5,
                       ),
@@ -347,18 +290,20 @@ class _VoiceAnalysisPageWidgetState extends State<VoiceAnalysisPageWidget> {
                   ),
                   child: const Icon(
                     Icons.auto_awesome,
-                    size: 40,
+                    size: 50,
                     color: Colors.white,
                   ),
-                )
-                    .animate(
-                      onPlay: (controller) => controller.repeat(),
-                    )
-                    .rotate(
-                      duration: const Duration(milliseconds: 3000),
-                      begin: 0,
-                      end: 1,
-                    ),
+                ),
+
+                // CircularProgressIndicator autour
+                const SizedBox(
+                  width: 160,
+                  height: 160,
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF6B9D)),
+                    strokeWidth: 3,
+                  ),
+                ),
               ],
             ),
           ),
@@ -396,24 +341,15 @@ class _VoiceAnalysisPageWidgetState extends State<VoiceAnalysisPageWidget> {
 
           const SizedBox(height: 32),
 
-          // Indicateur de progression
+          // Indicateur de progression simple
           SizedBox(
             width: 200,
             child: LinearProgressIndicator(
               backgroundColor: Colors.white.withOpacity(0.1),
-              valueColor: AlwaysStoppedAnimation<Color>(
-                const Color(0xFFFF6B9D),
-              ),
+              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFFFF6B9D)),
               minHeight: 4,
             ),
-          )
-              .animate(
-                onPlay: (controller) => controller.repeat(),
-              )
-              .shimmer(
-                duration: const Duration(milliseconds: 1500),
-                color: Colors.white.withOpacity(0.3),
-              ),
+          ),
         ],
       ),
     );
