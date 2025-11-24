@@ -5,36 +5,68 @@ import 'package:flutter/foundation.dart';
 
 /// Service pour analyser les transcriptions vocales avec OpenAI
 class OpenAIVoiceAnalysisService {
-  static String get _apiKey => OpenAIService.apiKey;
   static const String _apiUrl = 'https://api.openai.com/v1/chat/completions';
+
+  /// Clé API OpenAI - avec fallback vers la clé hardcodée si environment.json manque
+  static String get _apiKey {
+    try {
+      final envKey = OpenAIService.apiKey;
+      if (envKey.isNotEmpty) {
+        print('🔑 Using OpenAI API key from environment');
+        return envKey;
+      }
+    } catch (e) {
+      print('⚠️ Environment API key not available: $e');
+    }
+
+    // Fallback vers clé hardcodée (même clé que api_calls.dart)
+    print('🔑 Using fallback OpenAI API key');
+    return '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';
+  }
 
   /// Analyse une transcription vocale et extrait les informations structurées
   static Future<Map<String, dynamic>?> analyzeVoiceTranscript(
     String transcript,
   ) async {
+    print('🎤 [VOICE ANALYSIS] Starting analysis...');
+    print('🎤 [VOICE ANALYSIS] Transcript: "$transcript"');
+
     if (transcript.trim().isEmpty) {
-      print('❌ Empty transcript');
+      print('❌ [VOICE ANALYSIS] Empty transcript - cannot analyze');
       return null;
     }
 
     try {
-      print('🤖 Analyzing voice transcript with OpenAI...');
+      print('🤖 [VOICE ANALYSIS] Calling OpenAI GPT-4o...');
+      print('🔑 [VOICE ANALYSIS] API Key available: ${_apiKey.isNotEmpty ? "YES (${_apiKey.substring(0, 20)}...)" : "NO"}');
 
       final prompt = _buildAnalysisPrompt(transcript);
+      print('📝 [VOICE ANALYSIS] Prompt built (${prompt.length} chars)');
+
       final response = await _callOpenAI(prompt);
 
       if (response == null) {
-        print('❌ No response from OpenAI');
+        print('❌ [VOICE ANALYSIS] No response from OpenAI - API call failed');
         return null;
       }
 
+      print('📥 [VOICE ANALYSIS] OpenAI response received (${response.length} chars)');
+
       // Parser la réponse JSON
       final parsed = _parseOpenAIResponse(response);
-      print('✅ Voice analysis completed: $parsed');
+
+      if (parsed == null) {
+        print('❌ [VOICE ANALYSIS] Failed to parse OpenAI response');
+        return null;
+      }
+
+      print('✅ [VOICE ANALYSIS] Analysis completed successfully!');
+      print('✅ [VOICE ANALYSIS] Result: $parsed');
 
       return parsed;
-    } catch (e) {
-      print('❌ Error analyzing voice transcript: $e');
+    } catch (e, stackTrace) {
+      print('❌ [VOICE ANALYSIS] Exception during analysis: $e');
+      print('❌ [VOICE ANALYSIS] Stack: ${stackTrace.toString().split('\n').take(5).join('\n')}');
       return null;
     }
   }
@@ -117,6 +149,16 @@ Réponds UNIQUEMENT avec le JSON, sans texte avant ou après:''';
   /// Appelle l'API OpenAI avec retry logic
   static Future<String?> _callOpenAI(String prompt) async {
     try {
+      print('📤 [OPENAI] Preparing API call...');
+      print('📤 [OPENAI] URL: $_apiUrl');
+      print('📤 [OPENAI] Model: gpt-4o');
+
+      final apiKey = _apiKey;
+      if (apiKey.isEmpty) {
+        print('❌ [OPENAI] API key is EMPTY - cannot proceed');
+        return null;
+      }
+
       final body = json.encode({
         'model': 'gpt-4o',
         'messages': [
@@ -133,27 +175,51 @@ Réponds UNIQUEMENT avec le JSON, sans texte avant ou après:''';
         'max_tokens': 1000,
       });
 
+      print('📤 [OPENAI] Request body size: ${body.length} bytes');
+      print('📤 [OPENAI] Sending request with 45s timeout and 3 retries...');
+
       final response = await HttpService.postWithRetry(
         url: Uri.parse(_apiUrl),
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer $_apiKey',
+          'Authorization': 'Bearer $apiKey',
         },
         body: body,
         timeoutSeconds: 45, // Plus long pour l'analyse
         maxRetries: 3,
       );
 
+      print('📥 [OPENAI] Response status: ${response.statusCode}');
+
       if (response.statusCode == 200) {
+        print('✅ [OPENAI] API call successful!');
         final data = json.decode(response.body);
         final content = data['choices']?[0]?['message']?['content'];
+        if (content == null) {
+          print('⚠️ [OPENAI] Response has no content in choices[0].message.content');
+          print('⚠️ [OPENAI] Full response: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}...');
+        }
         return content?.toString().trim();
+      } else if (response.statusCode == 401) {
+        print('❌ [OPENAI] AUTHENTICATION ERROR (401) - API key invalid or expired');
+        print('❌ [OPENAI] Response: ${response.body}');
+        return null;
+      } else if (response.statusCode == 429) {
+        print('❌ [OPENAI] RATE LIMIT ERROR (429) - Too many requests');
+        print('❌ [OPENAI] Response: ${response.body}');
+        return null;
+      } else if (response.statusCode == 500 || response.statusCode == 503) {
+        print('❌ [OPENAI] SERVER ERROR (${response.statusCode}) - OpenAI service unavailable');
+        print('❌ [OPENAI] Response: ${response.body}');
+        return null;
       } else {
-        print('❌ OpenAI API error: ${response.statusCode} - ${response.body}');
+        print('❌ [OPENAI] API error: ${response.statusCode}');
+        print('❌ [OPENAI] Response body: ${response.body}');
         return null;
       }
-    } catch (e) {
-      print('❌ Error calling OpenAI: $e');
+    } catch (e, stackTrace) {
+      print('❌ [OPENAI] Exception during API call: $e');
+      print('❌ [OPENAI] Stack: ${stackTrace.toString().split('\n').take(5).join('\n')}');
       return null;
     }
   }

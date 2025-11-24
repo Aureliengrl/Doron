@@ -51,28 +51,30 @@ class VoiceAnalysisPageModel extends ChangeNotifier {
         return;
       }
 
-      print('🤖 Starting OpenAI analysis for transcript: "$_transcript"');
+      print('🤖 [MODEL] Starting OpenAI analysis for transcript: "$_transcript"');
 
-      // FIX Bug 2: Ajouter un timeout de 30 secondes pour éviter l'écran gris infini
+      // Timeout de 60 secondes pour laisser le temps à l'API (45s) + retries
+      // L'API fait 3 retries avec backoff donc total possible = 45s + 2s + 4s + 8s = 59s
       final result = await OpenAIVoiceAnalysisService.analyzeVoiceTranscript(_transcript)
           .timeout(
-        const Duration(seconds: 30),
+        const Duration(seconds: 60),
         onTimeout: () {
-          print('⏱️ OpenAI analysis timeout after 30 seconds');
+          print('⏱️ [MODEL] OpenAI analysis timeout after 60 seconds');
           return null;
         },
       );
 
       if (result != null) {
-        print('✅ Analysis successful');
+        print('✅ [MODEL] Analysis successful - result received!');
+        print('✅ [MODEL] Keys: ${result.keys.join(", ")}');
         _analysisResult = result;
         _isAnalyzing = false;
         _hasError = false;
       } else {
-        print('❌ Analysis returned null');
+        print('❌ [MODEL] Analysis returned null - check Xcode logs for details');
         _hasError = true;
         _errorMessage =
-            'L\'analyse a pris trop de temps ou a échoué. Veuillez réessayer.';
+            'L\'analyse a échoué. Vérifiez votre connexion internet et réessayez.';
         _isAnalyzing = false;
       }
 

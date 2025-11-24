@@ -246,12 +246,72 @@ class _TikTokInspirationPageWidgetState extends State<TikTokInspirationPageWidge
           child: _buildBackButton(),
         ),
 
-        // Indicateur de progression
+        // Indicateur de progression (pas de ratio pour infinite scroll)
         Positioned(
           right: 12,
           top: 80,
           bottom: 80,
           child: _buildProgressIndicator(),
+        ),
+
+        // ✨ INFINITE SCROLL: Indicateur de chargement en bas
+        if (_model.isLoadingMore)
+          Positioned(
+            bottom: 100,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.7),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Chargement...',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+        // ✨ INFINITE SCROLL: Compteur de produits (pour debug/info)
+        Positioned(
+          top: 16,
+          right: 60,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '${_model.currentIndex + 1} / ${_model.products.length}',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
         ),
       ],
     );
@@ -464,7 +524,7 @@ class _TikTokInspirationPageWidgetState extends State<TikTokInspirationPageWidge
                     size: 32,
                   ),
                   Text(
-                    'Swipe pour voir plus',
+                    'Swipe infini ♾️',
                     style: GoogleFonts.poppins(
                       color: Colors.white.withOpacity(0.7),
                       fontSize: 12,
