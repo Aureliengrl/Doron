@@ -53,48 +53,77 @@ function normalizeTag(tag) {
 
 /**
  * Détecte le genre depuis le champ "gender" et le nom/description
+ * IMPORTANT: Il n'y a PAS de mixte - seulement homme OU femme
  */
 function detectGenderFromProduct(product) {
   const genderField = (product.gender || '').toLowerCase();
   const productName = (product.name || product.product_title || '').toLowerCase();
   const productDescription = (product.description || '').toLowerCase();
   const text = `${productName} ${productDescription}`;
+  const categories = Array.isArray(product.categories) ? product.categories.map(c => c.toLowerCase()) : [];
 
   // Mots-clés TRÈS SPÉCIFIQUES pour FEMME
   const feminineKeywords = [
-    'robe', 'jupe', 'lingerie', 'soutien-gorge', 'culotte femme',
-    'collant', 'maquillage', 'rouge à lèvres', 'mascara', 'vernis',
-    'sac à main', 'pour elle', 'féminin', 'talons', 'femme'
+    'robe', 'jupe', 'lingerie', 'soutien-gorge', 'brassière', 'culotte femme',
+    'collant', 'maquillage', 'rouge à lèvres', 'mascara', 'vernis', 'nail polish',
+    'sac à main', 'pour elle', 'féminin', 'talons', 'femme', 'woman', 'women',
+    'miss', 'lady', 'dress', 'skirt', 'heels', 'makeup', 'she', 'her'
   ];
 
   // Mots-clés TRÈS SPÉCIFIQUES pour HOMME
   const masculineKeywords = [
-    'cravate', 'rasoir électrique', 'tondeuse barbe', 'after shave',
-    'costume homme', 'pour lui', 'masculin', 'barbe', 'homme'
+    'cravate', 'rasoir électrique', 'tondeuse barbe', 'after shave', 'aftershave',
+    'costume homme', 'pour lui', 'masculin', 'barbe', 'homme', 'man', 'men',
+    'monsieur', 'mister', 'tie', 'beard', 'he', 'him', 'male'
   ];
 
-  // D'abord, regarder le champ gender
+  // Analyser les mots-clés dans le texte
+  const feminineMatches = feminineKeywords.filter(kw => text.includes(kw)).length;
+  const masculineMatches = masculineKeywords.filter(kw => text.includes(kw)).length;
+
+  // 1. Si le champ gender est explicite
   if (genderField === 'male' || genderField === 'homme' || genderField === 'man') {
     return 'gender_homme';
   }
   if (genderField === 'female' || genderField === 'femme' || genderField === 'woman') {
     return 'gender_femme';
   }
-  if (genderField === 'unisex' || genderField === 'mixte') {
-    return 'gender_mixte';
-  }
 
-  // Ensuite, chercher dans le nom/description
-  const isFeminine = feminineKeywords.some(kw => text.includes(kw));
-  const isMasculine = masculineKeywords.some(kw => text.includes(kw));
-
-  if (isFeminine && !isMasculine) {
+  // 2. Si des mots-clés sont trouvés
+  if (feminineMatches > masculineMatches) {
     return 'gender_femme';
-  } else if (isMasculine && !isFeminine) {
+  }
+  if (masculineMatches > feminineMatches) {
     return 'gender_homme';
   }
 
-  return 'gender_mixte'; // Par défaut: universel
+  // 3. Analyser la catégorie
+  const feminineCats = ['beauty', 'beaute', 'makeup', 'fashion'];
+  const masculineCats = ['tech', 'sport', 'gaming'];
+
+  const hasFeminineCat = categories.some(cat => feminineCats.some(fc => cat.includes(fc)));
+  const hasMasculineCat = categories.some(cat => masculineCats.some(mc => cat.includes(mc)));
+
+  if (hasFeminineCat && !hasMasculineCat) {
+    return 'gender_femme';
+  }
+  if (hasMasculineCat && !hasFeminineCat) {
+    return 'gender_homme';
+  }
+
+  // 4. Si "unisex" ou impossible à déterminer → Regarder les tags existants
+  const existingTags = Array.isArray(product.tags) ? product.tags : [];
+  const existingGenderTag = existingTags.find(t => t.startsWith('gender_'));
+
+  if (existingGenderTag === 'gender_femme' || existingGenderTag === 'gender_homme') {
+    // Conserver le tag existant si on ne peut pas mieux déterminer
+    return existingGenderTag;
+  }
+
+  // 5. Par défaut: si vraiment aucun indice, mettre homme ET femme
+  // L'utilisateur pourra ajuster manuellement si nécessaire
+  // Pour l'instant, privilégier FEMME par défaut pour unisex (plus de produits beauté/mode)
+  return 'gender_femme';
 }
 
 /**
