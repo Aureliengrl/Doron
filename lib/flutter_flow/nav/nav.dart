@@ -22,7 +22,6 @@ import 'serialization_util.dart';
 import '/index.dart';
 import '/pages/tiktok_inspiration/tiktok_inspiration_page_widget.dart';
 import '/pages/admin/admin_products_page.dart';
-import '/utils/fix_firebase_tags_page.dart';
 
 export 'package:go_router/go_router.dart';
 export 'serialization_util.dart';
@@ -287,12 +286,6 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: AdminProductsPage.routeName,
           path: AdminProductsPage.routePath,
           builder: (context, params) => AdminProductsPage(),
-        ),
-        // Fix Firebase Tags (Debug Tool)
-        FFRoute(
-          name: FixFirebaseTagsPage.routeName,
-          path: FixFirebaseTagsPage.routePath,
-          builder: (context, params) => FixFirebaseTagsPage(),
         ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );

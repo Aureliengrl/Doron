@@ -243,53 +243,11 @@ class SearchPageModel {
     }
   }
 
-  /// Toggle le like d'un produit et sauvegarde dans Firebase
-  Future<void> toggleLike(int productId, [Map<String, dynamic>? product]) async {
-    // Extraire le titre du produit pour mise à jour UI immédiate
-    final productTitle = product?['name'] as String? ?? product?['title'] as String? ?? '';
-
-    if (likedProductTitles.contains(productTitle) || likedProducts.contains(productId)) {
-      // RETIRER des favoris
+  void toggleLike(int productId) {
+    if (likedProducts.contains(productId)) {
       likedProducts.remove(productId);
-      if (productTitle.isNotEmpty) {
-        likedProductTitles.remove(productTitle);
-      }
-
-      // Retirer des favoris Firebase
-      await FirebaseDataService.removeFromFavorites(productId.toString());
-      print('❤️ Produit "$productTitle" retiré des favoris');
     } else {
-      // AJOUTER aux favoris
       likedProducts.add(productId);
-      if (productTitle.isNotEmpty) {
-        likedProductTitles.add(productTitle);
-      }
-
-      // Ajouter aux favoris Firebase si on a les données du produit
-      if (product != null && product.isNotEmpty) {
-        await FirebaseDataService.addToFavorites(product);
-        print('❤️ Produit "$productTitle" ajouté aux favoris');
-      } else {
-        // Chercher le produit dans les cadeaux en cache
-        Map<String, dynamic>? foundProduct;
-        for (var gifts in personGifts.values) {
-          for (var gift in gifts) {
-            final giftId = gift['id'];
-            final normalizedGiftId = giftId is int ? giftId : (int.tryParse(giftId.toString()) ?? giftId.hashCode);
-            if (normalizedGiftId == productId) {
-              foundProduct = gift;
-              break;
-            }
-          }
-          if (foundProduct != null) break;
-        }
-        if (foundProduct != null) {
-          await FirebaseDataService.addToFavorites(foundProduct);
-          print('❤️ Produit ajouté aux favoris (trouvé dans cache)');
-        } else {
-          print('⚠️ Produit $productId non trouvé pour sauvegarde favoris');
-        }
-      }
     }
   }
 
