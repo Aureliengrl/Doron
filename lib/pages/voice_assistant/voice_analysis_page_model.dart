@@ -76,9 +76,12 @@ class VoiceAnalysisPageModel extends ChangeNotifier {
         _hasError = false;
       } else {
         print('❌ [MODEL] ===== ANALYSE ÉCHOUÉE =====');
-        print('❌ [MODEL] Consultez les logs [OPENAI] ci-dessus pour la cause');
         _hasError = true;
-        _errorMessage = 'L\'analyse a échoué. Vérifiez votre connexion internet et réessayez.';
+        // Récupérer la dernière erreur du service pour l'afficher à l'utilisateur
+        final lastError = OpenAIVoiceAnalysisService.lastErrorMessage;
+        _errorMessage = lastError.isNotEmpty
+            ? 'Erreur: $lastError'
+            : 'L\'analyse a échoué. Vérifiez votre connexion internet.';
         _isAnalyzing = false;
       }
 

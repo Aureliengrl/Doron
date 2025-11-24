@@ -10,22 +10,29 @@ class OpenAIVoiceAnalysisService {
   /// Pas besoin de passer par environment.json car la clé est déjà dans le code
   static const String _hardcodedApiKey = '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';
 
+  /// Dernière erreur - VISIBLE À L'UTILISATEUR pour diagnostic
+  static String _lastErrorMessage = '';
+  static String get lastErrorMessage => _lastErrorMessage;
+
   /// Analyse une transcription vocale et extrait les informations structurées
   static Future<Map<String, dynamic>?> analyzeVoiceTranscript(
     String transcript,
   ) async {
+    // Reset erreur
+    _lastErrorMessage = '';
+
     print('🎤 [VOICE ANALYSIS] ===== DÉBUT ANALYSE =====');
     print('🎤 [VOICE ANALYSIS] Transcript reçu: "$transcript"');
     print('🎤 [VOICE ANALYSIS] Longueur: ${transcript.length} caractères');
 
     if (transcript.trim().isEmpty) {
+      _lastErrorMessage = 'Transcript vide';
       print('❌ [VOICE ANALYSIS] ERREUR: Transcript vide');
       return null;
     }
 
     try {
       print('🤖 [VOICE ANALYSIS] Préparation appel OpenAI...');
-      print('🔑 [VOICE ANALYSIS] Clé API disponible: OUI (hardcoded)');
 
       final prompt = _buildAnalysisPrompt(transcript);
       print('📝 [VOICE ANALYSIS] Prompt construit (${prompt.length} caractères)');
@@ -34,6 +41,7 @@ class OpenAIVoiceAnalysisService {
       final response = await _callOpenAI(prompt);
 
       if (response == null) {
+        // _lastErrorMessage déjà set par _callOpenAI
         print('❌ [VOICE ANALYSIS] ERREUR: Pas de réponse OpenAI');
         return null;
       }
@@ -44,8 +52,8 @@ class OpenAIVoiceAnalysisService {
       final parsed = _parseOpenAIResponse(response);
 
       if (parsed == null) {
+        _lastErrorMessage = 'Impossible de parser la réponse OpenAI';
         print('❌ [VOICE ANALYSIS] ERREUR: Impossible de parser la réponse');
-        print('❌ [VOICE ANALYSIS] Réponse brute: ${response.substring(0, response.length > 200 ? 200 : response.length)}...');
         return null;
       }
 
@@ -54,6 +62,7 @@ class OpenAIVoiceAnalysisService {
 
       return parsed;
     } catch (e, stackTrace) {
+      _lastErrorMessage = 'Exception: ${e.toString().length > 100 ? e.toString().substring(0, 100) : e.toString()}';
       print('❌ [VOICE ANALYSIS] ===== EXCEPTION =====');
       print('❌ [VOICE ANALYSIS] Type: ${e.runtimeType}');
       print('❌ [VOICE ANALYSIS] Message: $e');
@@ -190,23 +199,28 @@ Réponds UNIQUEMENT avec le JSON, sans texte avant ou après:''';
         }
         return content?.toString().trim();
       } else if (response.statusCode == 401) {
+        _lastErrorMessage = 'Erreur 401: Clé API invalide ou expirée';
         print('❌ [OPENAI] ERREUR 401: Clé API invalide ou expirée');
         print('❌ [OPENAI] Body: ${response.body}');
         return null;
       } else if (response.statusCode == 429) {
+        _lastErrorMessage = 'Erreur 429: Limite de requêtes dépassée';
         print('❌ [OPENAI] ERREUR 429: Rate limit dépassé');
         print('❌ [OPENAI] Body: ${response.body}');
         return null;
       } else if (response.statusCode >= 500) {
+        _lastErrorMessage = 'Erreur ${response.statusCode}: Serveur OpenAI indisponible';
         print('❌ [OPENAI] ERREUR ${response.statusCode}: Serveur OpenAI indisponible');
         print('❌ [OPENAI] Body: ${response.body}');
         return null;
       } else {
+        _lastErrorMessage = 'Erreur HTTP ${response.statusCode}';
         print('❌ [OPENAI] ERREUR ${response.statusCode}: Erreur inattendue');
         print('❌ [OPENAI] Body: ${response.body}');
         return null;
       }
     } catch (e, stackTrace) {
+      _lastErrorMessage = 'Erreur réseau: ${e.runtimeType}';
       print('❌ [OPENAI] ===== EXCEPTION =====');
       print('❌ [OPENAI] Type: ${e.runtimeType}');
       print('❌ [OPENAI] Message: $e');
