@@ -25,15 +25,18 @@ class VoiceAnalysisPageModel extends ChangeNotifier {
 
   /// Analyse le transcript avec OpenAI
   Future<void> analyzeTranscript() async {
+    print('🤖 [MODEL] ===== DÉBUT ANALYSE TRANSCRIPT =====');
+    print('🤖 [MODEL] Transcript: "$_transcript"');
+
     _isAnalyzing = true;
     _hasError = false;
     _errorMessage = '';
     notifyListeners();
 
     try {
-      // FIX Bug 2: Vérifier que le transcript n'est pas vide
+      // Vérification 1: Transcript vide
       if (_transcript.trim().isEmpty) {
-        print('❌ Transcript vide - impossible d\'analyser');
+        print('❌ [MODEL] ERREUR: Transcript vide');
         _hasError = true;
         _errorMessage = 'Aucune description détectée. Veuillez réessayer et parler clairement.';
         _isAnalyzing = false;
@@ -41,9 +44,9 @@ class VoiceAnalysisPageModel extends ChangeNotifier {
         return;
       }
 
-      // FIX Bug 2: Vérifier que le transcript est assez long
+      // Vérification 2: Transcript trop court
       if (_transcript.trim().length < 10) {
-        print('❌ Transcript trop court: "${_transcript}"');
+        print('❌ [MODEL] ERREUR: Transcript trop court (${_transcript.trim().length} chars)');
         _hasError = true;
         _errorMessage = 'Description trop courte. Veuillez donner plus de détails sur la personne.';
         _isAnalyzing = false;
@@ -51,38 +54,42 @@ class VoiceAnalysisPageModel extends ChangeNotifier {
         return;
       }
 
-      print('🤖 [MODEL] Starting OpenAI analysis for transcript: "$_transcript"');
+      print('🤖 [MODEL] Validations OK, lancement analyse OpenAI...');
 
-      // Timeout de 60 secondes pour laisser le temps à l'API (45s) + retries
-      // L'API fait 3 retries avec backoff donc total possible = 45s + 2s + 4s + 8s = 59s
+      // Appel OpenAI avec timeout de 60 secondes
       final result = await OpenAIVoiceAnalysisService.analyzeVoiceTranscript(_transcript)
           .timeout(
         const Duration(seconds: 60),
         onTimeout: () {
-          print('⏱️ [MODEL] OpenAI analysis timeout after 60 seconds');
+          print('⏱️ [MODEL] TIMEOUT après 60 secondes');
           return null;
         },
       );
 
+      print('🤖 [MODEL] Résultat reçu: ${result != null ? "SUCCÈS" : "NULL"}');
+
       if (result != null) {
-        print('✅ [MODEL] Analysis successful - result received!');
-        print('✅ [MODEL] Keys: ${result.keys.join(", ")}');
+        print('✅ [MODEL] ===== ANALYSE RÉUSSIE =====');
+        print('✅ [MODEL] Clés: ${result.keys.join(", ")}');
         _analysisResult = result;
         _isAnalyzing = false;
         _hasError = false;
       } else {
-        print('❌ [MODEL] Analysis returned null - check Xcode logs for details');
+        print('❌ [MODEL] ===== ANALYSE ÉCHOUÉE =====');
+        print('❌ [MODEL] Consultez les logs [OPENAI] ci-dessus pour la cause');
         _hasError = true;
-        _errorMessage =
-            'L\'analyse a échoué. Vérifiez votre connexion internet et réessayez.';
+        _errorMessage = 'L\'analyse a échoué. Vérifiez votre connexion internet et réessayez.';
         _isAnalyzing = false;
       }
 
       notifyListeners();
-    } catch (e) {
-      print('❌ Analysis error: $e');
+    } catch (e, stack) {
+      print('❌ [MODEL] ===== EXCEPTION =====');
+      print('❌ [MODEL] Type: ${e.runtimeType}');
+      print('❌ [MODEL] Message: $e');
+      print('❌ [MODEL] Stack: ${stack.toString().split('\n').take(3).join('\n')}');
       _hasError = true;
-      _errorMessage = 'Une erreur est survenue lors de l\'analyse: ${e.toString().length > 100 ? e.toString().substring(0, 100) : e.toString()}';
+      _errorMessage = 'Erreur: ${e.toString().length > 80 ? e.toString().substring(0, 80) : e.toString()}';
       _isAnalyzing = false;
       notifyListeners();
     }
