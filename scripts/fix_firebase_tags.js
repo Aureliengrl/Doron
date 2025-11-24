@@ -8,11 +8,11 @@
  * 4. Ajouter votre fichier serviceAccountKey.json dans Secrets
  * 5. Exécuter: node fix_firebase_tags.js
  *
- * Ce script ajoute automatiquement les tags manquants à tous les produits:
- * - gender_homme / gender_femme / gender_mixte
- * - cat_tech / cat_mode / cat_beaute / etc.
- * - budget_0_50 / budget_50_100 / etc.
- * - age_adulte / age_jeune / etc.
+ * Ce script CORRIGE et NORMALISE les tags existants:
+ * - Remplace les tirets par des underscores (budget_100-200 → budget_100_200)
+ * - Corrige les incohérences (gender: "unisex" vs tags: ["gender_femme"])
+ * - Ajoute les tags manquants
+ * - Garantit que TOUS les produits ont les tags requis
  */
 
 const admin = require('firebase-admin');
@@ -32,33 +32,59 @@ let stats = {
   total: 0,
   updated: 0,
   errors: 0,
-  byTag: {
-    gender: 0,
-    category: 0,
-    budget: 0,
-    age: 0
+  normalized: 0,
+  fixed: 0,
+  byIssue: {
+    dashToUnderscore: 0,
+    genderConflict: 0,
+    missingGender: 0,
+    missingCategory: 0,
+    missingBudget: 0,
+    missingAge: 0
   }
 };
 
 /**
- * Détecte le genre d'un produit basé sur son nom et description
+ * Normalise un tag : remplace les tirets par des underscores
  */
-function detectGender(productName, productDescription) {
-  const text = `${productName} ${productDescription}`.toLowerCase();
+function normalizeTag(tag) {
+  return tag.toLowerCase().replace(/-/g, '_');
+}
+
+/**
+ * Détecte le genre depuis le champ "gender" et le nom/description
+ */
+function detectGenderFromProduct(product) {
+  const genderField = (product.gender || '').toLowerCase();
+  const productName = (product.name || product.product_title || '').toLowerCase();
+  const productDescription = (product.description || '').toLowerCase();
+  const text = `${productName} ${productDescription}`;
 
   // Mots-clés TRÈS SPÉCIFIQUES pour FEMME
   const feminineKeywords = [
     'robe', 'jupe', 'lingerie', 'soutien-gorge', 'culotte femme',
     'collant', 'maquillage', 'rouge à lèvres', 'mascara', 'vernis',
-    'sac à main', 'femme', 'pour elle', 'féminin', 'talons'
+    'sac à main', 'pour elle', 'féminin', 'talons', 'femme'
   ];
 
   // Mots-clés TRÈS SPÉCIFIQUES pour HOMME
   const masculineKeywords = [
     'cravate', 'rasoir électrique', 'tondeuse barbe', 'after shave',
-    'costume homme', 'homme', 'pour lui', 'masculin', 'barbe'
+    'costume homme', 'pour lui', 'masculin', 'barbe', 'homme'
   ];
 
+  // D'abord, regarder le champ gender
+  if (genderField === 'male' || genderField === 'homme' || genderField === 'man') {
+    return 'gender_homme';
+  }
+  if (genderField === 'female' || genderField === 'femme' || genderField === 'woman') {
+    return 'gender_femme';
+  }
+  if (genderField === 'unisex' || genderField === 'mixte') {
+    return 'gender_mixte';
+  }
+
+  // Ensuite, chercher dans le nom/description
   const isFeminine = feminineKeywords.some(kw => text.includes(kw));
   const isMasculine = masculineKeywords.some(kw => text.includes(kw));
 
@@ -66,55 +92,38 @@ function detectGender(productName, productDescription) {
     return 'gender_femme';
   } else if (isMasculine && !isFeminine) {
     return 'gender_homme';
-  } else {
-    return 'gender_mixte'; // Par défaut: universel
   }
+
+  return 'gender_mixte'; // Par défaut: universel
 }
 
 /**
  * Détecte la catégorie d'un produit
  */
-function detectCategory(productName, productDescription) {
+function detectCategory(productName, productDescription, existingCategories) {
   const text = `${productName} ${productDescription}`.toLowerCase();
 
   const categoryKeywords = {
-    'cat_tech': [
-      'tech', 'électronique', 'gadget', 'usb', 'bluetooth', 'écouteurs',
-      'casque', 'smartphone', 'tablette', 'ordinateur', 'souris', 'clavier',
-      'cable', 'chargeur', 'powerbank', 'enceinte', 'speaker'
-    ],
-    'cat_mode': [
-      'vêtement', 't-shirt', 'pull', 'sweat', 'pantalon', 'jean',
-      'chaussure', 'basket', 'sneaker', 'mode', 'fashion', 'hoodie',
-      'chemise', 'polo', 'short', 'robe', 'jupe'
-    ],
-    'cat_beaute': [
-      'beauté', 'maquillage', 'parfum', 'crème', 'soin', 'cosmétique',
-      'huile', 'sérum', 'shampoing', 'après-shampoing', 'gel douche',
-      'lotion', 'masque', 'gommage'
-    ],
-    'cat_maison': [
-      'maison', 'déco', 'décoration', 'coussin', 'lampe', 'bougie',
-      'vase', 'cadre', 'plante', 'tapis', 'rideau', 'horloge'
-    ],
-    'cat_sport': [
-      'sport', 'fitness', 'yoga', 'running', 'musculation', 'gym',
-      'training', 'basket', 'football', 'vélo', 'natation', 'tennis',
-      'haltère', 'tapis de sport'
-    ],
-    'cat_food': [
-      'cuisine', 'gastronomie', 'chocolat', 'thé', 'café', 'vin',
-      'gourmet', 'food', 'bouteille', 'confiserie', 'biscuit',
-      'alcool', 'whisky', 'champagne'
-    ],
-    'cat_livre': [
-      'livre', 'roman', 'bd', 'manga', 'lecture', 'bouquin', 'polar'
-    ],
-    'cat_jeux': [
-      'jeu', 'jouet', 'puzzle', 'board game', 'société', 'carte',
-      'lego', 'playmobil'
-    ]
+    'cat_tech': ['tech', 'électronique', 'gadget', 'usb', 'bluetooth', 'écouteurs', 'casque', 'smartphone', 'tablette', 'ordinateur', 'souris', 'clavier', 'cable', 'chargeur', 'powerbank', 'enceinte', 'speaker'],
+    'cat_mode': ['vêtement', 't-shirt', 'pull', 'sweat', 'pantalon', 'jean', 'chaussure', 'basket', 'sneaker', 'mode', 'fashion', 'hoodie', 'chemise', 'polo', 'short', 'robe', 'jupe', 'pants'],
+    'cat_beaute': ['beauté', 'maquillage', 'parfum', 'crème', 'soin', 'cosmétique', 'huile', 'sérum', 'shampoing', 'après-shampoing', 'gel douche', 'lotion', 'masque', 'gommage'],
+    'cat_maison': ['maison', 'déco', 'décoration', 'coussin', 'lampe', 'bougie', 'vase', 'cadre', 'plante', 'tapis', 'rideau', 'horloge'],
+    'cat_sport': ['sport', 'fitness', 'yoga', 'running', 'musculation', 'gym', 'training', 'basket', 'football', 'vélo', 'natation', 'tennis', 'haltère', 'tapis de sport'],
+    'cat_food': ['cuisine', 'gastronomie', 'chocolat', 'thé', 'café', 'vin', 'gourmet', 'food', 'bouteille', 'confiserie', 'biscuit', 'alcool', 'whisky', 'champagne'],
+    'cat_livre': ['livre', 'roman', 'bd', 'manga', 'lecture', 'bouquin', 'polar'],
+    'cat_jeux': ['jeu', 'jouet', 'puzzle', 'board game', 'société', 'carte', 'lego', 'playmobil']
   };
+
+  // Vérifier si une catégorie existante correspond déjà
+  if (existingCategories && existingCategories.length > 0) {
+    const catLower = existingCategories[0].toLowerCase();
+    if (catLower.includes('tech') || catLower === 'technology') return 'cat_tech';
+    if (catLower.includes('mode') || catLower === 'fashion') return 'cat_mode';
+    if (catLower.includes('beaute') || catLower === 'beauty') return 'cat_beaute';
+    if (catLower.includes('maison') || catLower === 'home') return 'cat_maison';
+    if (catLower.includes('sport')) return 'cat_sport';
+    if (catLower.includes('food') || catLower.includes('cuisine')) return 'cat_food';
+  }
 
   for (const [categoryTag, keywords] of Object.entries(categoryKeywords)) {
     if (keywords.some(kw => text.includes(kw))) {
@@ -142,11 +151,11 @@ function getBudgetTag(price) {
 function detectAge(productName, productDescription) {
   const text = `${productName} ${productDescription}`.toLowerCase();
 
-  if (text.includes('enfant') || text.includes('bébé') || text.includes('kid')) {
+  if (text.includes('enfant') || text.includes('bébé') || text.includes('kid') || text.includes('child')) {
     return 'age_enfant';
-  } else if (text.includes('ado') || text.includes('teenager')) {
+  } else if (text.includes('ado') || text.includes('teenager') || text.includes('teen')) {
     return 'age_jeune';
-  } else if (text.includes('senior') || text.includes('retraite')) {
+  } else if (text.includes('senior') || text.includes('retraite') || text.includes('elderly')) {
     return 'age_senior';
   }
 
@@ -154,68 +163,115 @@ function detectAge(productName, productDescription) {
 }
 
 /**
- * Traite un produit et ajoute les tags manquants
+ * Traite un produit et corrige/normalise ses tags
  */
 async function processProduct(doc) {
   try {
     const data = doc.data();
-    const productName = data.name || '';
+    const productName = data.name || data.product_title || '';
     const productDescription = data.description || '';
     const price = typeof data.price === 'number' ? data.price : parseInt(data.price || '0');
     const currentTags = Array.isArray(data.tags) ? data.tags : [];
     const currentCategories = Array.isArray(data.categories) ? data.categories : [];
 
-    const newTags = new Set(currentTags);
-    const newCategories = new Set(currentCategories);
+    let newTags = new Set();
     let modified = false;
+    let issuesFound = [];
 
-    // 1. TAG DE GENRE (CRITIQUE)
-    if (!currentTags.some(t => t.startsWith('gender_'))) {
-      const genderTag = detectGender(productName, productDescription);
-      newTags.add(genderTag);
+    // 1. NORMALISER tous les tags existants (tirets → underscores)
+    currentTags.forEach(tag => {
+      const normalized = normalizeTag(tag);
+      if (normalized !== tag) {
+        stats.byIssue.dashToUnderscore++;
+        issuesFound.push(`Normalisé: ${tag} → ${normalized}`);
+        modified = true;
+      }
+      newTags.add(normalized);
+    });
+
+    // 2. VÉRIFIER ET CORRIGER LE GENRE
+    const existingGenderTags = Array.from(newTags).filter(t => t.startsWith('gender_'));
+    const correctGender = detectGenderFromProduct(data);
+
+    if (existingGenderTags.length === 0) {
+      // Pas de tag genre → ajouter
+      newTags.add(correctGender);
       modified = true;
-      stats.byTag.gender++;
-      console.log(`  👤 "${productName}" → ${genderTag}`);
+      stats.byIssue.missingGender++;
+      issuesFound.push(`Ajout genre: ${correctGender}`);
+      console.log(`  ➕ "${productName}" → ${correctGender} (manquant)`);
+    } else if (existingGenderTags[0] !== correctGender) {
+      // Tag genre existe mais est incorrect
+      existingGenderTags.forEach(tag => newTags.delete(tag));
+      newTags.add(correctGender);
+      modified = true;
+      stats.byIssue.genderConflict++;
+      issuesFound.push(`Correction genre: ${existingGenderTags[0]} → ${correctGender}`);
+      console.log(`  🔧 "${productName}" → ${correctGender} (était ${existingGenderTags[0]})`);
     }
 
-    // 2. TAG DE CATÉGORIE
-    if (!currentTags.some(t => t.startsWith('cat_'))) {
-      const categoryTag = detectCategory(productName, productDescription);
+    // 3. VÉRIFIER ET CORRIGER LA CATÉGORIE
+    const existingCategoryTags = Array.from(newTags).filter(t => t.startsWith('cat_'));
+
+    if (existingCategoryTags.length === 0) {
+      const categoryTag = detectCategory(productName, productDescription, currentCategories);
       newTags.add(categoryTag);
-      newCategories.add(categoryTag.replace('cat_', '').charAt(0).toUpperCase() + categoryTag.replace('cat_', '').slice(1));
       modified = true;
-      stats.byTag.category++;
-      console.log(`  📁 "${productName}" → ${categoryTag}`);
+      stats.byIssue.missingCategory++;
+      issuesFound.push(`Ajout catégorie: ${categoryTag}`);
     }
 
-    // 3. TAG DE BUDGET
-    if (!currentTags.some(t => t.startsWith('budget_')) && price > 0) {
+    // 4. VÉRIFIER ET CORRIGER LE BUDGET
+    const existingBudgetTags = Array.from(newTags).filter(t => t.startsWith('budget_'));
+
+    if (existingBudgetTags.length === 0 && price > 0) {
       const budgetTag = getBudgetTag(price);
       newTags.add(budgetTag);
       modified = true;
-      stats.byTag.budget++;
-      console.log(`  💰 "${productName}" → ${budgetTag} (${price}€)`);
+      stats.byIssue.missingBudget++;
+      issuesFound.push(`Ajout budget: ${budgetTag}`);
+    } else if (existingBudgetTags.length > 0 && price > 0) {
+      // Vérifier si le budget est cohérent avec le prix
+      const correctBudget = getBudgetTag(price);
+      if (!existingBudgetTags.includes(correctBudget)) {
+        existingBudgetTags.forEach(tag => newTags.delete(tag));
+        newTags.add(correctBudget);
+        modified = true;
+        issuesFound.push(`Correction budget: ${existingBudgetTags[0]} → ${correctBudget}`);
+      }
     }
 
-    // 4. TAG D'ÂGE
-    if (!currentTags.some(t => t.startsWith('age_'))) {
+    // 5. VÉRIFIER ET AJOUTER L'ÂGE
+    const existingAgeTags = Array.from(newTags).filter(t => t.startsWith('age_'));
+
+    if (existingAgeTags.length === 0) {
       const ageTag = detectAge(productName, productDescription);
       newTags.add(ageTag);
       modified = true;
-      stats.byTag.age++;
+      stats.byIssue.missingAge++;
+      issuesFound.push(`Ajout âge: ${ageTag}`);
     }
 
     // Mettre à jour le document si modifié
     if (modified) {
       await doc.ref.update({
-        tags: Array.from(newTags),
-        categories: Array.from(newCategories)
+        tags: Array.from(newTags)
       });
       stats.updated++;
-      return true;
-    }
 
-    return false;
+      if (issuesFound.length > 0) {
+        stats.fixed++;
+        if (stats.fixed <= 10) {
+          console.log(`  ✅ "${productName}"`);
+          issuesFound.forEach(issue => console.log(`     - ${issue}`));
+        }
+      }
+
+      return true;
+    } else {
+      stats.normalized++;
+      return false;
+    }
   } catch (error) {
     console.error(`❌ Erreur sur produit ${doc.id}:`, error.message);
     stats.errors++;
@@ -227,8 +283,8 @@ async function processProduct(doc) {
  * Fonction principale
  */
 async function main() {
-  console.log('🔧 Script de correction des tags Firebase');
-  console.log('=========================================\n');
+  console.log('🔧 Script de correction et normalisation des tags Firebase');
+  console.log('===========================================================\n');
 
   try {
     // Charger tous les produits
@@ -245,52 +301,60 @@ async function main() {
     // Afficher un échantillon AVANT
     const firstDoc = snapshot.docs[0];
     const firstData = firstDoc.data();
-    console.log('📋 ÉCHANTILLON AVANT MODIFICATION:');
-    console.log(`  Produit: ${firstData.name}`);
-    console.log(`  Tags actuels: ${JSON.stringify(firstData.tags)}`);
+    console.log('📋 ÉCHANTILLON AVANT CORRECTION:');
+    console.log(`  Produit: ${firstData.name || firstData.product_title}`);
+    console.log(`  Tags: ${JSON.stringify(firstData.tags)}`);
+    console.log(`  Gender field: ${firstData.gender}`);
     console.log(`  Prix: ${firstData.price}€\n`);
 
     // Traiter tous les produits
-    console.log('🔄 Traitement des produits...\n');
+    console.log('🔄 Correction et normalisation en cours...\n');
     let processed = 0;
 
     for (const doc of snapshot.docs) {
       await processProduct(doc);
       processed++;
 
-      // Afficher la progression tous les 10 produits
-      if (processed % 10 === 0) {
-        console.log(`   Progress: ${processed}/${stats.total} produits traités...`);
+      // Afficher la progression tous les 25 produits
+      if (processed % 25 === 0) {
+        console.log(`   📊 Progression: ${processed}/${stats.total} produits traités...`);
       }
     }
 
     // Résumé final
     console.log('\n✅ TERMINÉ !');
     console.log('═══════════════════════════════════════');
-    console.log(`📊 Total produits: ${stats.total}`);
-    console.log(`✅ Produits mis à jour: ${stats.updated}`);
+    console.log(`📊 Total produits analysés: ${stats.total}`);
+    console.log(`✅ Produits corrigés: ${stats.updated}`);
+    console.log(`✔️  Produits déjà OK: ${stats.normalized}`);
     console.log(`❌ Erreurs: ${stats.errors}`);
-    console.log('\n📈 Tags ajoutés par type:');
-    console.log(`  👤 Genre: ${stats.byTag.gender}`);
-    console.log(`  📁 Catégorie: ${stats.byTag.category}`);
-    console.log(`  💰 Budget: ${stats.byTag.budget}`);
-    console.log(`  🎂 Âge: ${stats.byTag.age}`);
+    console.log('\n🔍 Corrections effectuées par type:');
+    console.log(`  🔤 Tirets → Underscores: ${stats.byIssue.dashToUnderscore}`);
+    console.log(`  ⚠️  Conflits genre corrigés: ${stats.byIssue.genderConflict}`);
+    console.log(`  ➕ Genre manquant ajouté: ${stats.byIssue.missingGender}`);
+    console.log(`  ➕ Catégorie manquante ajoutée: ${stats.byIssue.missingCategory}`);
+    console.log(`  ➕ Budget manquant ajouté: ${stats.byIssue.missingBudget}`);
+    console.log(`  ➕ Âge manquant ajouté: ${stats.byIssue.missingAge}`);
 
     // Afficher un échantillon APRÈS
-    const updatedSnapshot = await db.collection('gifts').limit(1).get();
-    if (!updatedSnapshot.empty) {
-      const updatedData = updatedSnapshot.docs[0].data();
-      console.log('\n📋 ÉCHANTILLON APRÈS MODIFICATION:');
-      console.log(`  Produit: ${updatedData.name}`);
-      console.log(`  Tags: ${JSON.stringify(updatedData.tags)}`);
-      console.log(`  Catégories: ${JSON.stringify(updatedData.categories)}`);
-    }
+    const updatedSnapshot = await db.collection('gifts').doc(firstDoc.id).get();
+    const updatedData = updatedSnapshot.data();
+    console.log('\n📋 ÉCHANTILLON APRÈS CORRECTION:');
+    console.log(`  Produit: ${updatedData.name || updatedData.product_title}`);
+    console.log(`  Tags: ${JSON.stringify(updatedData.tags)}`);
+    console.log(`  Gender field: ${updatedData.gender}`);
 
-    console.log('\n✨ Votre base Firebase est maintenant prête !');
-    console.log('   Testez l\'app: ajoutez une personne et vérifiez les résultats.');
+    console.log('\n✨ Votre base Firebase est maintenant normalisée et corrigée !');
+    console.log('\n🎯 PROCHAINE ÉTAPE: Testez votre app');
+    console.log('   1. Ouvrez l\'app Doron');
+    console.log('   2. Allez dans "Recherche"');
+    console.log('   3. Cliquez sur "+ Ajouter une personne"');
+    console.log('   4. Remplissez le formulaire (ex: Homme, 30 ans)');
+    console.log('   5. ✅ Vous devriez voir des produits homme/mixte !');
 
   } catch (error) {
     console.error('\n❌ ERREUR CRITIQUE:', error);
+    console.error('Stack trace:', error.stack);
     process.exit(1);
   }
 
