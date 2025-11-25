@@ -514,15 +514,23 @@ class ProductMatchingService {
 
     // ========================================================================
     // 1️⃣ GENRE (STRICT - 1 seul tag) → gender_femme, gender_homme, gender_mixte
+    // FIX CRITIQUE: Utiliser contains() pour supporter les emojis
     // ========================================================================
     final gender = userTags['gender'] ?? userTags['recipientGender'];
     if (gender != null) {
       final genderStr = gender.toString();
-      final convertedGender = TagsDefinitions.genderConversion[genderStr] ??
-                              TagsDefinitions.genderConversion['Non spécifié'];
-      if (convertedGender != null) {
-        tags.add(convertedGender);
-        AppLogger.debug('🚹 Genre converti: $genderStr → $convertedGender', 'TagsConversion');
+
+      // FIX: Détecter "Femme" et "Homme" même avec emojis (🙋‍♀️ Femme, 🙋‍♂️ Homme)
+      if (genderStr.contains('Femme') || genderStr.contains('femme')) {
+        tags.add('gender_femme');
+        AppLogger.debug('🚹 Genre converti: $genderStr → gender_femme', 'TagsConversion');
+      } else if (genderStr.contains('Homme') || genderStr.contains('homme')) {
+        tags.add('gender_homme');
+        AppLogger.debug('🚹 Genre converti: $genderStr → gender_homme', 'TagsConversion');
+      } else {
+        // Fallback pour "Autre", "Préfère ne pas dire", etc.
+        tags.add('gender_mixte');
+        AppLogger.debug('🚹 Genre non spécifié: $genderStr → gender_mixte', 'TagsConversion');
       }
     }
 
