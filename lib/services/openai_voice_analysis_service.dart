@@ -89,7 +89,7 @@ FORMAT DE RÉPONSE REQUIS (JSON uniquement, sans texte supplémentaire):
   "budget": nombre (le maximum en euros),
   "age": nombre ou null,
   "gender": "Femme | Homme | Non spécifié",
-  "genderTag": "gender_femme | gender_homme",
+  "genderTag": "gender_femme | gender_homme | gender_mixte",
   "categoryTags": ["cat_tendances", "cat_tech", "cat_mode", "cat_maison", "cat_beaute", "cat_food"],
   "budgetTag": "budget_0_50 | budget_50_100 | budget_100_200 | budget_200+",
   "styleTags": ["style_elegant", "style_tendance", "style_minimaliste", "style_classique", "style_decontracte", "style_sportif", "style_vintage", "style_moderne", "style_luxe"],
@@ -101,10 +101,10 @@ FORMAT DE RÉPONSE REQUIS (JSON uniquement, sans texte supplémentaire):
 }
 
 RÈGLES STRICTES POUR LES TAGS:
-1. **genderTag**: TOUJOURS 1 seul tag parmi gender_femme, gender_homme
+1. **genderTag**: TOUJOURS 1 seul tag parmi gender_femme, gender_homme, gender_mixte
    - Maman/Sœur/Copine → gender_femme
    - Papa/Frère/Copain → gender_homme
-   - Si neutre/non spécifié → Choisir le plus probable (homme ou femme)
+   - Si neutre → gender_mixte
 
 2. **budgetTag**: TOUJOURS 1 seul tag calculé selon le budget
    - < 50€ → budget_0_50

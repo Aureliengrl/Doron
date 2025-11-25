@@ -104,13 +104,10 @@ class ProductMatchingService {
           genderFilter = 'gender_femme';
         } else if (genderStr.contains('Homme') || genderStr.contains('homme')) {
           genderFilter = 'gender_homme';
-        }
-        // ⚠️ Si genre non reconnu (Autre, etc.) → genderFilter reste null = accepte tous
-        if (genderFilter != null) {
-          AppLogger.info('👤 Genre utilisateur: $genderFilter (filtrage côté client)', 'Matching');
         } else {
-          AppLogger.info('👤 Genre non spécifié → Accepte tous les genres', 'Matching');
+          genderFilter = 'gender_mixte';
         }
+        AppLogger.info('👤 Genre utilisateur: $genderFilter (filtrage côté client)', 'Matching');
       }
 
       // Log du mode de filtrage
@@ -516,18 +513,16 @@ class ProductMatchingService {
     final tags = <String>{};
 
     // ========================================================================
-    // 1️⃣ GENRE (STRICT - 1 seul tag) → gender_femme, gender_homme
-    // ⚠️ Si "Autre" ou inconnu, ne génère AUCUN tag (accepte tous les produits)
+    // 1️⃣ GENRE (STRICT - 1 seul tag) → gender_femme, gender_homme, gender_mixte
     // ========================================================================
     final gender = userTags['gender'] ?? userTags['recipientGender'];
     if (gender != null) {
       final genderStr = gender.toString();
-      final convertedGender = TagsDefinitions.genderConversion[genderStr];
+      final convertedGender = TagsDefinitions.genderConversion[genderStr] ??
+                              TagsDefinitions.genderConversion['Non spécifié'];
       if (convertedGender != null) {
         tags.add(convertedGender);
         AppLogger.debug('🚹 Genre converti: $genderStr → $convertedGender', 'TagsConversion');
-      } else {
-        AppLogger.debug('🚹 Genre "$genderStr" non reconnu → Aucun filtre genre (accepte tous)', 'TagsConversion');
       }
     }
 
@@ -731,6 +726,10 @@ class ProductMatchingService {
         // Match exact du genre
         print('✅ GENRE MATCH: $userGender = +100 points');
         score += 100.0;
+      } else if (productGenderTags.contains('gender_mixte')) {
+        // Produit mixte accepté pour tout genre
+        print('✅ Produit mixte accepté: +70 points');
+        score += 70.0;
       } else {
         // Genre ne correspond PAS
         if (isPersonMode) {

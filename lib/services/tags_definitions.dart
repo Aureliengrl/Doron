@@ -11,10 +11,10 @@ class TagsDefinitions {
 
   /// 1️⃣ SEXE (OBLIGATOIRE - 1 seul tag)
   /// Règle : STRICTE - correspondance exacte requise
-  /// ⚠️ PAS DE gender_mixte - uniquement homme OU femme
   static const List<String> genderTags = [
     'gender_femme',
     'gender_homme',
+    'gender_mixte', // Rare, seulement si vraiment universel
   ];
 
   /// 2️⃣ CATÉGORIE PRINCIPALE (OBLIGATOIRE - 1 seul tag)
@@ -176,17 +176,11 @@ class TagsDefinitions {
   // ========================================================================
 
   /// Conversion genre utilisateur → tag produit
-  /// ⚠️ "Autre" et "Préfère ne pas dire" ne sont PAS dans cette map
-  /// → Ils ne génèrent AUCUN tag genre, ce qui accepte tous les produits
   static const Map<String, String> genderConversion = {
-    // Versions sans emoji (voice assistant, ancienne version)
     'Femme': 'gender_femme',
     'Homme': 'gender_homme',
-    // Versions avec emoji (onboarding actuel)
-    '🙋‍♀️ Femme': 'gender_femme',
-    '🙋‍♂️ Homme': 'gender_homme',
-    // '🌈 Autre' → volontairement omis, ne génère aucun tag
-    // '🤐 Préfère ne pas dire' → volontairement omis, ne génère aucun tag
+    'Mixte': 'gender_mixte',
+    'Non spécifié': 'gender_mixte',
   };
 
   /// Conversion catégories onboarding → tags produit
