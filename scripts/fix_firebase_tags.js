@@ -111,18 +111,25 @@ function detectGenderFromProduct(product) {
     return 'gender_homme';
   }
 
-  // 4. Si "unisex" ou impossible à déterminer → Regarder les tags existants
+  // 4. Pour les produits UNISEX (champ gender = "unisex")
+  // FORCER la répartition 50/50, NE PAS conserver l'ancien tag
+  if (genderField === 'unisex') {
+    const nameHash = productName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const newGender = nameHash % 2 === 0 ? 'gender_homme' : 'gender_femme';
+    console.log(`  🔄 Produit UNISEX "${productName}" → ${newGender} (répartition 50/50)`);
+    return newGender;
+  }
+
+  // 5. Sinon, conserver le tag existant si on ne peut vraiment pas déterminer
   const existingTags = Array.isArray(product.tags) ? product.tags : [];
   const existingGenderTag = existingTags.find(t => t.startsWith('gender_'));
 
   if (existingGenderTag === 'gender_femme' || existingGenderTag === 'gender_homme') {
-    // Conserver le tag existant si on ne peut pas mieux déterminer
+    // Conserver uniquement si le champ gender n'est PAS "unisex"
     return existingGenderTag;
   }
 
-  // 5. Par défaut pour produits vraiment unisex (pas de mots-clés, pas de catégorie claire)
-  // RÉPARTIR 50/50 entre homme et femme basé sur le hash du nom
-  // Garantit une distribution équilibrée
+  // 6. Par défaut : répartition 50/50
   const nameHash = productName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return nameHash % 2 === 0 ? 'gender_homme' : 'gender_femme';
 }
