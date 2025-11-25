@@ -97,8 +97,8 @@ function detectGenderFromProduct(product) {
     return 'gender_homme';
   }
 
-  // 3. Analyser la catégorie
-  const feminineCats = ['beauty', 'beaute', 'makeup', 'fashion'];
+  // 3. Analyser la catégorie (mais NE PLUS utiliser "fashion" comme indicateur féminin)
+  const feminineCats = ['beauty', 'beaute', 'makeup'];  // PAS fashion !
   const masculineCats = ['tech', 'sport', 'gaming'];
 
   const hasFeminineCat = categories.some(cat => feminineCats.some(fc => cat.includes(fc)));
@@ -120,10 +120,11 @@ function detectGenderFromProduct(product) {
     return existingGenderTag;
   }
 
-  // 5. Par défaut: si vraiment aucun indice, mettre homme ET femme
-  // L'utilisateur pourra ajuster manuellement si nécessaire
-  // Pour l'instant, privilégier FEMME par défaut pour unisex (plus de produits beauté/mode)
-  return 'gender_femme';
+  // 5. Par défaut pour produits vraiment unisex (pas de mots-clés, pas de catégorie claire)
+  // RÉPARTIR 50/50 entre homme et femme basé sur le hash du nom
+  // Garantit une distribution équilibrée
+  const nameHash = productName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return nameHash % 2 === 0 ? 'gender_homme' : 'gender_femme';
 }
 
 /**
