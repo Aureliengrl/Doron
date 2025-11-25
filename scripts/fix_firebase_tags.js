@@ -77,80 +77,22 @@ function detectGenderFromProduct(product) {
     'monsieur', 'mister', 'tie', 'beard', 'he', 'him', 'male'
   ];
 
-  // Analyser les mots-clés dans le texte
-  const feminineMatches = feminineKeywords.filter(kw => text.includes(kw)).length;
-  const masculineMatches = masculineKeywords.filter(kw => text.includes(kw)).length;
+  // ⚠️ SOLUTION FIREBASE UNIQUEMENT - APP NE PEUT PAS ÊTRE MODIFIÉE ⚠️
+  //
+  // PROBLÈME IDENTIFIÉ:
+  // L'app ne reconnaît pas les genres avec emojis ("🙋‍♀️ Femme")
+  // → Elle tombe sur le fallback "Non spécifié" → cherche gender_mixte
+  // → Si peu de produits gender_mixte → 0 résultats affichés
+  //
+  // SOLUTION:
+  // Mettre TOUS les produits en gender_mixte car:
+  // 1. Quand l'app cherche gender_femme → gender_mixte match avec +70 points
+  // 2. Quand l'app cherche gender_homme → gender_mixte match avec +70 points
+  // 3. Quand l'app cherche gender_mixte → gender_mixte match avec +100 points
+  //
+  // C'est la SEULE solution qui garantit des résultats sans modifier l'app!
 
-  // 1. Si le champ gender est explicite
-  if (genderField === 'male' || genderField === 'homme' || genderField === 'man') {
-    return 'gender_homme';
-  }
-  if (genderField === 'female' || genderField === 'femme' || genderField === 'woman') {
-    return 'gender_femme';
-  }
-
-  // 2. Si des mots-clés sont trouvés
-  if (feminineMatches > masculineMatches) {
-    return 'gender_femme';
-  }
-  if (masculineMatches > feminineMatches) {
-    return 'gender_homme';
-  }
-
-  // 3. Analyser la catégorie (mais NE PLUS utiliser "fashion" comme indicateur féminin)
-  const feminineCats = ['beauty', 'beaute', 'makeup'];  // PAS fashion !
-  const masculineCats = ['tech', 'sport', 'gaming'];
-
-  const hasFeminineCat = categories.some(cat => feminineCats.some(fc => cat.includes(fc)));
-  const hasMasculineCat = categories.some(cat => masculineCats.some(mc => cat.includes(mc)));
-
-  if (hasFeminineCat && !hasMasculineCat) {
-    return 'gender_femme';
-  }
-  if (hasMasculineCat && !hasFeminineCat) {
-    return 'gender_homme';
-  }
-
-  // 4. Pour les produits UNISEX (champ gender = "unisex")
-  // FORCER la répartition: 70% homme/femme (50/50), 30% mixte
-  if (genderField === 'unisex') {
-    const nameHash = productName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const repartition = nameHash % 10; // 0-9
-
-    if (repartition < 3) {
-      // 30% des unisex → gender_mixte (pour fallback app)
-      console.log(`  🌈 Produit UNISEX "${productName}" → gender_mixte (fallback universel)`);
-      return 'gender_mixte';
-    } else {
-      // 70% des unisex → répartition 50/50 homme/femme
-      const newGender = repartition % 2 === 0 ? 'gender_homme' : 'gender_femme';
-      console.log(`  🔄 Produit UNISEX "${productName}" → ${newGender} (répartition 50/50)`);
-      return newGender;
-    }
-  }
-
-  // 5. Sinon, conserver le tag existant si on ne peut vraiment pas déterminer
-  const existingTags = Array.isArray(product.tags) ? product.tags : [];
-  const existingGenderTag = existingTags.find(t => t.startsWith('gender_'));
-
-  if (existingGenderTag === 'gender_femme' || existingGenderTag === 'gender_homme') {
-    // Conserver uniquement si le champ gender n'est PAS "unisex"
-    return existingGenderTag;
-  }
-
-  // 6. Pour les produits vraiment neutres (pas de mots-clés, pas de genre)
-  // → 20% mixte, 80% répartition homme/femme
-  const nameHash = productName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const repartition = nameHash % 10;
-
-  if (repartition < 2) {
-    // 20% → gender_mixte (pour fallback app)
-    console.log(`  🌈 Produit neutre "${productName}" → gender_mixte (fallback universel)`);
-    return 'gender_mixte';
-  } else {
-    // 80% → répartition 50/50
-    return repartition % 2 === 0 ? 'gender_homme' : 'gender_femme';
-  }
+  return 'gender_mixte';
 }
 
 /**
