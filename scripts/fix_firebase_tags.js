@@ -112,12 +112,21 @@ function detectGenderFromProduct(product) {
   }
 
   // 4. Pour les produits UNISEX (champ gender = "unisex")
-  // FORCER la répartition 50/50, NE PAS conserver l'ancien tag
+  // FORCER la répartition: 70% homme/femme (50/50), 30% mixte
   if (genderField === 'unisex') {
     const nameHash = productName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-    const newGender = nameHash % 2 === 0 ? 'gender_homme' : 'gender_femme';
-    console.log(`  🔄 Produit UNISEX "${productName}" → ${newGender} (répartition 50/50)`);
-    return newGender;
+    const repartition = nameHash % 10; // 0-9
+
+    if (repartition < 3) {
+      // 30% des unisex → gender_mixte (pour fallback app)
+      console.log(`  🌈 Produit UNISEX "${productName}" → gender_mixte (fallback universel)`);
+      return 'gender_mixte';
+    } else {
+      // 70% des unisex → répartition 50/50 homme/femme
+      const newGender = repartition % 2 === 0 ? 'gender_homme' : 'gender_femme';
+      console.log(`  🔄 Produit UNISEX "${productName}" → ${newGender} (répartition 50/50)`);
+      return newGender;
+    }
   }
 
   // 5. Sinon, conserver le tag existant si on ne peut vraiment pas déterminer
@@ -129,9 +138,19 @@ function detectGenderFromProduct(product) {
     return existingGenderTag;
   }
 
-  // 6. Par défaut : répartition 50/50
+  // 6. Pour les produits vraiment neutres (pas de mots-clés, pas de genre)
+  // → 20% mixte, 80% répartition homme/femme
   const nameHash = productName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return nameHash % 2 === 0 ? 'gender_homme' : 'gender_femme';
+  const repartition = nameHash % 10;
+
+  if (repartition < 2) {
+    // 20% → gender_mixte (pour fallback app)
+    console.log(`  🌈 Produit neutre "${productName}" → gender_mixte (fallback universel)`);
+    return 'gender_mixte';
+  } else {
+    // 80% → répartition 50/50
+    return repartition % 2 === 0 ? 'gender_homme' : 'gender_femme';
+  }
 }
 
 /**
