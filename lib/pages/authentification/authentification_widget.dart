@@ -1258,17 +1258,22 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                   print('✅ User tags transferred to Firebase');
                                                                 }
 
-                                                                // 2. Transférer les people
-                                                                final peopleLocal = prefs.getString('local_people');
-                                                                if (peopleLocal != null) {
-                                                                  final people = (json.decode(peopleLocal) as List).cast<Map<String, dynamic>>();
-                                                                  for (var person in people) {
-                                                                    await FirebaseDataService.createPerson(
-                                                                      tags: person['tags'],
-                                                                      isPendingFirstGen: person['meta']?['isPendingFirstGen'] ?? false,
-                                                                    );
+                                                                // 2. Transférer les people SEULEMENT si pas de pendingPersonId
+                                                                // Si pendingPersonId existe, on va le sync spécifiquement après
+                                                                if (_pendingPersonId == null || _pendingPersonId!.isEmpty) {
+                                                                  final peopleLocal = prefs.getString('local_people');
+                                                                  if (peopleLocal != null) {
+                                                                    final people = (json.decode(peopleLocal) as List).cast<Map<String, dynamic>>();
+                                                                    for (var person in people) {
+                                                                      await FirebaseDataService.createPerson(
+                                                                        tags: person['tags'],
+                                                                        isPendingFirstGen: person['meta']?['isPendingFirstGen'] ?? false,
+                                                                      );
+                                                                    }
+                                                                    print('✅ People transferred to Firebase');
                                                                   }
-                                                                  print('✅ People transferred to Firebase');
+                                                                } else {
+                                                                  print('⏭️ Skipping bulk transfer, will sync specific person: $_pendingPersonId');
                                                                 }
 
                                                                 // 3. Transférer l'ancien format pour compatibilité
@@ -1619,17 +1624,21 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                                 print('✅ User tags transferred to Firebase');
                                                                               }
 
-                                                                              // 2. Transférer les people
-                                                                              final peopleLocal = prefs.getString('local_people');
-                                                                              if (peopleLocal != null) {
-                                                                                final people = (json.decode(peopleLocal) as List).cast<Map<String, dynamic>>();
-                                                                                for (var person in people) {
-                                                                                  await FirebaseDataService.createPerson(
-                                                                                    tags: person['tags'],
-                                                                                    isPendingFirstGen: person['meta']?['isPendingFirstGen'] ?? false,
-                                                                                  );
+                                                                              // 2. Transférer les people SEULEMENT si pas de pendingPersonId
+                                                                              if (_pendingPersonId == null || _pendingPersonId!.isEmpty) {
+                                                                                final peopleLocal = prefs.getString('local_people');
+                                                                                if (peopleLocal != null) {
+                                                                                  final people = (json.decode(peopleLocal) as List).cast<Map<String, dynamic>>();
+                                                                                  for (var person in people) {
+                                                                                    await FirebaseDataService.createPerson(
+                                                                                      tags: person['tags'],
+                                                                                      isPendingFirstGen: person['meta']?['isPendingFirstGen'] ?? false,
+                                                                                    );
+                                                                                  }
+                                                                                  print('✅ People transferred to Firebase');
                                                                                 }
-                                                                                print('✅ People transferred to Firebase');
+                                                                              } else {
+                                                                                print('⏭️ Skipping bulk transfer, will sync specific person: $_pendingPersonId');
                                                                               }
 
                                                                               // 3. Transférer l'ancien format pour compatibilité
@@ -1791,17 +1800,21 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                                     print('✅ User tags transferred to Firebase');
                                                                                   }
 
-                                                                                  // 2. Transférer les people
-                                                                                  final peopleLocal = prefs.getString('local_people');
-                                                                                  if (peopleLocal != null) {
-                                                                                    final people = (json.decode(peopleLocal) as List).cast<Map<String, dynamic>>();
-                                                                                    for (var person in people) {
-                                                                                      await FirebaseDataService.createPerson(
-                                                                                        tags: person['tags'],
-                                                                                        isPendingFirstGen: person['meta']?['isPendingFirstGen'] ?? false,
-                                                                                      );
+                                                                                  // 2. Transférer les people SEULEMENT si pas de pendingPersonId
+                                                                                  if (_pendingPersonId == null || _pendingPersonId!.isEmpty) {
+                                                                                    final peopleLocal = prefs.getString('local_people');
+                                                                                    if (peopleLocal != null) {
+                                                                                      final people = (json.decode(peopleLocal) as List).cast<Map<String, dynamic>>();
+                                                                                      for (var person in people) {
+                                                                                        await FirebaseDataService.createPerson(
+                                                                                          tags: person['tags'],
+                                                                                          isPendingFirstGen: person['meta']?['isPendingFirstGen'] ?? false,
+                                                                                        );
+                                                                                      }
+                                                                                      print('✅ People transferred to Firebase');
                                                                                     }
-                                                                                    print('✅ People transferred to Firebase');
+                                                                                  } else {
+                                                                                    print('⏭️ Skipping bulk transfer, will sync specific person: $_pendingPersonId');
                                                                                   }
 
                                                                                   // 3. Transférer l'ancien format pour compatibilité
@@ -2435,17 +2448,21 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                 print('✅ User tags transferred to Firebase');
                                                               }
 
-                                                              // 2. Transférer les people
-                                                              final peopleLocal = prefs.getString('local_people');
-                                                              if (peopleLocal != null) {
-                                                                final people = (json.decode(peopleLocal) as List).cast<Map<String, dynamic>>();
-                                                                for (var person in people) {
-                                                                  await FirebaseDataService.createPerson(
-                                                                    tags: person['tags'],
-                                                                    isPendingFirstGen: person['meta']?['isPendingFirstGen'] ?? false,
-                                                                  );
+                                                              // 2. Transférer les people SEULEMENT si pas de pendingPersonId
+                                                              if (_pendingPersonId == null || _pendingPersonId!.isEmpty) {
+                                                                final peopleLocal = prefs.getString('local_people');
+                                                                if (peopleLocal != null) {
+                                                                  final people = (json.decode(peopleLocal) as List).cast<Map<String, dynamic>>();
+                                                                  for (var person in people) {
+                                                                    await FirebaseDataService.createPerson(
+                                                                      tags: person['tags'],
+                                                                      isPendingFirstGen: person['meta']?['isPendingFirstGen'] ?? false,
+                                                                    );
+                                                                  }
+                                                                  print('✅ People transferred to Firebase');
                                                                 }
-                                                                print('✅ People transferred to Firebase');
+                                                              } else {
+                                                                print('⏭️ Skipping bulk transfer, will sync specific person: $_pendingPersonId');
                                                               }
 
                                                               // 3. Transférer l'ancien format pour compatibilité
