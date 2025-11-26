@@ -754,9 +754,29 @@ class FirebaseDataService {
   /// Charge toutes les personnes
   static Future<List<Map<String, dynamic>>> loadPeople() async {
     AppLogger.info('🔍 loadPeople: isLoggedIn=$isLoggedIn, currentUserId=$currentUserId', 'Firebase');
-    List<Map<String, dynamic>>? firebasePeople;
 
-    // Essayer Firebase si connecté
+    // ⚠️ FIX ONBOARDING: TOUJOURS charger le local storage EN PREMIER
+    // Cela garantit que les personnes créées AVANT la connexion sont disponibles
+    List<Map<String, dynamic>> localPeople = [];
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final peopleJson = prefs.getString('local_people') ?? '[]';
+      localPeople = (json.decode(peopleJson) as List)
+          .map((e) => e as Map<String, dynamic>)
+          .toList();
+      if (localPeople.isNotEmpty) {
+        AppLogger.success('💾 LOCAL: ${localPeople.length} people found', 'Firebase');
+        final localIds = localPeople.map((p) => p['id']).toList();
+        AppLogger.debug('   Local IDs: $localIds', 'Firebase');
+      } else {
+        AppLogger.warning('⚠️ LOCAL: empty', 'Firebase');
+      }
+    } catch (e) {
+      AppLogger.error('❌ LOCAL: error loading', 'Firebase', e);
+    }
+
+    // Charger Firebase seulement si connecté
+    List<Map<String, dynamic>>? firebasePeople;
     if (isLoggedIn) {
       try {
         final snapshot = await _firestore
@@ -766,9 +786,8 @@ class FirebaseDataService {
             .orderBy('meta.createdAt', descending: true)
             .get();
 
-        AppLogger.info('📊 Firebase query result: ${snapshot.docs.length} docs', 'Firebase');
+        AppLogger.info('📊 FIREBASE: ${snapshot.docs.length} docs', 'Firebase');
         if (snapshot.docs.isNotEmpty) {
-          AppLogger.firebase('Loaded ${snapshot.docs.length} people from Firebase');
           firebasePeople = snapshot.docs.map((doc) {
             return {
               'id': doc.id,
@@ -776,70 +795,47 @@ class FirebaseDataService {
             };
           }).toList();
         } else {
-          // Firebase vide mais query réussie
           firebasePeople = [];
-          AppLogger.warning('⚠️ Firebase people collection is empty', 'Firebase');
         }
       } catch (e) {
-        AppLogger.error('Error loading people from Firebase', 'Firebase', e);
+        AppLogger.error('❌ FIREBASE: error', 'Firebase', e);
       }
-    } else {
-      AppLogger.info('👤 User not logged in, skipping Firebase query', 'Firebase');
     }
 
-    // Charger aussi depuis le stockage local
-    List<Map<String, dynamic>> localPeople = [];
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final peopleJson = prefs.getString('local_people') ?? '[]';
-      localPeople = (json.decode(peopleJson) as List)
-          .map((e) => e as Map<String, dynamic>)
-          .toList();
-      if (localPeople.isNotEmpty) {
-        AppLogger.success('💾 Loaded ${localPeople.length} people from local storage', 'Firebase');
-        // Log les IDs des personnes locales
-        final localIds = localPeople.map((p) => p['id']).toList();
-        AppLogger.debug('   Local person IDs: $localIds', 'Firebase');
-      } else {
-        AppLogger.warning('⚠️ Local storage is empty', 'Firebase');
-      }
-    } catch (e) {
-      AppLogger.error('Error loading people locally', 'Firebase', e);
-    }
+    // ⚠️ FIX ONBOARDING: Si LOCAL a des données, TOUJOURS les inclure
+    // Merge avec Firebase si disponible, sinon retourner local uniquement
+    if (localPeople.isNotEmpty) {
+      if (firebasePeople != null && firebasePeople.isNotEmpty) {
+        // Les deux ont des données: merger (local en priorité)
+        AppLogger.info('🔄 MERGE: local ${localPeople.length} + firebase ${firebasePeople.length}', 'Firebase');
+        final localIds = localPeople.map((p) => p['id']).toSet();
+        final merged = [...localPeople]; // Local en premier
 
-    // Fusionner: Si Firebase a des données, ajouter les personnes locales non présentes
-    // Si Firebase est vide ou null, retourner simplement les personnes locales
-    if (firebasePeople != null && firebasePeople.isNotEmpty) {
-      AppLogger.info('🔄 Merging: Firebase has ${firebasePeople.length} people, local has ${localPeople.length}', 'Firebase');
-      // Ajouter les personnes locales qui ne sont pas dans Firebase
-      final firebaseIds = firebasePeople.map((p) => p['id']).toSet();
-      for (var localPerson in localPeople) {
-        if (!firebaseIds.contains(localPerson['id'])) {
-          firebasePeople.add(localPerson);
-          AppLogger.debug('Added local person to list: ${localPerson['id']}', 'Firebase');
+        for (var fbPerson in firebasePeople) {
+          if (!localIds.contains(fbPerson['id'])) {
+            merged.add(fbPerson);
+          }
         }
+
+        final result = _deduplicatePeopleByName(merged);
+        AppLogger.success('✅ RETURN: ${result.length} people (merged)', 'Firebase');
+        return result;
+      } else {
+        // Seulement local
+        AppLogger.success('✅ RETURN: ${localPeople.length} people (local only)', 'Firebase');
+        return _deduplicatePeopleByName(localPeople);
       }
-
-      // FIX Bug 3: Déduplication par nom pour éviter les doubles cercles
-      final deduplicatedPeople = _deduplicatePeopleByName(firebasePeople);
-      AppLogger.success('✅ Returning ${deduplicatedPeople.length} people (Firebase + local)', 'Firebase');
-      return deduplicatedPeople;
     }
 
-    // FIX ONBOARDING: Si Firebase vide/null mais qu'on est connecté et qu'il y a des personnes locales,
-    // fusionner quand même pour que les personnes créées AVANT la connexion soient visibles
-    if (firebasePeople != null && localPeople.isNotEmpty) {
-      AppLogger.success('🔄 Firebase empty but local has ${localPeople.length} people', 'Firebase');
-      final result = _deduplicatePeopleByName(localPeople);
-      AppLogger.success('✅ Returning ${result.length} people (local only)', 'Firebase');
-      return result;
+    // Local vide: retourner Firebase si disponible
+    if (firebasePeople != null && firebasePeople.isNotEmpty) {
+      AppLogger.success('✅ RETURN: ${firebasePeople.length} people (firebase only)', 'Firebase');
+      return _deduplicatePeopleByName(firebasePeople);
     }
 
-    // Si Firebase vide ou non connecté, retourner les personnes locales (dédupliquées)
-    AppLogger.info('📋 Returning ${localPeople.length} local people (default path)', 'Firebase');
-    final result = _deduplicatePeopleByName(localPeople);
-    AppLogger.success('✅ Returning ${result.length} people after deduplication', 'Firebase');
-    return result;
+    // Aucune donnée
+    AppLogger.warning('⚠️ RETURN: 0 people (nothing found)', 'Firebase');
+    return [];
   }
 
   /// FIX Bug 3: Déduplique les personnes par nom (garde la plus récente)
