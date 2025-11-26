@@ -91,12 +91,18 @@ class _OnboardingGiftsResultWidgetState
       else if (_model.personId != null) {
         print('🔍 Chargement des données pour personne: ${_model.personId}');
         final people = await FirebaseDataService.loadPeople();
+        print('📊 loadPeople returned ${people.length} people');
+        if (people.isNotEmpty) {
+          final peopleIds = people.map((p) => p['id']).toList();
+          print('   Available person IDs: $peopleIds');
+        }
         final person = people.firstWhere(
           (p) => p['id'] == _model.personId,
           orElse: () => {},
         );
 
         if (person.isEmpty) {
+          print('❌ Person not found! Looking for ID: ${_model.personId}');
           // Afficher erreur à l'utilisateur au lieu de crasher
           if (mounted) {
             // IMPORTANT: Montrer SnackBar AVANT de pop pour éviter context invalide
