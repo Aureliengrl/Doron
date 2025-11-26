@@ -881,6 +881,59 @@ class FirebaseDataService {
     return result;
   }
 
+  /// FIX ONBOARDING: Charge une personne par ID sans déduplication
+  /// Utilisé pour l'onboarding où on a l'ID exact
+  static Future<Map<String, dynamic>?> loadPersonById(String personId) async {
+    AppLogger.info('🔍 loadPersonById: $personId', 'Firebase');
+
+    // Charger depuis local storage d'abord
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final peopleJson = prefs.getString('local_people') ?? '[]';
+      final localPeople = (json.decode(peopleJson) as List)
+          .map((e) => e as Map<String, dynamic>)
+          .toList();
+
+      // Chercher par ID dans local
+      final localPerson = localPeople.firstWhere(
+        (p) => p['id'] == personId,
+        orElse: () => {},
+      );
+
+      if (localPerson.isNotEmpty) {
+        AppLogger.success('✅ Person found in LOCAL: $personId', 'Firebase');
+        return localPerson;
+      }
+    } catch (e) {
+      AppLogger.error('Error loading from local', 'Firebase', e);
+    }
+
+    // Si pas trouvé en local et user connecté, chercher dans Firebase
+    if (isLoggedIn) {
+      try {
+        final doc = await _firestore
+            .collection('users')
+            .doc(currentUserId)
+            .collection('people')
+            .doc(personId)
+            .get();
+
+        if (doc.exists) {
+          AppLogger.success('✅ Person found in FIREBASE: $personId', 'Firebase');
+          return {
+            'id': doc.id,
+            ...doc.data() as Map<String, dynamic>,
+          };
+        }
+      } catch (e) {
+        AppLogger.error('Error loading from Firebase', 'Firebase', e);
+      }
+    }
+
+    AppLogger.warning('⚠️ Person NOT FOUND: $personId', 'Firebase');
+    return null;
+  }
+
   /// Charge la première personne avec isPendingFirstGen=true
   static Future<Map<String, dynamic>?> getFirstPendingPerson() async {
     final people = await loadPeople();

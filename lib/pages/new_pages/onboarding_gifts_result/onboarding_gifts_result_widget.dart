@@ -89,19 +89,13 @@ class _OnboardingGiftsResultWidgetState
       }
       // 🎯 PRIORITÉ 2: Si un personId est spécifié, charger les tags de la personne
       else if (_model.personId != null) {
-        print('🔍 Chargement des données pour personne: ${_model.personId}');
-        final people = await FirebaseDataService.loadPeople();
-        print('📊 loadPeople returned ${people.length} people');
-        if (people.isNotEmpty) {
-          final peopleIds = people.map((p) => p['id']).toList();
-          print('   Available person IDs: $peopleIds');
-        }
-        final person = people.firstWhere(
-          (p) => p['id'] == _model.personId,
-          orElse: () => {},
-        );
+        print('🔍 Chargement direct par ID: ${_model.personId}');
 
-        if (person.isEmpty) {
+        // FIX ONBOARDING: Charger directement par ID sans déduplication
+        // Évite que la personne soit supprimée si plusieurs tentatives avec même nom
+        final person = await FirebaseDataService.loadPersonById(_model.personId!);
+
+        if (person == null) {
           print('❌ Person not found! Looking for ID: ${_model.personId}');
           // Afficher erreur à l'utilisateur au lieu de crasher
           if (mounted) {
