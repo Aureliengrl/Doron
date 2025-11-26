@@ -1287,6 +1287,18 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                 // D'abord, vérifier si un personId a été passé en paramètre (premier onboarding)
                                                                 if (_pendingPersonId != null && _pendingPersonId!.isNotEmpty && context.mounted) {
                                                                   print('🎯 PersonId depuis onboarding: $_pendingPersonId');
+
+                                                                  // FIX ONBOARDING: Synchroniser la personne locale vers Firebase
+                                                                  // Car elle a été créée AVANT la connexion (donc seulement en local)
+                                                                  print('🔄 Synchronisation de la personne vers Firebase...');
+                                                                  final syncSuccess = await FirebaseDataService.syncLocalPersonToFirebase(_pendingPersonId!);
+
+                                                                  if (syncSuccess) {
+                                                                    print('✅ Personne synchronisée avec succès');
+                                                                  } else {
+                                                                    print('⚠️ Échec de la synchronisation, mais on continue avec les données locales');
+                                                                  }
+
                                                                   // Ajouter returnTo si présent
                                                                   final returnParam = (_returnTo != null && _returnTo!.isNotEmpty)
                                                                       ? '&returnTo=${Uri.encodeComponent(_returnTo!)}'
@@ -1636,6 +1648,17 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                               // D'abord, vérifier si un personId a été passé en paramètre (premier onboarding)
                                                                               if (_pendingPersonId != null && _pendingPersonId!.isNotEmpty && context.mounted) {
                                                                                 print('🎯 PersonId depuis onboarding: $_pendingPersonId');
+
+                                                                                // FIX ONBOARDING: Synchroniser la personne locale vers Firebase
+                                                                                print('🔄 Synchronisation de la personne vers Firebase...');
+                                                                                final syncSuccess = await FirebaseDataService.syncLocalPersonToFirebase(_pendingPersonId!);
+
+                                                                                if (syncSuccess) {
+                                                                                  print('✅ Personne synchronisée avec succès');
+                                                                                } else {
+                                                                                  print('⚠️ Échec de la synchronisation, mais on continue avec les données locales');
+                                                                                }
+
                                                                                 // Ajouter returnTo si présent
                                                                                 final returnParam = (_returnTo != null && _returnTo!.isNotEmpty)
                                                                                     ? '&returnTo=${Uri.encodeComponent(_returnTo!)}'
@@ -1797,6 +1820,17 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                                                   // D'abord, vérifier si un personId a été passé en paramètre (premier onboarding)
                                                                                   if (_pendingPersonId != null && _pendingPersonId!.isNotEmpty && context.mounted) {
                                                                                     print('🎯 PersonId depuis onboarding: $_pendingPersonId');
+
+                                                                                    // FIX ONBOARDING: Synchroniser la personne locale vers Firebase
+                                                                                    print('🔄 Synchronisation de la personne vers Firebase...');
+                                                                                    final syncSuccess = await FirebaseDataService.syncLocalPersonToFirebase(_pendingPersonId!);
+
+                                                                                    if (syncSuccess) {
+                                                                                      print('✅ Personne synchronisée avec succès');
+                                                                                    } else {
+                                                                                      print('⚠️ Échec de la synchronisation, mais on continue avec les données locales');
+                                                                                    }
+
                                                                                     // Ajouter returnTo si présent
                                                                                     final returnParam = (_returnTo != null && _returnTo!.isNotEmpty)
                                                                                         ? '&returnTo=${Uri.encodeComponent(_returnTo!)}'

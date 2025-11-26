@@ -700,6 +700,57 @@ class FirebaseDataService {
     }
   }
 
+  /// FIX ONBOARDING: Synchronise une personne locale vers Firebase
+  /// Utilisé après le premier onboarding quand la personne a été créée AVANT la connexion
+  static Future<bool> syncLocalPersonToFirebase(String personId) async {
+    if (!isLoggedIn) {
+      AppLogger.error('Cannot sync: user not logged in', 'Firebase', null);
+      return false;
+    }
+
+    try {
+      // Charger la personne depuis le storage local
+      final prefs = await SharedPreferences.getInstance();
+      final peopleJson = prefs.getString('local_people') ?? '[]';
+      final localPeople = (json.decode(peopleJson) as List)
+          .map((e) => e as Map<String, dynamic>)
+          .toList();
+
+      // Trouver la personne avec cet ID
+      final person = localPeople.firstWhere(
+        (p) => p['id'] == personId,
+        orElse: () => {},
+      );
+
+      if (person.isEmpty) {
+        AppLogger.error('Person not found in local storage: $personId', 'Firebase', null);
+        return false;
+      }
+
+      AppLogger.info('🔄 Syncing person $personId to Firebase...', 'Firebase');
+
+      // Sauvegarder dans Firebase
+      await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('people')
+          .doc(personId)
+          .set({
+        'tags': person['tags'],
+        'meta': person['meta'] ?? {
+          'isPendingFirstGen': false,
+          'createdAt': FieldValue.serverTimestamp(),
+        },
+      });
+
+      AppLogger.success('✅ Person $personId synced to Firebase', 'Firebase');
+      return true;
+    } catch (e) {
+      AppLogger.error('Error syncing person to Firebase', 'Firebase', e);
+      return false;
+    }
+  }
+
   /// Charge toutes les personnes
   static Future<List<Map<String, dynamic>>> loadPeople() async {
     AppLogger.info('🔍 loadPeople: isLoggedIn=$isLoggedIn, currentUserId=$currentUserId', 'Firebase');
