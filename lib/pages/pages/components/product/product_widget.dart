@@ -98,8 +98,8 @@ class _ProductWidgetState extends State<ProductWidget>
                 highlightColor: Colors.transparent,
                 onTap: () async {
                   await launchURL(
-                      (widget!.product?.platform == Platforms.sephora) ||
-                              (widget!.product?.platform == Platforms.ikea)
+                      (widget!.product?.platform == "sephora") ||
+                              (widget!.product?.platform == "ikea")
                           ? widget!.product!.productUrl
                           : ((String var1) {
                               return '$var1?tag=doron7-21';
@@ -137,7 +137,7 @@ class _ProductWidgetState extends State<ProductWidget>
                                   ),
                                   width: 120.0,
                                   height: 120.0,
-                                  fit: BoxFit.fitHeight,
+                                  fit: BoxFit.cover,
                                   cacheWidth: 120,
                                   cacheHeight: 120,
                                 ),
@@ -241,7 +241,7 @@ class _ProductWidgetState extends State<ProductWidget>
                                 ),
                               ],
                             ),
-                            if (widget!.product?.platform != Platforms.ikea)
+                            if (widget!.product?.platform != "ikea")
                               Row(
                                 mainAxisSize: MainAxisSize.max,
                                 children: [
@@ -329,7 +329,7 @@ class _ProductWidgetState extends State<ProductWidget>
                             Builder(
                               builder: (context) {
                                 if (widget!.product?.platform ==
-                                    Platforms.sephora) {
+                                    "sephora") {
                                   return Row(
                                     mainAxisSize: MainAxisSize.max,
                                     crossAxisAlignment:
@@ -381,7 +381,7 @@ class _ProductWidgetState extends State<ProductWidget>
                                     ].divide(SizedBox(width: 5.0)),
                                   );
                                 } else if (widget!.product?.platform ==
-                                    Platforms.ikea) {
+                                    "ikea") {
                                   return Row(
                                     mainAxisSize: MainAxisSize.max,
                                     crossAxisAlignment:

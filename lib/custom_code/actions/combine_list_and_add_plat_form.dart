@@ -13,7 +13,7 @@ import 'package:flutter/material.dart';
 Future<List<ProductsStruct>?> combineListAndAddPlatForm(
   List<ProductsStruct>? oldList,
   List<ProductsStruct>? newList,
-  Platforms? platform,
+  String? platform,
 ) async {
   // Add your function code here!
 

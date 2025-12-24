@@ -9,6 +9,7 @@ import 'schema/users_record.dart';
 import 'schema/favourites_record.dart';
 import 'schema/q_as_record.dart';
 import 'schema/gift_suggestion_chat_record.dart';
+import 'schema/gifts_record.dart';
 
 export 'dart:async' show StreamSubscription;
 export 'package:cloud_firestore/cloud_firestore.dart' hide Order;
@@ -21,6 +22,7 @@ export 'schema/users_record.dart';
 export 'schema/favourites_record.dart';
 export 'schema/q_as_record.dart';
 export 'schema/gift_suggestion_chat_record.dart';
+export 'schema/gifts_record.dart';
 
 /// Functions to query UsersRecords (as a Stream and as a Future).
 Future<int> queryUsersRecordCount({
@@ -170,6 +172,43 @@ Future<List<GiftSuggestionChatRecord>> queryGiftSuggestionChatRecordOnce({
       singleRecord: singleRecord,
     );
 
+/// Functions to query GiftsRecords (as a Stream and as a Future).
+Future<int> queryGiftsRecordCount({
+  Query Function(Query)? queryBuilder,
+  int limit = -1,
+}) =>
+    queryCollectionCount(
+      GiftsRecord.collection,
+      queryBuilder: queryBuilder,
+      limit: limit,
+    );
+
+Stream<List<GiftsRecord>> queryGiftsRecord({
+  Query Function(Query)? queryBuilder,
+  int limit = -1,
+  bool singleRecord = false,
+}) =>
+    queryCollection(
+      GiftsRecord.collection,
+      GiftsRecord.fromSnapshot,
+      queryBuilder: queryBuilder,
+      limit: limit,
+      singleRecord: singleRecord,
+    );
+
+Future<List<GiftsRecord>> queryGiftsRecordOnce({
+  Query Function(Query)? queryBuilder,
+  int limit = -1,
+  bool singleRecord = false,
+}) =>
+    queryCollectionOnce(
+      GiftsRecord.collection,
+      GiftsRecord.fromSnapshot,
+      queryBuilder: queryBuilder,
+      limit: limit,
+      singleRecord: singleRecord,
+    );
+
 Future<int> queryCollectionCount(
   Query collection, {
   Query Function(Query)? queryBuilder,
@@ -307,13 +346,21 @@ Future<FFFirestorePage<T>> queryCollectionPage<T>(
 
 // Creates a Firestore document representing the logged in user if it doesn't yet exist
 Future maybeCreateUser(User user) async {
+  print('🔄 maybeCreateUser: Début pour UID: ${user.uid}');
+
   final userRecord = UsersRecord.collection.doc(user.uid);
+
+  print('🔄 maybeCreateUser: Vérification si utilisateur existe...');
   final userExists = await userRecord.get().then((u) => u.exists);
+
   if (userExists) {
+    print('✅ maybeCreateUser: Utilisateur existe déjà, chargement du document');
     currentUserDocument = await UsersRecord.getDocumentOnce(userRecord);
+    print('✅ maybeCreateUser: Document chargé');
     return;
   }
 
+  print('🔄 maybeCreateUser: Utilisateur n\'existe pas, création du document...');
   final userData = createUsersRecordData(
     email: user.email ??
         FirebaseAuth.instance.currentUser?.email ??
@@ -326,8 +373,15 @@ Future maybeCreateUser(User user) async {
     createdTime: getCurrentTimestamp,
   );
 
+  print('🔄 maybeCreateUser: Enregistrement dans Firestore...');
+  print('   Email: ${userData['email']}');
+  print('   DisplayName: ${userData['display_name']}');
+
   await userRecord.set(userData);
+
+  print('✅ maybeCreateUser: Document créé avec succès');
   currentUserDocument = UsersRecord.getDocumentFromData(userData, userRecord);
+  print('✅ maybeCreateUser: Terminé');
 }
 
 Future updateUserDocument({String? email}) async {

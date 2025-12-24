@@ -2,6 +2,8 @@ import '/custom_code/actions/index.dart' as actions;
 import 'package:provider/provider.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:ui';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -17,8 +19,120 @@ import 'package:google_fonts/google_fonts.dart';
 import 'flutter_flow/nav/nav.dart';
 import 'index.dart';
 
+/// Service de logging d'erreurs global pour capturer les crashs en release
+class ErrorLogService {
+  static final List<String> _errorLogs = [];
+  static const int _maxLogs = 50;
+
+  static void logError(String source, dynamic error, StackTrace? stack) {
+    final timestamp = DateTime.now().toIso8601String();
+    final logEntry = '''
+[$timestamp] $source
+Error: $error
+Stack: ${stack?.toString().split('\n').take(10).join('\n') ?? 'No stack'}
+---''';
+
+    _errorLogs.add(logEntry);
+    if (_errorLogs.length > _maxLogs) {
+      _errorLogs.removeAt(0);
+    }
+
+    // Print pour debug console (visible dans Xcode logs)
+    print('🔴 ERROR CAPTURED [$source]: $error');
+    if (stack != null) {
+      print('Stack trace:\n${stack.toString().split('\n').take(15).join('\n')}');
+    }
+  }
+
+  static List<String> get logs => List.unmodifiable(_errorLogs);
+  static String get logsAsString => _errorLogs.join('\n\n');
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ============================================
+  // FIX CRITIQUE: Capture d'erreurs globale
+  // Pour voir les crashs en mode release sur iOS
+  // ============================================
+
+  // 1. Capture les erreurs de framework Flutter (widget build errors, etc.)
+  FlutterError.onError = (FlutterErrorDetails details) {
+    ErrorLogService.logError(
+      'FlutterError',
+      details.exceptionAsString(),
+      details.stack,
+    );
+    // En debug, afficher normalement
+    if (kDebugMode) {
+      FlutterError.presentError(details);
+    }
+  };
+
+  // 2. Capture les erreurs async non-gérées (Future/Stream errors)
+  PlatformDispatcher.instance.onError = (error, stack) {
+    ErrorLogService.logError('PlatformDispatcher', error, stack);
+    return true; // Indique qu'on a géré l'erreur
+  };
+
+  // 3. Widget d'erreur personnalisé - AU LIEU d'un écran gris
+  // Affiche l'erreur réelle pour pouvoir la diagnostiquer
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return Container(
+      color: Colors.red.shade900,
+      padding: const EdgeInsets.all(16),
+      child: Center(
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.white, size: 48),
+              const SizedBox(height: 16),
+              const Text(
+                'ERREUR WIDGET',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  decoration: TextDecoration.none,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.black54,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  details.exceptionAsString(),
+                  style: const TextStyle(
+                    color: Colors.yellow,
+                    fontSize: 12,
+                    fontFamily: 'monospace',
+                    decoration: TextDecoration.none,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Stack: ${details.stack?.toString().split('\n').take(5).join('\n') ?? 'N/A'}',
+                style: const TextStyle(
+                  color: Colors.white70,
+                  fontSize: 10,
+                  fontFamily: 'monospace',
+                  decoration: TextDecoration.none,
+                ),
+                textAlign: TextAlign.left,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  };
+
   GoRouter.optionURLReflectsImperativeAPIs = true;
   usePathUrlStrategy();
 
@@ -134,6 +248,7 @@ class _MyAppState extends State<MyApp> {
       supportedLocales: const [
         Locale('fr'),
         Locale('en'),
+        Locale('es'),
       ],
       theme: ThemeData(
         brightness: Brightness.light,
@@ -167,7 +282,7 @@ class NavBarPage extends StatefulWidget {
 
 /// This is the private State class that goes with NavBarPage.
 class _NavBarPageState extends State<NavBarPage> {
-  String _currentPageName = 'HomeAlgoace';
+  String _currentPageName = 'HomePinterest';
   late Widget? _currentPage;
 
   @override
@@ -180,9 +295,9 @@ class _NavBarPageState extends State<NavBarPage> {
   @override
   Widget build(BuildContext context) {
     final tabs = {
-      'HomeAlgoace': HomeAlgoaceWidget(),
-      'ChatHistory': ChatHistoryWidget(),
+      'HomePinterest': HomePinterestWidget(),
       'Favourites': FavouritesWidget(),
+      'SearchPage': SearchPageWidget(),
       'profile': ProfileWidget(),
     };
     final currentIndex = tabs.keys.toList().indexOf(_currentPageName);
@@ -196,20 +311,20 @@ class _NavBarPageState extends State<NavBarPage> {
           _currentPage = null;
           _currentPageName = tabs.keys.toList()[i];
         }),
-        backgroundColor: FlutterFlowTheme.of(context).secondaryBackground,
-        selectedItemColor: Color(0xFF0808A5),
-        unselectedItemColor: FlutterFlowTheme.of(context).secondary,
+        backgroundColor: Colors.white,
+        selectedItemColor: Color(0xFF8A2BE2),
+        unselectedItemColor: Color(0xFF9E9E9E),
         showSelectedLabels: false,
         showUnselectedLabels: false,
         type: BottomNavigationBarType.fixed,
         items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(
-              Icons.search,
+              Icons.home_outlined,
               size: 24.0,
             ),
             activeIcon: Icon(
-              Icons.search_sharp,
+              Icons.home,
               size: 24.0,
             ),
             label: FFLocalizations.of(context).getText(
@@ -219,29 +334,29 @@ class _NavBarPageState extends State<NavBarPage> {
           ),
           BottomNavigationBarItem(
             icon: Icon(
-              Icons.card_giftcard_outlined,
+              Icons.favorite_border,
               size: 24.0,
             ),
             activeIcon: Icon(
-              Icons.card_giftcard_outlined,
+              Icons.favorite,
               size: 24.0,
             ),
             label: FFLocalizations.of(context).getText(
-              'jfrmi7vm' /* Home */,
+              'jfrmi7vm' /* Favorites */,
             ),
             tooltip: '',
           ),
           BottomNavigationBarItem(
             icon: Icon(
-              Icons.favorite,
+              Icons.search,
               size: 24.0,
             ),
             activeIcon: Icon(
-              Icons.favorite,
+              Icons.search,
               size: 24.0,
             ),
             label: FFLocalizations.of(context).getText(
-              '8ty3kok9' /* Home */,
+              '8ty3kok9' /* Search */,
             ),
             tooltip: '',
           ),
@@ -251,11 +366,11 @@ class _NavBarPageState extends State<NavBarPage> {
               size: 24.0,
             ),
             activeIcon: Icon(
-              Icons.person_sharp,
+              Icons.person,
               size: 24.0,
             ),
             label: FFLocalizations.of(context).getText(
-              '5m4dt1tl' /* __ */,
+              '5m4dt1tl' /* Profile */,
             ),
             tooltip: '',
           )

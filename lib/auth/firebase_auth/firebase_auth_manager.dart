@@ -306,24 +306,54 @@ class FirebaseAuthManager extends AuthManager
     String authProvider,
   ) async {
     try {
+      print('🔄 FirebaseAuthManager: Début authentification ($authProvider)');
       final userCredential = await signInFunc();
-      if (userCredential?.user != null) {
-        await maybeCreateUser(userCredential!.user!);
+
+      if (userCredential == null) {
+        print('❌ FirebaseAuthManager: userCredential est null');
+        return null;
       }
-      return userCredential == null
-          ? null
-          : DoronFirebaseUser.fromUserCredential(userCredential);
+
+      if (userCredential.user == null) {
+        print('❌ FirebaseAuthManager: userCredential.user est null');
+        return null;
+      }
+
+      print('✅ FirebaseAuthManager: User credential obtenu - UID: ${userCredential.user!.uid}');
+      print('🔄 FirebaseAuthManager: Appel maybeCreateUser...');
+
+      await maybeCreateUser(userCredential.user!);
+
+      print('✅ FirebaseAuthManager: maybeCreateUser terminé');
+
+      return DoronFirebaseUser.fromUserCredential(userCredential);
     } on FirebaseAuthException catch (e) {
+      print('❌ FirebaseAuthManager: FirebaseAuthException - Code: ${e.code}, Message: ${e.message}');
+
       final errorMsg = switch (e.code) {
         'email-already-in-use' =>
           'Error: The email is already in use by a different account',
         'INVALID_LOGIN_CREDENTIALS' =>
           'Error: The supplied auth credential is incorrect, malformed or has expired',
+        'weak-password' =>
+          'Error: The password is too weak',
+        'invalid-email' =>
+          'Error: The email address is invalid',
         _ => 'Error: ${e.message!}',
       };
+
       ScaffoldMessenger.of(context).hideCurrentSnackBar();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(errorMsg)),
+      );
+      return null;
+    } catch (e, stackTrace) {
+      print('❌ FirebaseAuthManager: Exception générique: $e');
+      print('Stack trace: $stackTrace');
+
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur d\'authentification: $e')),
       );
       return null;
     }

@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '/backend/backend.dart';
 import '/backend/schema/structs/index.dart';
 import '/backend/schema/enums/enums.dart';
@@ -18,6 +20,8 @@ import '/flutter_flow/flutter_flow_util.dart';
 import 'serialization_util.dart';
 
 import '/index.dart';
+import '/pages/tiktok_inspiration/tiktok_inspiration_page_widget.dart';
+import '/pages/admin/admin_products_page.dart';
 
 export 'package:go_router/go_router.dart';
 export 'serialization_util.dart';
@@ -79,6 +83,53 @@ class AppStateNotifier extends ChangeNotifier {
   }
 }
 
+/// Détermine la route initiale selon l'état de l'utilisateur
+Future<String> _determineInitialRoute() async {
+  try {
+    // Import Firebase Auth pour vérifier l'état de connexion
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final prefs = await SharedPreferences.getInstance();
+
+    // Vérifier si l'utilisateur est déjà connecté via Firebase
+    final User? currentUser = auth.currentUser;
+    final bool isLoggedIn = currentUser != null;
+
+    final isFirstTime = !prefs.containsKey('not_first_time');
+    final hasCompletedOnboarding = prefs.getBool('onboarding_completed') ?? false;
+
+    print('🔍 Détermination route initiale:');
+    print('   - isLoggedIn: $isLoggedIn');
+    print('   - isFirstTime: $isFirstTime');
+    print('   - hasCompletedOnboarding: $hasCompletedOnboarding');
+
+    // Si l'utilisateur est déjà connecté (session Firebase active), aller directement à l'accueil
+    if (isLoggedIn && hasCompletedOnboarding) {
+      print('✅ Utilisateur déjà connecté → /home-pinterest');
+      return '/home-pinterest';
+    }
+
+    // Si c'est la première fois ET pas d'onboarding complété, aller à l'onboarding
+    if (isFirstTime && !hasCompletedOnboarding) {
+      print('🆕 Première fois → /onboarding-advanced');
+      return '/onboarding-advanced';
+    }
+
+    // Si onboarding complété mais pas connecté, aller à l'authentification
+    if (hasCompletedOnboarding && !isLoggedIn) {
+      print('🔐 Onboarding fait mais pas connecté → /authentification');
+      return '/authentification';
+    }
+
+    // Par défaut, page d'accueil
+    print('🏠 Par défaut → /home-pinterest');
+    return '/home-pinterest';
+  } catch (e) {
+    print('❌ Erreur détermination route: $e');
+    // Par défaut, onboarding
+    return '/onboarding-advanced';
+  }
+}
+
 GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
       initialLocation: '/',
       debugLogDiagnostics: true,
@@ -90,9 +141,30 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: '_initialize',
           path: '/',
-          builder: (context, _) => appStateNotifier.loggedIn
-              ? NavBarPage()
-              : AuthentificationWidget(),
+          builder: (context, _) {
+            // Redirection intelligente selon l'état de l'utilisateur
+            // Le splash screen s'affiche automatiquement pendant le chargement
+            return FutureBuilder(
+              future: _determineInitialRoute(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  // Pendant le chargement, on affiche rien (le splash natif est déjà là)
+                  return const SizedBox.shrink();
+                }
+
+                final route = snapshot.data as String? ?? '/onboarding-advanced';
+
+                // Navigation immédiate après chargement
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (context.mounted) {
+                    context.go(route);
+                  }
+                });
+
+                return const SizedBox.shrink();
+              },
+            );
+          },
         ),
         FFRoute(
           name: AuthentificationWidget.routeName,
@@ -103,13 +175,6 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: GiftGeneratorWidget.routeName,
           path: GiftGeneratorWidget.routePath,
           builder: (context, params) => GiftGeneratorWidget(),
-        ),
-        FFRoute(
-          name: HomeAlgoaceWidget.routeName,
-          path: HomeAlgoaceWidget.routePath,
-          builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'HomeAlgoace')
-              : HomeAlgoaceWidget(),
         ),
         FFRoute(
           name: FavouritesWidget.routeName,
@@ -174,7 +239,54 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: ForgotPasswordWidget.routeName,
           path: ForgotPasswordWidget.routePath,
           builder: (context, params) => ForgotPasswordWidget(),
-        )
+        ),
+        // New pages
+        FFRoute(
+          name: OnboardingAdvancedWidget.routeName,
+          path: OnboardingAdvancedWidget.routePath,
+          builder: (context, params) => OnboardingAdvancedWidget(),
+        ),
+        FFRoute(
+          name: OnboardingGiftsResultWidget.routeName,
+          path: OnboardingGiftsResultWidget.routePath,
+          builder: (context, params) => OnboardingGiftsResultWidget(),
+        ),
+        FFRoute(
+          name: HomePinterestWidget.routeName,
+          path: HomePinterestWidget.routePath,
+          builder: (context, params) => params.isEmpty
+              ? NavBarPage(initialPage: 'HomePinterest')
+              : HomePinterestWidget(),
+        ),
+        FFRoute(
+          name: SearchPageWidget.routeName,
+          path: SearchPageWidget.routePath,
+          builder: (context, params) => params.isEmpty
+              ? NavBarPage(initialPage: 'SearchPage')
+              : SearchPageWidget(),
+        ),
+        FFRoute(
+          name: GiftResultsWidget.routeName,
+          path: GiftResultsWidget.routePath,
+          builder: (context, params) => GiftResultsWidget(),
+        ),
+        FFRoute(
+          name: SplashScreenWidget.routeName,
+          path: SplashScreenWidget.routePath,
+          builder: (context, params) => SplashScreenWidget(),
+        ),
+        // TikTok Inspiration (BÊTA)
+        FFRoute(
+          name: TikTokInspirationPageWidget.routeName,
+          path: TikTokInspirationPageWidget.routePath,
+          builder: (context, params) => TikTokInspirationPageWidget(),
+        ),
+        // Admin Products Page
+        FFRoute(
+          name: AdminProductsPage.routeName,
+          path: AdminProductsPage.routePath,
+          builder: (context, params) => AdminProductsPage(),
+        ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
 
@@ -361,9 +473,9 @@ class FFRoute {
               : builder(context, ffParams);
           final child = appStateNotifier.loading
               ? Container(
-                  color: FlutterFlowTheme.of(context).primary,
+                  color: Colors.black,
                   child: Image.asset(
-                    'assets/images/IMG_1926-1741775187718.jpeg',
+                    'assets/images/splash_screen.jpeg',
                     fit: BoxFit.cover,
                   ),
                 )
