@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '/services/firebase_data_service.dart';
+import '/services/product_matching_service.dart';
+import '/services/product_url_service.dart';
 import '/backend/backend.dart';
 import '/auth/firebase_auth/auth_util.dart';
 
@@ -49,12 +51,70 @@ class SearchPageModel {
         final initials = _generateInitials(recipientName, relation);
         final color = _generateColor(recipientName);
 
-        // Charger la dernière liste de cadeaux pour cette personne
-        final giftListData = await FirebaseDataService.loadLatestGiftListForPerson(personId);
-        final gifts = giftListData?['gifts'] as List? ?? [];
+        // FIX: Vérifier si c'est la première génération (isPendingFirstGen)
+        final isPendingFirstGen = meta['isPendingFirstGen'] == true;
+
+        List<Map<String, dynamic>> gifts = [];
+
+        if (isPendingFirstGen) {
+          // 🎯 PREMIÈRE GÉNÉRATION: Générer les cadeaux directement
+          print('🔄 Génération de cadeaux pour $recipientName (isPendingFirstGen=true)');
+          try {
+            final rawGifts = await ProductMatchingService.getPersonalizedProducts(
+              userTags: tags,
+              count: 50,
+              filteringMode: "person",
+            );
+
+            // Convertir au format attendu et ajouter URLs intelligentes
+            gifts = rawGifts.map((product) {
+              return {
+                'id': product['id'],
+                'name': product['name'] ?? 'Produit',
+                'brand': product['brand'] ?? '',
+                'price': product['price'] ?? 0,
+                'image': product['image'] ?? product['imageUrl'] ?? '',
+                'url': ProductUrlService.generateProductUrl(product),
+                'source': product['source'] ?? 'Amazon',
+                'categories': product['categories'] ?? [],
+                'match': (product['_matchScore'] is int
+                    ? product['_matchScore'] as int
+                    : (product['_matchScore'] is double ? (product['_matchScore'] as double).toInt() : 0)).clamp(0, 100),
+              };
+            }).toList();
+
+            print('✅ ${gifts.length} cadeaux générés pour $recipientName');
+
+            // Auto-sauvegarder pour éviter de regénérer à chaque fois
+            if (gifts.isNotEmpty) {
+              try {
+                final listName = 'Liste ${DateTime.now().day}/${DateTime.now().month}';
+                await FirebaseDataService.saveGiftListForPerson(
+                  personId: personId,
+                  gifts: gifts,
+                  listName: listName,
+                );
+                await FirebaseDataService.updatePersonPendingFlag(personId, false);
+                print('💾 Auto-sauvegarde effectuée pour $recipientName');
+              } catch (e) {
+                print('⚠️ Erreur auto-save (non-bloquant): $e');
+              }
+            }
+          } catch (e) {
+            print('❌ Erreur génération cadeaux pour $recipientName: $e');
+            // Fallback: essayer de charger depuis Firebase quand même
+            final giftListData = await FirebaseDataService.loadLatestGiftListForPerson(personId);
+            gifts = (giftListData?['gifts'] as List? ?? []).cast<Map<String, dynamic>>();
+          }
+        } else {
+          // Charger normalement depuis Firebase (personne déjà générée)
+          final giftListData = await FirebaseDataService.loadLatestGiftListForPerson(personId);
+          gifts = (giftListData?['gifts'] as List? ?? []).cast<Map<String, dynamic>>();
+          print('📦 ${gifts.length} cadeaux chargés depuis Firebase pour $recipientName');
+        }
 
         // Mettre en cache les cadeaux
-        personGifts[personId] = gifts.cast<Map<String, dynamic>>();
+        personGifts[personId] = gifts;
 
         profiles.add({
           'id': personId,

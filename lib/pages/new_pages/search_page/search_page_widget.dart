@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '/components/cached_image.dart';
 import '/services/product_url_service.dart';
+import '/services/firebase_data_service.dart';
 import 'search_page_model.dart';
 export 'search_page_model.dart';
 
@@ -325,74 +327,170 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
 
           return Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () async {
-                  await _model.selectProfile(profileIdInt);
-                  if (mounted) {
-                    setState(() {});
-                  }
-                },
-                borderRadius: BorderRadius.circular(50),
-                child: Column(
-                  children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        color: Color(int.parse(
-                            profile['color'].toString().replaceAll('#', '0xFF'))),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isSelected
-                              ? Color(int.parse(profile['color']
-                                  .toString()
-                                  .replaceAll('#', '0xFF')))
-                              : Colors.white,
-                          width: 4,
+            child: Dismissible(
+              key: ValueKey(profileId),
+              direction: DismissDirection.up,
+              background: Container(
+                alignment: Alignment.bottomCenter,
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Icon(
+                  Icons.delete_outline,
+                  color: Colors.red.withOpacity(0.8),
+                  size: 28,
+                ),
+              ),
+              confirmDismiss: (direction) async {
+                // Haptic feedback
+                HapticFeedback.mediumImpact();
+
+                return await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    title: Text(
+                      'Supprimer cette personne ?',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                    content: Text(
+                      'Les cadeaux sauvegardés pour ${profile['name']} seront supprimés.',
+                      style: GoogleFonts.poppins(fontSize: 15),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: Text(
+                          'Annuler',
+                          style: GoogleFonts.poppins(
+                            color: const Color(0xFF6B7280),
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: isSelected
-                                ? Color(int.parse(profile['color']
-                                        .toString()
-                                        .replaceAll('#', '0xFF')))
-                                    .withOpacity(0.6)
-                                : Colors.black.withOpacity(0.1),
-                            blurRadius: isSelected ? 20 : 12,
-                            offset: const Offset(0, 4),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          HapticFeedback.heavyImpact();
+                          Navigator.pop(context, true);
+                        },
+                        child: Text(
+                          'Supprimer',
+                          style: GoogleFonts.poppins(
+                            color: Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              onDismissed: (direction) async {
+                // Supprimer la personne de Firebase
+                await FirebaseDataService.deletePerson(profileId.toString());
+
+                // Supprimer du modèle local
+                setState(() {
+                  _model.profiles.removeAt(index);
+                  if (_model.selectedProfileId == profileIdInt) {
+                    _model.selectedProfileId = null;
+                  }
+                });
+
+                // SnackBar de confirmation
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                          const SizedBox(width: 12),
+                          Text(
+                            '${profile['name']} supprimé(e)',
+                            style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
                           ),
                         ],
                       ),
-                      transform: isSelected
-                          ? Matrix4.identity().scaled(1.05)
-                          : Matrix4.identity(),
-                      child: Center(
-                        child: Text(
-                          profile['initials'] as String,
-                          style: GoogleFonts.poppins(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                      backgroundColor: Colors.red,
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      duration: const Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () async {
+                    await _model.selectProfile(profileIdInt);
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(50),
+                  child: Column(
+                    children: [
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        width: 72,
+                        height: 72,
+                        decoration: BoxDecoration(
+                          color: Color(int.parse(
+                              profile['color'].toString().replaceAll('#', '0xFF'))),
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isSelected
+                                ? Color(int.parse(profile['color']
+                                    .toString()
+                                    .replaceAll('#', '0xFF')))
+                                : Colors.white,
+                            width: 4,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: isSelected
+                                  ? Color(int.parse(profile['color']
+                                          .toString()
+                                          .replaceAll('#', '0xFF')))
+                                      .withOpacity(0.6)
+                                  : Colors.black.withOpacity(0.1),
+                              blurRadius: isSelected ? 20 : 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        transform: isSelected
+                            ? Matrix4.identity().scaled(1.05)
+                            : Matrix4.identity(),
+                        child: Center(
+                          child: Text(
+                            profile['initials'] as String,
+                            style: GoogleFonts.poppins(
+                              fontSize: 28,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      profile['name'] as String,
-                      style: GoogleFonts.poppins(
-                        fontSize: 13,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                        color: isSelected
-                            ? Color(int.parse(
-                                profile['color'].toString().replaceAll('#', '0xFF')))
-                            : const Color(0xFF6B7280),
+                      const SizedBox(height: 8),
+                      Text(
+                        profile['name'] as String,
+                        style: GoogleFonts.poppins(
+                          fontSize: 13,
+                          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                          color: isSelected
+                              ? Color(int.parse(
+                                  profile['color'].toString().replaceAll('#', '0xFF')))
+                              : const Color(0xFF6B7280),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

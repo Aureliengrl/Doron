@@ -547,7 +547,35 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
       backgroundColor: const Color(0xFFF9FAFB),
       body: RefreshIndicator(
         color: violetColor,
-        onRefresh: _loadProducts,
+        onRefresh: () async {
+          // Haptic feedback
+          HapticFeedback.mediumImpact();
+
+          // Charger les produits
+          await _loadProducts();
+
+          // Montrer un SnackBar de succès
+          if (mounted && _model.products.isNotEmpty) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      '✨ ${_model.products.length} cadeaux chargés !',
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                ),
+                backgroundColor: violetColor,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+        },
         child: CustomScrollView(
           controller: _scrollController,
           slivers: [
@@ -659,7 +687,9 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                'Accueil',
+                _model.firstName.isNotEmpty
+                    ? 'Salut ${_model.firstName} ! 👋'
+                    : 'Accueil',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
                   color: Colors.white,
@@ -670,7 +700,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Découvrez votre sélection personnalisée',
+                'Voici tes inspirations cadeaux',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
                   color: Colors.white.withOpacity(0.9),
@@ -1330,33 +1360,78 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.card_giftcard,
-                  size: 80,
-                  color: Colors.grey[300],
+                // Icône avec animation
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  duration: const Duration(milliseconds: 600),
+                  builder: (context, value, child) {
+                    return Transform.scale(
+                      scale: value,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          color: violetColor.withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.card_giftcard,
+                          size: 60,
+                          color: violetColor.withOpacity(0.6),
+                        ),
+                      ),
+                    );
+                  },
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 24),
                 Text(
                   filteredProducts.isEmpty && _model.products.isNotEmpty
-                      ? 'Aucun produit dans cette gamme de prix'
-                      : 'Aucun cadeau pour l\'instant',
+                      ? 'Oups, aucun produit !'
+                      : 'Oups, on a rien trouvé !',
+                  style: GoogleFonts.poppins(
+                    color: const Color(0xFF1F2937),
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  filteredProducts.isEmpty && _model.products.isNotEmpty
+                      ? 'Essaie de changer de filtre de prix ou de catégorie'
+                      : 'Essaie de changer de catégorie ou tire pour rafraîchir',
                   style: GoogleFonts.poppins(
                     color: const Color(0xFF6B7280),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                    height: 1.5,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  filteredProducts.isEmpty && _model.products.isNotEmpty
-                      ? 'Essaie un autre filtre de prix'
-                      : 'Tire vers le bas pour rafraîchir',
-                  style: GoogleFonts.poppins(
-                    color: const Color(0xFF9CA3AF),
-                    fontSize: 14,
+                const SizedBox(height: 28),
+                // Bouton de rafraîchissement
+                ElevatedButton.icon(
+                  onPressed: () async {
+                    HapticFeedback.mediumImpact();
+                    await _loadProducts();
+                  },
+                  icon: const Icon(Icons.refresh, size: 20),
+                  label: Text(
+                    'Rafraîchir',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                  textAlign: TextAlign.center,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: violetColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    elevation: 4,
+                    shadowColor: violetColor.withOpacity(0.4),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(50),
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -1441,21 +1516,93 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Image seule, sans badge
-              AspectRatio(
-                aspectRatio: 0.65,
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(24), // Arrondi complet pour éviter dépassement
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: double.infinity,
-                    child: ProductImage(
-                      imageUrl: product['image'] as String? ?? '',
-                      height: double.infinity,
-                      borderRadius: BorderRadius.zero,
+              // Image avec badge de match
+              Stack(
+                children: [
+                  AspectRatio(
+                    aspectRatio: 0.65,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(24), // Arrondi complet pour éviter dépassement
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: double.infinity,
+                        child: ProductImage(
+                          imageUrl: product['image'] as String? ?? '',
+                          height: double.infinity,
+                          borderRadius: BorderRadius.zero,
+                        ),
+                      ),
                     ),
                   ),
-                ),
+
+                  // Badge de match en haut à droite
+                  if (product['match'] != null && product['match'] > 0)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [violetColor, const Color(0xFFEC4899)],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: violetColor.withOpacity(0.4),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.auto_awesome,
+                              size: 14,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${product['match']}%',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  // Badge like/favoris en haut à gauche
+                  if (isLiked)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.95),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.favorite,
+                          size: 16,
+                          color: Colors.red,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ],
           ),

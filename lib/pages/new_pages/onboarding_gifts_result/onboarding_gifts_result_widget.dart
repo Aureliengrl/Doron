@@ -1,9 +1,12 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:confetti/confetti.dart';
 import '/services/product_matching_service.dart';
 import '/services/firebase_data_service.dart';
 import '/services/product_url_service.dart';
@@ -26,11 +29,15 @@ class _OnboardingGiftsResultWidgetState
   late OnboardingGiftsResultModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
   final Color violetColor = const Color(0xFF8A2BE2);
+  late ConfettiController _confettiController;
 
   @override
   void initState() {
     super.initState();
     _model = OnboardingGiftsResultModel();
+
+    // Initialiser le confetti controller
+    _confettiController = ConfettiController(duration: const Duration(seconds: 3));
 
     // Parse le personId depuis les query parameters (sera fait dans didChangeDependencies)
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -325,6 +332,7 @@ class _OnboardingGiftsResultWidgetState
 
   @override
   void dispose() {
+    _confettiController.dispose();
     _model.dispose();
     super.dispose();
   }
@@ -334,40 +342,65 @@ class _OnboardingGiftsResultWidgetState
     return Scaffold(
       key: scaffoldKey,
       backgroundColor: const Color(0xFFFAF5FF),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              const Color(0xFFFAF5FF),
-              const Color(0xFFFCE7F3),
-              Colors.white,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header
-              _buildHeader(),
-
-              // Contenu
-              Expanded(
-                child: _model.isLoading
-                    ? _buildLoader()
-                    : _model.errorMessage != null
-                        ? _buildErrorState()
-                        : _model.gifts.isEmpty
-                            ? _buildEmptyState()
-                            : _buildGiftsList(),
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  const Color(0xFFFAF5FF),
+                  const Color(0xFFFCE7F3),
+                  Colors.white,
+                ],
               ),
+            ),
+            child: SafeArea(
+              child: Column(
+                children: [
+                  // Header
+                  _buildHeader(),
 
-              // Boutons d'action
-              _buildActionButtons(),
-            ],
+                  // Contenu
+                  Expanded(
+                    child: _model.isLoading
+                        ? _buildLoader()
+                        : _model.errorMessage != null
+                            ? _buildErrorState()
+                            : _model.gifts.isEmpty
+                                ? _buildEmptyState()
+                                : _buildGiftsList(),
+                  ),
+
+                  // Boutons d'action
+                  _buildActionButtons(),
+                ],
+              ),
+            ),
           ),
-        ),
+
+          // Confetti overlay
+          Align(
+            alignment: Alignment.topCenter,
+            child: ConfettiWidget(
+              confettiController: _confettiController,
+              blastDirection: pi / 2, // Vers le bas
+              emissionFrequency: 0.05,
+              numberOfParticles: 50,
+              maxBlastForce: 30,
+              minBlastForce: 15,
+              gravity: 0.3,
+              colors: [
+                violetColor,
+                const Color(0xFFEC4899),
+                const Color(0xFFFBBF24),
+                const Color(0xFF10B981),
+                const Color(0xFF3B82F6),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -905,6 +938,9 @@ class _OnboardingGiftsResultWidgetState
               onPressed: _model.isLoading
                   ? null
                   : () async {
+                      // Haptic feedback au clic
+                      HapticFeedback.mediumImpact();
+
                       // Nouvelle architecture: sauvegarder la liste de cadeaux pour une personne
                       if (_model.personId != null) {
                         print('💾 Sauvegarde via nouvelle architecture (personId: ${_model.personId})');
@@ -942,6 +978,34 @@ class _OnboardingGiftsResultWidgetState
                             print('✅ Contexte de personne défini: $profileId');
                           }
                         }
+                      }
+
+                      // 🎉 CONFETTIS + HAPTIC lors de la sauvegarde réussie !
+                      if (mounted) {
+                        HapticFeedback.heavyImpact();
+                        _confettiController.play();
+
+                        // SnackBar de succès
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Row(
+                              children: [
+                                const Icon(Icons.celebration, color: Colors.white, size: 20),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    '🎉 ${_model.gifts.length} cadeaux enregistrés !',
+                                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            backgroundColor: const Color(0xFF10B981),
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            duration: const Duration(seconds: 2),
+                          ),
+                        );
                       }
 
                       // Marquer l'onboarding comme complété
