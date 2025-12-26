@@ -128,8 +128,11 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
       backgroundColor: const Color(0xFFF9FAFB),
       body: Stack(
         children: [
-          // Contenu principal scrollable
+          // Contenu principal scrollable avec physics premium
           CustomScrollView(
+            physics: const BouncingScrollPhysics(
+              parent: AlwaysScrollableScrollPhysics(),
+            ),
             slivers: [
               // Header violet arrondi
               SliverToBoxAdapter(child: _buildHeader()),

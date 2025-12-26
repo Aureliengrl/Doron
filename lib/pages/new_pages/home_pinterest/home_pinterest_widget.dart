@@ -5,6 +5,8 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:spring/spring.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '/services/openai_home_service.dart';
 import '/services/firebase_data_service.dart';
@@ -578,6 +580,9 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
         },
         child: CustomScrollView(
           controller: _scrollController,
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
           slivers: [
             // Header violet arrondi
             SliverToBoxAdapter(child: _buildHeader()),
@@ -1408,28 +1413,43 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 28),
-                // Bouton de rafraîchissement
-                ElevatedButton.icon(
-                  onPressed: () async {
+                // Bouton de rafraîchissement avec bounce effect
+                Spring.onTap(
+                  onTap: () async {
                     HapticFeedback.mediumImpact();
                     await _loadProducts();
                   },
-                  icon: const Icon(Icons.refresh, size: 20),
-                  label: Text(
-                    'Rafraîchir',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: violetColor,
-                    foregroundColor: Colors.white,
+                  animDuration: const Duration(milliseconds: 300),
+                  scaleCoefficient: 0.95,
+                  child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                    elevation: 4,
-                    shadowColor: violetColor.withOpacity(0.4),
-                    shape: RoundedRectangleBorder(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [violetColor, const Color(0xFFEC4899)],
+                      ),
                       borderRadius: BorderRadius.circular(50),
+                      boxShadow: [
+                        BoxShadow(
+                          color: violetColor.withOpacity(0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.refresh, size: 20, color: Colors.white),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Rafraîchir',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -1447,35 +1467,55 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
       sliver: SliverToBoxAdapter(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Colonne 1
-            Expanded(
-              child: Column(
-                children: column1.map((product) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8, bottom: 16),
-                    child: _buildProductCard(product),
-                  );
-                }).toList(),
-              ),
-            ),
-            // Colonne 2 (décalée)
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 32),
+        child: AnimationLimiter(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Colonne 1 avec animations staggered
+              Expanded(
                 child: Column(
-                  children: column2.map((product) {
-                    return Padding(
-                      padding: const EdgeInsets.only(left: 8, bottom: 16),
-                      child: _buildProductCard(product),
-                    );
-                  }).toList(),
+                  children: AnimationConfiguration.toStaggeredList(
+                    duration: const Duration(milliseconds: 375),
+                    childAnimationBuilder: (widget) => SlideAnimation(
+                      verticalOffset: 50.0,
+                      child: FadeInAnimation(
+                        child: widget,
+                      ),
+                    ),
+                    children: column1.map((product) {
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8, bottom: 16),
+                        child: _buildProductCard(product),
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
-            ),
-          ],
+              // Colonne 2 (décalée) avec animations staggered
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 32),
+                  child: Column(
+                    children: AnimationConfiguration.toStaggeredList(
+                      duration: const Duration(milliseconds: 375),
+                      childAnimationBuilder: (widget) => SlideAnimation(
+                        verticalOffset: 50.0,
+                        child: FadeInAnimation(
+                          child: widget,
+                        ),
+                      ),
+                      children: column2.map((product) {
+                        return Padding(
+                          padding: const EdgeInsets.only(left: 8, bottom: 16),
+                          child: _buildProductCard(product),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1485,34 +1525,43 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
     final isLiked = _model.likedProductTitles.contains(product['name'] ?? '');
     final productIndex = _model.products.indexOf(product);
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          // Haptic feedback
-          HapticFeedback.lightImpact();
-          setState(() {
-            _model.selectedProduct = product;
-          });
-          _showProductDetail(product);
-        },
-        borderRadius: BorderRadius.circular(24),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: Colors.transparent,
-              width: 2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
+    return Spring.onTap(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            // Haptic feedback
+            HapticFeedback.lightImpact();
+            setState(() {
+              _model.selectedProduct = product;
+            });
+            _showProductDetail(product);
+          },
+          borderRadius: BorderRadius.circular(24),
+          splashColor: violetColor.withOpacity(0.1),
+          highlightColor: violetColor.withOpacity(0.05),
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Colors.transparent,
+                width: 2,
               ),
-            ],
-          ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF8A2BE2).withOpacity(0.08),
+                  blurRadius: 20,
+                  spreadRadius: -2,
+                  offset: const Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
