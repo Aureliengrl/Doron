@@ -94,13 +94,15 @@ Future<String> _determineInitialRoute() async {
     final User? currentUser = auth.currentUser;
     final bool isLoggedIn = currentUser != null;
 
-    final isFirstTime = !prefs.containsKey('not_first_time');
+    final isFirstTime = prefs.getBool('first_time') ?? true;
     final hasCompletedOnboarding = prefs.getBool('onboarding_completed') ?? false;
+    final isAnonymousMode = prefs.getBool('anonymous_mode') ?? false;
 
     print('🔍 Détermination route initiale:');
     print('   - isLoggedIn: $isLoggedIn');
     print('   - isFirstTime: $isFirstTime');
     print('   - hasCompletedOnboarding: $hasCompletedOnboarding');
+    print('   - isAnonymousMode: $isAnonymousMode');
 
     // Si l'utilisateur est déjà connecté (session Firebase active), aller directement à l'accueil
     if (isLoggedIn && hasCompletedOnboarding) {
@@ -108,10 +110,16 @@ Future<String> _determineInitialRoute() async {
       return '/home-pinterest';
     }
 
-    // Si c'est la première fois ET pas d'onboarding complété, aller à l'onboarding
-    if (isFirstTime && !hasCompletedOnboarding) {
-      print('🆕 Première fois → /onboarding-advanced');
-      return '/onboarding-advanced';
+    // Si mode anonyme déjà activé, aller directement à l'accueil
+    if (isAnonymousMode) {
+      print('👤 Mode anonyme activé → /home-pinterest');
+      return '/home-pinterest';
+    }
+
+    // Si c'est la première fois, afficher le welcome screen
+    if (isFirstTime) {
+      print('🎉 Première fois → /welcome');
+      return '/welcome';
     }
 
     // Si onboarding complété mais pas connecté, aller à l'authentification
@@ -120,13 +128,13 @@ Future<String> _determineInitialRoute() async {
       return '/authentification';
     }
 
-    // Par défaut, page d'accueil
-    print('🏠 Par défaut → /home-pinterest');
-    return '/home-pinterest';
+    // Par défaut, welcome screen
+    print('🏠 Par défaut → /welcome');
+    return '/welcome';
   } catch (e) {
     print('❌ Erreur détermination route: $e');
-    // Par défaut, onboarding
-    return '/onboarding-advanced';
+    // Par défaut, welcome screen
+    return '/welcome';
   }
 }
 
@@ -152,7 +160,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
                   return const SizedBox.shrink();
                 }
 
-                final route = snapshot.data as String? ?? '/onboarding-advanced';
+                final route = snapshot.data as String? ?? '/welcome';
 
                 // Navigation immédiate après chargement
                 WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -165,6 +173,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
               },
             );
           },
+        ),
+        FFRoute(
+          name: WelcomeScreen.routeName,
+          path: WelcomeScreen.routePath,
+          builder: (context, params) => WelcomeScreen(),
         ),
         FFRoute(
           name: AuthentificationWidget.routeName,

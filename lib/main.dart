@@ -16,7 +16,9 @@ import '/flutter_flow/flutter_flow_theme.dart';
 import 'flutter_flow/flutter_flow_util.dart';
 import 'flutter_flow/internationalization.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'flutter_flow/nav/nav.dart';
+import '/components/connection_required_dialog.dart';
 import 'index.dart';
 
 /// Service de logging d'erreurs global pour capturer les crashs en release
@@ -307,10 +309,31 @@ class _NavBarPageState extends State<NavBarPage> {
       body: _currentPage ?? tabs[_currentPageName],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
-        onTap: (i) => safeSetState(() {
-          _currentPage = null;
-          _currentPageName = tabs.keys.toList()[i];
-        }),
+        onTap: (i) async {
+          // Vérifier si on essaie d'accéder à la page de recherche (index 2)
+          if (i == 2) {
+            final prefs = await SharedPreferences.getInstance();
+            final isAnonymous = prefs.getBool('anonymous_mode') ?? false;
+
+            if (isAnonymous) {
+              // Afficher le dialog de connexion requise
+              if (context.mounted) {
+                await showConnectionRequiredDialog(
+                  context,
+                  title: 'Connexion requise',
+                  message: 'Crée ton compte pour rechercher des cadeaux personnalisés pour tes proches',
+                );
+              }
+              return; // Ne pas changer de page
+            }
+          }
+
+          // Navigation normale
+          safeSetState(() {
+            _currentPage = null;
+            _currentPageName = tabs.keys.toList()[i];
+          });
+        },
         backgroundColor: Colors.white,
         selectedItemColor: Color(0xFF8A2BE2),
         unselectedItemColor: Color(0xFF9E9E9E),

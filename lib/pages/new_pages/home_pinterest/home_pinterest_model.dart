@@ -13,6 +13,11 @@ class HomePinterestModel {
   String? errorMessage;
   String? errorDetails;
 
+  // Mode anonyme
+  bool isAnonymousMode = false;
+  int productsViewed = 0; // Compteur pour trigger après 10 vues
+  bool hasShownConnectionPrompt = false; // Pour ne montrer qu'une fois
+
   // Quick filters
   bool showOnlyFavorites = false;
   bool showOnlyNew = false;

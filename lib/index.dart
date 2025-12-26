@@ -30,3 +30,4 @@ export '/pages/new_pages/gift_results/gift_results_widget.dart'
     show GiftResultsWidget;
 export '/pages/splash_screen/splash_screen_widget.dart'
     show SplashScreenWidget;
+export '/pages/welcome/welcome_screen.dart' show WelcomeScreen;

@@ -43,10 +43,14 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
     final skipUserQuestions = GoRouterState.of(context).uri.queryParameters['skipUserQuestions'] == 'true';
     final onlyUserQuestions = GoRouterState.of(context).uri.queryParameters['onlyUserQuestions'] == 'true';
     final returnTo = GoRouterState.of(context).uri.queryParameters['returnTo'];
+    // Mode express activé par défaut (seulement 7 questions essentielles)
+    // Pour revenir au mode complet, passer expressMode=false en paramètre
+    final expressMode = GoRouterState.of(context).uri.queryParameters['expressMode'] != 'false';
 
     final steps = _model.getSteps(
       skipUserQuestions: skipUserQuestions,
       onlyUserQuestions: onlyUserQuestions,
+      expressMode: expressMode,
     );
     final currentStepData = steps[_model.currentStep];
     final progress = (_model.currentStep + 1) / steps.length;
@@ -536,7 +540,12 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
                 child: InkWell(
                   onTap: () {
                     setState(() {
-                      _model.handleSelect(field, option, type == 'multiple');
+                      _model.handleSelect(
+                        field,
+                        option,
+                        type == 'multiple',
+                        maxSelections: stepData['maxSelections'] as int?,
+                      );
                     });
                   },
                   borderRadius: BorderRadius.circular(32),

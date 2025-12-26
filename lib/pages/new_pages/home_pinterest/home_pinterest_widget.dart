@@ -8,6 +8,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:spring/spring.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '/services/openai_home_service.dart';
 import '/services/firebase_data_service.dart';
 import '/services/product_matching_service.dart';
@@ -18,6 +19,7 @@ import '/backend/schema/structs/index.dart';
 import '/backend/schema/enums/enums.dart';
 import '/components/cached_image.dart';
 import '/components/skeleton_loader.dart';
+import '/components/connection_required_dialog.dart';
 import 'home_pinterest_model.dart';
 import 'home_pinterest_widgets_extra.dart';
 export 'home_pinterest_model.dart';
@@ -110,6 +112,78 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
     }
   }
 
+  /// Charge les produits populaires (mode anonyme)
+  Future<void> _loadPopularProducts() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      // Charger les produits depuis Firebase triés par popularité
+      Query query = FirebaseFirestore.instance
+          .collection('gifts')
+          .where('active', isEqualTo: true)
+          .orderBy('popularity', descending: true)
+          .limit(50);
+
+      // Si catégorie spécifique, filtrer
+      if (_model.activeCategory != 'Pour toi') {
+        final categoryLower = _model.activeCategory.toLowerCase();
+        query = FirebaseFirestore.instance
+            .collection('gifts')
+            .where('active', isEqualTo: true)
+            .where('categories', arrayContains: categoryLower)
+            .orderBy('popularity', descending: true)
+            .limit(50);
+      }
+
+      final snapshot = await query.get();
+
+      final products = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return {
+          'id': doc.id.hashCode,
+          'name': data['name'] ?? data['product_title'] ?? 'Produit',
+          'brand': data['brand'] ?? '',
+          'price': _parsePrice(data['price'] ?? data['product_price'] ?? 0),
+          'image': data['image'] ?? data['product_photo'] ?? '',
+          'url': data['url'] ?? data['product_url'] ?? '',
+          'source': data['source'] ?? 'Amazon',
+          'categories': (data['categories'] as List?)?.cast<String>() ?? [],
+          'match': 0, // Pas de score de match en mode anonyme
+        };
+      }).toList();
+
+      if (mounted) {
+        setState(() {
+          _model.setProducts(products);
+          _model.setLoading(false);
+          _model.hasMore = products.length >= 50;
+        });
+      }
+
+      print('✅ ${products.length} produits populaires chargés (mode anonyme)');
+    } catch (e, stackTrace) {
+      print('❌ Erreur chargement produits populaires: $e');
+      print('Stack trace: $stackTrace');
+
+      if (mounted) {
+        setState(() {
+          _model.setLoading(false);
+          _model.errorMessage = 'Erreur de chargement';
+        });
+      }
+    }
+  }
+
+  double _parsePrice(dynamic price) {
+    if (price is double) return price;
+    if (price is int) return price.toDouble();
+    if (price is String) {
+      final cleaned = price.replaceAll(RegExp(r'[^\d.]'), '');
+      return double.tryParse(cleaned) ?? 0.0;
+    }
+    return 0.0;
+  }
+
   /// Charge les produits initiaux (12 premiers)
   Future<void> _loadProducts() async {
     // Réinitialiser la pagination
@@ -122,7 +196,18 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
     }
 
     try {
-      // Charger les tags utilisateur depuis Firebase (nouvelle architecture)
+      // Vérifier si on est en mode anonyme
+      final prefs = await SharedPreferences.getInstance();
+      final isAnonymous = prefs.getBool('anonymous_mode') ?? false;
+      _model.isAnonymousMode = isAnonymous;
+
+      // Si mode anonyme, charger les produits populaires
+      if (isAnonymous) {
+        await _loadPopularProducts();
+        return;
+      }
+
+      // Mode connecté : charger les tags utilisateur depuis Firebase (nouvelle architecture)
       final userProfileTags = await FirebaseDataService.loadUserProfileTags();
 
       print('🏷️ User profile tags: $userProfileTags');
@@ -334,6 +419,17 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
   /// Toggle favorite avec sauvegarde Firebase ou locale
   /// FIX Bug 3: Amélioration de la sauvegarde des favoris avec les bonnes données
   Future<void> _toggleFavorite(Map<String, dynamic> product) async {
+    // Vérifier si on est en mode anonyme
+    if (_model.isAnonymousMode) {
+      // Afficher le dialog de connexion requise
+      await showConnectionRequiredDialog(
+        context,
+        title: 'Créer un compte pour sauvegarder',
+        message: 'Connecte-toi pour garder tes produits favoris synchronisés sur tous tes appareils',
+      );
+      return;
+    }
+
     final productId = product['id'];
     final productTitle = product['name'] ?? product['title'] ?? '';
     final isCurrentlyLiked = _model.likedProductTitles.contains(productTitle);
@@ -1672,7 +1768,31 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
         );
   }
 
+  /// Track product views in anonymous mode and trigger connection prompt after 10 views
+  Future<void> _trackProductView() async {
+    if (!_model.isAnonymousMode) return;
+    if (_model.hasShownConnectionPrompt) return;
+
+    _model.productsViewed++;
+    print('📊 Mode anonyme: ${_model.productsViewed} produits vus');
+
+    // Trigger après 10 produits vus
+    if (_model.productsViewed >= 10) {
+      _model.hasShownConnectionPrompt = true;
+
+      // Afficher le dialog de connexion
+      await showConnectionRequiredDialog(
+        context,
+        title: 'Tu adores découvrir de nouveaux produits !',
+        message: 'Crée ton compte pour recevoir des suggestions ultra-personnalisées et ne plus jamais perdre tes favoris',
+      );
+    }
+  }
+
   void _showProductDetail(Map<String, dynamic> product) {
+    // Track product view in anonymous mode
+    _trackProductView();
+
     showDialog(
       context: context,
       barrierColor: Colors.black.withOpacity(0.7),

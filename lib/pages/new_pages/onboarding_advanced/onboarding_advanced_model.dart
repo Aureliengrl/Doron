@@ -75,8 +75,137 @@ class OnboardingAdvancedModel {
   List<Map<String, dynamic>> getSteps({
     bool skipUserQuestions = false,
     bool onlyUserQuestions = false,
+    bool expressMode = false, // Mode express avec seulement 7 questions essentielles
   }) {
     final baseSteps = <Map<String, dynamic>>[];
+
+    // Mode express : seulement 7 questions essentielles
+    if (expressMode) {
+      return [
+        // Écran de bienvenue
+        {
+          'id': 'welcome',
+          'type': 'welcome',
+          'title': 'DORÕN',
+          'subtitle': 'Trouve le cadeau parfait en 3 min',
+          'emoji': '',
+          'useLogo': true,
+        },
+        // 1. Prénom utilisateur (pour personnalisation)
+        {
+          'section': 'user',
+          'id': 'firstName',
+          'type': 'text',
+          'question': 'Comment tu t\'appelles ?',
+          'subtitle': '✨ Pour personnaliser ton expérience',
+          'field': 'firstName',
+          'placeholder': 'Ton prénom',
+          'icon': '👋',
+        },
+        // 2. Prénom de la personne
+        {
+          'section': 'person',
+          'id': 'personName',
+          'type': 'text',
+          'question': 'Pour qui cherches-tu un cadeau ?',
+          'subtitle': '✨ Entre le prénom de cette personne',
+          'field': 'personName',
+          'placeholder': 'Son prénom',
+          'icon': '👤',
+        },
+        // 3. Sexe
+        {
+          'section': 'person',
+          'id': 'personGender',
+          'type': 'single',
+          'question': 'Son sexe ?',
+          'subtitle': '🎯 Pour mieux personnaliser les suggestions',
+          'field': 'personGender',
+          'options': [
+            '🙋‍♀️ Femme',
+            '🙋‍♂️ Homme',
+            '🌈 Autre',
+          ],
+          'icon': '👥',
+        },
+        // 4. Relation
+        {
+          'section': 'gift',
+          'id': 'recipient',
+          'type': 'single',
+          'question': 'Quelle est votre relation ?',
+          'subtitle': '🎯 Trouve le cadeau parfait',
+          'field': 'recipient',
+          'options': [
+            '👩 Ma mère',
+            '👨 Mon père',
+            '💑 Mon/Ma partenaire',
+            '👶 Mon enfant',
+            '👯 Un(e) ami(e)',
+            '👔 Un collègue',
+            '👴 Grand-parent',
+            '🎓 Autre'
+          ],
+          'icon': '🎁',
+        },
+        // 5. Budget
+        {
+          'section': 'gift',
+          'id': 'budget',
+          'type': 'slider',
+          'question': 'Quel est ton budget ?',
+          'subtitle': '💰 Sois honnête, on ne juge pas !',
+          'field': 'budget',
+          'min': 10,
+          'max': 500,
+          'icon': '💶',
+        },
+        // 6. Occasion
+        {
+          'section': 'gift',
+          'id': 'occasion',
+          'type': 'single',
+          'question': 'Pour quelle occasion ?',
+          'field': 'occasion',
+          'options': [
+            '🎂 Anniversaire',
+            '🎄 Noël',
+            '💝 Saint-Valentin',
+            '👨‍👩‍👧 Fête des mères/pères',
+            '💍 Mariage',
+            '🎓 Diplôme',
+            '🏠 Pendaison de crémaillère',
+            '❤️ Juste pour faire plaisir'
+          ],
+          'icon': '🎉',
+        },
+        // 7. Hobbies (1-2 principaux)
+        {
+          'section': 'gift',
+          'id': 'hobbies',
+          'type': 'multiple',
+          'question': 'Ses hobbies principaux ?',
+          'subtitle': '🎯 Choisis 1 ou 2 maximum',
+          'field': 'recipientHobbies',
+          'options': [
+            '🎨 Art & Créativité',
+            '⚽ Sport',
+            '🎮 Gaming',
+            '📚 Lecture',
+            '🎵 Musique',
+            '✈️ Voyages',
+            '🍳 Cuisine',
+            '🎬 Cinéma',
+            '🧘 Bien-être',
+            '🔬 Sciences',
+            '🎭 Spectacles',
+            '🌱 Nature'
+          ],
+          'icon': '💫',
+          'maxSelections': 2, // Limiter à 2 choix
+        },
+      ];
+    }
 
     // Ajouter l'écran de bienvenue SEULEMENT si c'est la première fois
     if (!skipUserQuestions) {
@@ -448,12 +577,17 @@ class OnboardingAdvancedModel {
     return baseSteps;
   }
 
-  void handleSelect(String field, String value, bool isMultiple) {
+  void handleSelect(String field, String value, bool isMultiple, {int? maxSelections}) {
     if (isMultiple) {
       final currentList = answers[field] as List<String>;
       if (currentList.contains(value)) {
         currentList.remove(value);
       } else {
+        // Vérifier la limite de sélection si définie
+        if (maxSelections != null && currentList.length >= maxSelections) {
+          // Ne pas ajouter si la limite est atteinte
+          return;
+        }
         currentList.add(value);
       }
     } else {
