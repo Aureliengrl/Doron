@@ -310,13 +310,24 @@ class _NavBarPageState extends State<NavBarPage> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: currentIndex,
         onTap: (i) async {
-          // Vérifier si on essaie d'accéder à la page de recherche (index 2)
-          if (i == 2) {
-            final prefs = await SharedPreferences.getInstance();
-            final isAnonymous = prefs.getBool('anonymous_mode') ?? false;
+          final prefs = await SharedPreferences.getInstance();
+          final isAnonymous = prefs.getBool('anonymous_mode') ?? false;
 
-            if (isAnonymous) {
-              // Afficher le dialog de connexion requise
+          // Bloquer certaines pages en mode anonyme
+          if (isAnonymous) {
+            // Index 1 = Favourites, Index 2 = SearchPage
+            if (i == 1) {
+              // Afficher le dialog pour Favourites
+              if (context.mounted) {
+                await showConnectionRequiredDialog(
+                  context,
+                  title: 'Sauvegarde tes favoris',
+                  message: 'Crée ton compte pour sauvegarder tes produits préférés et les retrouver sur tous tes appareils',
+                );
+              }
+              return; // Ne pas changer de page
+            } else if (i == 2) {
+              // Afficher le dialog pour SearchPage
               if (context.mounted) {
                 await showConnectionRequiredDialog(
                   context,

@@ -15,7 +15,7 @@ class HomePinterestModel {
 
   // Mode anonyme
   bool isAnonymousMode = false;
-  int productsViewed = 0; // Compteur pour trigger après 10 vues
+  Set<int> uniqueProductsViewed = {}; // Set pour tracker les produits UNIQUES vus
   bool hasShownConnectionPrompt = false; // Pour ne montrer qu'une fois
 
   // Quick filters

@@ -116,26 +116,58 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
   Future<void> _loadPopularProducts() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      QuerySnapshot? snapshot;
 
-      // Charger les produits depuis Firebase triés par popularité
-      Query query = FirebaseFirestore.instance
-          .collection('gifts')
-          .where('active', isEqualTo: true)
-          .orderBy('popularity', descending: true)
-          .limit(50);
+      // Tenter de charger les produits avec tri par popularité
+      try {
+        Query query;
 
-      // Si catégorie spécifique, filtrer
-      if (_model.activeCategory != 'Pour toi') {
-        final categoryLower = _model.activeCategory.toLowerCase();
-        query = FirebaseFirestore.instance
-            .collection('gifts')
-            .where('active', isEqualTo: true)
-            .where('categories', arrayContains: categoryLower)
-            .orderBy('popularity', descending: true)
-            .limit(50);
+        // Si catégorie spécifique, filtrer
+        if (_model.activeCategory != 'Pour toi') {
+          final categoryLower = _model.activeCategory.toLowerCase();
+          // ATTENTION: Cette requête nécessite un index composite dans Firestore
+          // Si l'index n'existe pas, on va fallback sur une requête sans orderBy
+          query = FirebaseFirestore.instance
+              .collection('gifts')
+              .where('active', isEqualTo: true)
+              .where('categories', arrayContains: categoryLower)
+              .orderBy('popularity', descending: true)
+              .limit(50);
+        } else {
+          query = FirebaseFirestore.instance
+              .collection('gifts')
+              .where('active', isEqualTo: true)
+              .orderBy('popularity', descending: true)
+              .limit(50);
+        }
+
+        snapshot = await query.get();
+      } catch (firestoreError) {
+        print('⚠️ Erreur requête avec orderBy (index manquant?): $firestoreError');
+        print('📦 Fallback: chargement sans tri par popularité');
+
+        // Fallback: requête sans orderBy (ne nécessite pas d'index composite)
+        Query fallbackQuery;
+        if (_model.activeCategory != 'Pour toi') {
+          final categoryLower = _model.activeCategory.toLowerCase();
+          fallbackQuery = FirebaseFirestore.instance
+              .collection('gifts')
+              .where('active', isEqualTo: true)
+              .where('categories', arrayContains: categoryLower)
+              .limit(50);
+        } else {
+          fallbackQuery = FirebaseFirestore.instance
+              .collection('gifts')
+              .where('active', isEqualTo: true)
+              .limit(50);
+        }
+
+        snapshot = await fallbackQuery.get();
       }
 
-      final snapshot = await query.get();
+      if (snapshot == null) {
+        throw Exception('Failed to load products');
+      }
 
       final products = snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
@@ -788,9 +820,11 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Text(
-                _model.firstName.isNotEmpty
-                    ? 'Salut ${_model.firstName} ! 👋'
-                    : 'Accueil',
+                _model.isAnonymousMode
+                    ? 'Découvre 🎁'
+                    : (_model.firstName.isNotEmpty
+                        ? 'Salut ${_model.firstName} ! 👋'
+                        : 'Accueil'),
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
                   color: Colors.white,
@@ -801,7 +835,9 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Voici tes inspirations cadeaux',
+                _model.isAnonymousMode
+                    ? 'Idées cadeaux populaires'
+                    : 'Voici tes inspirations cadeaux',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.poppins(
                   color: Colors.white.withOpacity(0.9),
@@ -829,9 +865,11 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           const SizedBox(width: 8),
           Expanded(
             child: Text(
-              _model.firstName.isNotEmpty
-                  ? 'Bienvenue ${_model.firstName} !\nVoici ta sélection personnalisée'
-                  : 'Bienvenue !\nVoici ta sélection personnalisée',
+              _model.isAnonymousMode
+                  ? 'Mode découverte 🎯\nLes cadeaux les plus populaires du moment'
+                  : (_model.firstName.isNotEmpty
+                      ? 'Bienvenue ${_model.firstName} !\nVoici ta sélection personnalisée'
+                      : 'Bienvenue !\nVoici ta sélection personnalisée'),
               style: GoogleFonts.poppins(
                 color: const Color(0xFF4B5563),
                 fontSize: 13,
@@ -1768,30 +1806,36 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
         );
   }
 
-  /// Track product views in anonymous mode and trigger connection prompt after 10 views
-  Future<void> _trackProductView() async {
+  /// Track product views in anonymous mode and trigger connection prompt after 10 UNIQUE views
+  Future<void> _trackProductView(Map<String, dynamic> product) async {
     if (!_model.isAnonymousMode) return;
     if (_model.hasShownConnectionPrompt) return;
 
-    _model.productsViewed++;
-    print('📊 Mode anonyme: ${_model.productsViewed} produits vus');
+    final productId = product['id'] as int? ?? product['name'].hashCode;
 
-    // Trigger après 10 produits vus
-    if (_model.productsViewed >= 10) {
-      _model.hasShownConnectionPrompt = true;
+    // Ajouter au Set (ne compte que si c'est un nouveau produit)
+    final wasNew = _model.uniqueProductsViewed.add(productId);
 
-      // Afficher le dialog de connexion
-      await showConnectionRequiredDialog(
-        context,
-        title: 'Tu adores découvrir de nouveaux produits !',
-        message: 'Crée ton compte pour recevoir des suggestions ultra-personnalisées et ne plus jamais perdre tes favoris',
-      );
+    if (wasNew) {
+      print('📊 Mode anonyme: ${_model.uniqueProductsViewed.length} produits uniques vus');
+
+      // Trigger après 10 produits UNIQUES vus
+      if (_model.uniqueProductsViewed.length >= 10) {
+        _model.hasShownConnectionPrompt = true;
+
+        // Afficher le dialog de connexion
+        await showConnectionRequiredDialog(
+          context,
+          title: 'Tu adores découvrir de nouveaux produits !',
+          message: 'Crée ton compte pour recevoir des suggestions ultra-personnalisées et ne plus jamais perdre tes favoris',
+        );
+      }
     }
   }
 
   void _showProductDetail(Map<String, dynamic> product) {
-    // Track product view in anonymous mode
-    _trackProductView();
+    // Track product view in anonymous mode (produits uniques seulement)
+    _trackProductView(product);
 
     showDialog(
       context: context,

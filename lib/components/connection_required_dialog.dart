@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Dialog demandant la connexion avec liste des bénéfices
 class ConnectionRequiredDialog extends StatelessWidget {
@@ -94,10 +95,17 @@ class ConnectionRequiredDialog extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   HapticFeedback.mediumImpact();
-                  Navigator.pop(context);
-                  context.go('/onboarding-advanced');
+
+                  // Désactiver le mode anonyme
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setBool('anonymous_mode', false);
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    context.go('/onboarding-advanced');
+                  }
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: violetColor,
@@ -132,10 +140,17 @@ class ConnectionRequiredDialog extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton(
-                onPressed: () {
+                onPressed: () async {
                   HapticFeedback.lightImpact();
-                  Navigator.pop(context);
-                  context.go('/authentification');
+
+                  // Désactiver le mode anonyme
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setBool('anonymous_mode', false);
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    context.go('/authentification');
+                  }
                 },
                 style: OutlinedButton.styleFrom(
                   foregroundColor: violetColor,

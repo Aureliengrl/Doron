@@ -113,8 +113,15 @@ class WelcomeScreen extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: () async {
                           HapticFeedback.mediumImpact();
+
+                          // Marquer que ce n'est plus la première fois
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setBool('first_time', false);
+
                           // Aller à l'onboarding express
-                          context.go('/onboarding-advanced');
+                          if (context.mounted) {
+                            context.go('/onboarding-advanced');
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.white,
