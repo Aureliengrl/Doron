@@ -300,6 +300,7 @@ class _NavBarPageState extends State<NavBarPage> {
       'HomePinterest': HomePinterestWidget(),
       'Favourites': FavouritesWidget(),
       'SearchPage': SearchPageWidget(),
+      'Inspiration': TikTokInspirationPageWidget(),
       'profile': ProfileWidget(),
     };
     final currentIndex = tabs.keys.toList().indexOf(_currentPageName);
@@ -337,6 +338,7 @@ class _NavBarPageState extends State<NavBarPage> {
               }
               return; // Ne pas changer de page
             }
+            // L'onglet Inspiration (index 3) est accessible en mode anonyme
           }
 
           // Navigation normale
@@ -392,6 +394,18 @@ class _NavBarPageState extends State<NavBarPage> {
             label: FFLocalizations.of(context).getText(
               '8ty3kok9' /* Search */,
             ),
+            tooltip: '',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(
+              Icons.play_circle_outline,
+              size: 26.0,
+            ),
+            activeIcon: Icon(
+              Icons.play_circle,
+              size: 26.0,
+            ),
+            label: 'Inspiration',
             tooltip: '',
           ),
           BottomNavigationBarItem(

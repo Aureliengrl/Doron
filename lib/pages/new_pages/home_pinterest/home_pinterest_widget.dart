@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:spring/spring.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -1593,71 +1594,38 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
         ),
       );
     }
-    final column1 =
-        filteredProducts.where((p) => filteredProducts.indexOf(p) % 2 == 0).toList();
-    final column2 =
-        filteredProducts.where((p) => filteredProducts.indexOf(p) % 2 != 0).toList();
-
+    // Layout Masonry désordonné façon Pinterest
     return SliverPadding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-      sliver: SliverToBoxAdapter(
-        child: AnimationLimiter(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Colonne 1 avec animations staggered
-              Expanded(
-                child: Column(
-                  children: AnimationConfiguration.toStaggeredList(
-                    duration: const Duration(milliseconds: 375),
-                    childAnimationBuilder: (widget) => SlideAnimation(
-                      verticalOffset: 50.0,
-                      child: FadeInAnimation(
-                        child: widget,
-                      ),
-                    ),
-                    children: column1.map((product) {
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 8, bottom: 16),
-                        child: _buildProductCard(product),
-                      );
-                    }).toList(),
-                  ),
-                ),
+      sliver: SliverMasonryGrid.count(
+        crossAxisCount: 2,
+        mainAxisSpacing: 12,
+        crossAxisSpacing: 12,
+        childCount: filteredProducts.length,
+        itemBuilder: (context, index) {
+          final product = filteredProducts[index];
+          return AnimationConfiguration.staggeredGrid(
+            position: index,
+            duration: const Duration(milliseconds: 375),
+            columnCount: 2,
+            child: SlideAnimation(
+              verticalOffset: 50.0,
+              child: FadeInAnimation(
+                child: _buildProductCard(product, index),
               ),
-              // Colonne 2 (décalée) avec animations staggered
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 32),
-                  child: Column(
-                    children: AnimationConfiguration.toStaggeredList(
-                      duration: const Duration(milliseconds: 375),
-                      childAnimationBuilder: (widget) => SlideAnimation(
-                        verticalOffset: 50.0,
-                        child: FadeInAnimation(
-                          child: widget,
-                        ),
-                      ),
-                      children: column2.map((product) {
-                        return Padding(
-                          padding: const EdgeInsets.only(left: 8, bottom: 16),
-                          child: _buildProductCard(product),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
 
-  Widget _buildProductCard(Map<String, dynamic> product) {
+  Widget _buildProductCard(Map<String, dynamic> product, int index) {
     final isLiked = _model.likedProductTitles.contains(product['name'] ?? '');
-    final productIndex = _model.products.indexOf(product);
+
+    // Variation des aspect ratios pour un look plus désordonné/Pinterest
+    final aspectRatios = [0.7, 0.85, 0.65, 0.75, 0.8, 0.7, 0.9, 0.65];
+    final aspectRatio = aspectRatios[index % aspectRatios.length];
 
     return Spring.onTap(
       child: Material(
@@ -1671,13 +1639,13 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
             });
             _showProductDetail(product);
           },
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(12),
           splashColor: violetColor.withOpacity(0.1),
           highlightColor: violetColor.withOpacity(0.05),
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: Colors.transparent,
                 width: 2,
@@ -1703,9 +1671,9 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
               Stack(
                 children: [
                   AspectRatio(
-                    aspectRatio: 0.65,
+                    aspectRatio: aspectRatio, // Aspect ratio variable pour look désordonné
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(24), // Arrondi complet pour éviter dépassement
+                      borderRadius: BorderRadius.circular(12), // Coins moins arrondis
                       child: SizedBox(
                         width: double.infinity,
                         height: double.infinity,
@@ -1794,13 +1762,13 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
     )
         .animate()
         .fadeIn(
-          delay: Duration(milliseconds: 50 * productIndex),
+          delay: Duration(milliseconds: 50 * index),
           duration: 400.ms,
         )
         .slideY(
           begin: 0.2,
           end: 0,
-          delay: Duration(milliseconds: 50 * productIndex),
+          delay: Duration(milliseconds: 50 * index),
           duration: 400.ms,
           curve: Curves.easeOut,
         );
