@@ -356,12 +356,7 @@ class _UserProfileWidgetState extends State<UserProfileWidget> with SingleTicker
       child: InkWell(
         onTap: () async {
           // Ouvrir l'URL du produit
-          final productData = {
-            'name': favourite.productName,
-            'brand': favourite.brand ?? '',
-            'url': favourite.productUrl,
-          };
-          final url = ProductUrlService.generateProductUrl(productData);
+          final url = favourite.product.productUrl;
           if (url.isNotEmpty) {
             final uri = Uri.parse(url);
             if (await canLaunchUrl(uri)) {
@@ -394,7 +389,7 @@ class _UserProfileWidgetState extends State<UserProfileWidget> with SingleTicker
                       topRight: Radius.circular(20),
                     ),
                     child: CachedNetworkImage(
-                      imageUrl: favourite.productImage ?? '',
+                      imageUrl: favourite.product.productPhoto,
                       height: 180,
                       width: double.infinity,
                       fit: BoxFit.cover,
@@ -449,7 +444,7 @@ class _UserProfileWidgetState extends State<UserProfileWidget> with SingleTicker
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        favourite.productName ?? 'Produit',
+                        favourite.product.productTitle,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.poppins(
@@ -460,9 +455,9 @@ class _UserProfileWidgetState extends State<UserProfileWidget> with SingleTicker
                         ),
                       ),
                       const SizedBox(height: 4),
-                      if (favourite.brand != null && favourite.brand!.isNotEmpty)
+                      if (favourite.platform != null && favourite.platform!.isNotEmpty)
                         Text(
-                          favourite.brand!,
+                          favourite.platform!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.poppins(
@@ -471,9 +466,9 @@ class _UserProfileWidgetState extends State<UserProfileWidget> with SingleTicker
                           ),
                         ),
                       const Spacer(),
-                      if (favourite.productPrice != null)
+                      if (favourite.product.productPrice.isNotEmpty)
                         Text(
-                          '${favourite.productPrice}€',
+                          favourite.product.productPrice,
                           style: GoogleFonts.poppins(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,

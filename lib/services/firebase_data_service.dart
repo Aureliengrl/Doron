@@ -987,6 +987,38 @@ class FirebaseDataService {
     }
   }
 
+  /// Supprime une personne
+  static Future<void> deletePerson(String personId) async {
+    // Suppression locale
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final peopleJson = prefs.getString('local_people') ?? '[]';
+      final people = (json.decode(peopleJson) as List).cast<Map<String, dynamic>>();
+
+      people.removeWhere((p) => p['id'] == personId);
+      await prefs.setString('local_people', json.encode(people));
+      AppLogger.success('Person deleted locally: $personId', 'Firebase');
+    } catch (e) {
+      AppLogger.error('Error deleting person locally', 'Firebase', e);
+    }
+
+    // Suppression Firebase si connecté
+    if (!isLoggedIn) return;
+
+    try {
+      await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('people')
+          .doc(personId)
+          .delete();
+
+      AppLogger.firebase('Person deleted from Firebase: $personId');
+    } catch (e) {
+      AppLogger.error('Error deleting person from Firebase', 'Firebase', e);
+    }
+  }
+
   // ============= GIFT LISTS (PER PERSON) =============
 
   /// Sauvegarde une liste de cadeaux pour une personne

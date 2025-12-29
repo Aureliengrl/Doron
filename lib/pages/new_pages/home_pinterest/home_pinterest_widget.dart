@@ -278,7 +278,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
       }
 
       // Charger la liste des IDs de produits déjà vus depuis le cache
-      final prefs = await SharedPreferences.getInstance();
+      // Réutilisation de prefs déclaré plus haut
       final seenProductIds = prefs.getStringList('seen_home_product_ids_${_model.activeCategory}')?.map((s) => int.tryParse(s) ?? 0).toList() ?? [];
       print('📋 ${seenProductIds.length} produits déjà vus dans la catégorie ${_model.activeCategory}');
 
@@ -1632,8 +1632,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
     ];
     final aspectRatio = aspectRatios[index % aspectRatios.length];
 
-    return Spring.onTap(
-      child: Material(
+    return Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
@@ -1764,8 +1763,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           ),
         ),
       ),
-    )
-        .animate()
+    ).animate()
         .fadeIn(
           delay: Duration(milliseconds: 50 * index),
           duration: 400.ms,
