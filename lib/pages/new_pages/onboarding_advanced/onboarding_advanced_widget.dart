@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'onboarding_advanced_model.dart';
 export 'onboarding_advanced_model.dart';
 
@@ -24,11 +25,33 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
   // Couleur principale
   final Color violetColor = const Color(0xFF8A2BE2);
 
+  // Mode d'onboarding (valentine ou classic)
+  String? _onboardingMode;
+  bool _isLoadingMode = true;
+
   @override
   void initState() {
     super.initState();
     _model = OnboardingAdvancedModel();
     _model.initAnimations(this);
+    _loadOnboardingMode();
+  }
+
+  Future<void> _loadOnboardingMode() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final mode = prefs.getString('onboarding_mode');
+      setState(() {
+        _onboardingMode = mode;
+        _isLoadingMode = false;
+      });
+      print('🎯 Mode onboarding chargé: $_onboardingMode');
+    } catch (e) {
+      print('⚠️ Erreur chargement mode: $e');
+      setState(() {
+        _isLoadingMode = false;
+      });
+    }
   }
 
   @override
@@ -39,6 +62,19 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
 
   @override
   Widget build(BuildContext context) {
+    // Afficher un loader pendant le chargement du mode
+    if (_isLoadingMode) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFFAF5FF),
+        body: Center(
+          child: CircularProgressIndicator(
+            color: violetColor,
+            strokeWidth: 3,
+          ),
+        ),
+      );
+    }
+
     // Lire les paramètres de query
     final skipUserQuestions = GoRouterState.of(context).uri.queryParameters['skipUserQuestions'] == 'true';
     final onlyUserQuestions = GoRouterState.of(context).uri.queryParameters['onlyUserQuestions'] == 'true';
@@ -51,6 +87,7 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
       skipUserQuestions: skipUserQuestions,
       onlyUserQuestions: onlyUserQuestions,
       expressMode: expressMode,
+      onboardingMode: _onboardingMode, // Passer le mode chargé
     );
     final currentStepData = steps[_model.currentStep];
     final progress = (_model.currentStep + 1) / steps.length;

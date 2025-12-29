@@ -20,6 +20,8 @@ class OnboardingAdvancedModel {
     'giftTypes': <String>[],
     // Onboarding "Personne" - Étape de création du profil destinataire
     'personName': '', // Nom de la personne
+    'personIdentifierType': '', // 'name' ou 'username'
+    'personIdentifier': '', // Le prénom OU le username
     'personGender': '', // Sexe de la personne
     // Onboarding "Cadeau" - AMÉLIORÉ
     'recipient': '',
@@ -77,8 +79,222 @@ class OnboardingAdvancedModel {
     bool skipUserQuestions = false,
     bool onlyUserQuestions = false,
     bool expressMode = false, // Mode express avec seulement 7 questions essentielles
+    String? onboardingMode, // 'valentine' ou 'classic'
   }) {
     final baseSteps = <Map<String, dynamic>>[];
+
+    // Mode Saint-Valentin : questions spécifiques romantiques
+    if (onboardingMode == 'valentine') {
+      return [
+        // Écran de bienvenue Saint-Valentin
+        {
+          'id': 'welcome',
+          'type': 'welcome',
+          'title': '💝 DORON Saint-Valentin',
+          'subtitle': 'Trouve LE cadeau qui fera chavirer son cœur',
+          'emoji': '💝',
+        },
+        // 1. Prénom utilisateur
+        {
+          'section': 'user',
+          'id': 'firstName',
+          'type': 'text',
+          'question': 'Comment tu t\'appelles ?',
+          'subtitle': '✨ Pour personnaliser ton expérience',
+          'field': 'firstName',
+          'placeholder': 'Ton prénom',
+          'icon': '👋',
+        },
+        // 2. Département
+        {
+          'section': 'user',
+          'id': 'department',
+          'type': 'single',
+          'question': 'Dans quel département es-tu ?',
+          'subtitle': '📍 Pour des idées locales romantiques',
+          'field': 'department',
+          'options': [
+            '75 - Paris',
+            '13 - Bouches-du-Rhône',
+            '69 - Rhône',
+            '59 - Nord',
+            '33 - Gironde',
+            '44 - Loire-Atlantique',
+            '92 - Hauts-de-Seine',
+            '93 - Seine-Saint-Denis',
+            '94 - Val-de-Marne',
+            '31 - Haute-Garonne',
+            '06 - Alpes-Maritimes',
+            '34 - Hérault',
+            '67 - Bas-Rhin',
+            '35 - Ille-et-Vilaine',
+            '38 - Isère',
+            '🌍 Autre',
+          ],
+          'icon': '📍',
+        },
+        // 3. Choix type d'identifiant
+        {
+          'section': 'person',
+          'id': 'personIdentifierType',
+          'type': 'single',
+          'question': 'Pour qui est ce cadeau ?',
+          'subtitle': '💡 Comment souhaites-tu l\'identifier ?',
+          'field': 'personIdentifierType',
+          'options': [
+            '👤 Son prénom (si elle n\'a pas encore l\'appli)',
+            '🔗 Son nom d\'utilisateur',
+          ],
+          'icon': '💕',
+        },
+        // 3b. Champ identifiant
+        {
+          'section': 'person',
+          'id': 'personIdentifier',
+          'type': 'text',
+          'question': answers['personIdentifierType']?.contains('utilisateur') == true
+              ? 'Entre son nom d\'utilisateur'
+              : 'Entre son prénom',
+          'subtitle': answers['personIdentifierType']?.contains('utilisateur') == true
+              ? '🔗 Exemple: @marie_dupont'
+              : '💝 Le prénom de ton/ta chéri(e)',
+          'field': 'personIdentifier',
+          'placeholder': answers['personIdentifierType']?.contains('utilisateur') == true
+              ? '@username'
+              : 'Son prénom',
+          'icon': '✏️',
+        },
+        // 4. Sexe
+        {
+          'section': 'person',
+          'id': 'personGender',
+          'type': 'single',
+          'question': 'Son sexe ?',
+          'subtitle': '🎯 Pour des suggestions personnalisées',
+          'field': 'personGender',
+          'options': [
+            '🙋‍♀️ Femme',
+            '🙋‍♂️ Homme',
+            '🌈 Autre',
+          ],
+          'icon': '👥',
+        },
+        // 5. Durée de la relation
+        {
+          'section': 'gift',
+          'id': 'relationDuration',
+          'type': 'single',
+          'question': 'Depuis combien de temps êtes-vous ensemble ?',
+          'subtitle': '💑 Pour adapter l\'intensité du cadeau',
+          'field': 'recipientRelationDuration',
+          'options': [
+            '🌸 Moins de 6 mois (nouveaux amoureux)',
+            '💕 6 mois - 1 an',
+            '❤️ 1-3 ans',
+            '💍 Plus de 3 ans (couple établi)',
+          ],
+          'icon': '⏰',
+        },
+        // 6. Budget
+        {
+          'section': 'gift',
+          'id': 'budget',
+          'type': 'slider',
+          'question': 'Quel est ton budget ?',
+          'subtitle': '💰 Pas besoin de te ruiner pour faire plaisir !',
+          'field': 'budget',
+          'min': 10,
+          'max': 500,
+          'icon': '💶',
+        },
+        // 7. Style de relation
+        {
+          'section': 'gift',
+          'id': 'relationStyle',
+          'type': 'single',
+          'question': 'Votre style de couple ?',
+          'subtitle': '💑 Pour un cadeau qui vous ressemble',
+          'field': 'recipientPersonality',
+          'options': [
+            '🌹 Romantique & classique',
+            '🎉 Fun & aventurier',
+            '🏠 Cocooning & intimiste',
+            '🎨 Créatif & original',
+            '💪 Sportif & actif',
+            '🌍 Voyageur & curieux',
+          ],
+          'icon': '💞',
+        },
+        // 8. Centres d'intérêt
+        {
+          'section': 'gift',
+          'id': 'hobbies',
+          'type': 'multiple',
+          'question': 'Quelles sont ses passions ?',
+          'subtitle': '🎯 Choisis 2-3 maximum',
+          'field': 'recipientHobbies',
+          'options': [
+            '🎨 Art & Créativité',
+            '⚽ Sport & Fitness',
+            '🎮 Gaming',
+            '📚 Lecture',
+            '🎵 Musique',
+            '✈️ Voyages',
+            '🍳 Cuisine & Gastronomie',
+            '🎬 Cinéma & Séries',
+            '🧘 Bien-être & Spa',
+            '📸 Photo',
+            '🌱 Nature & Plein air',
+            '💅 Beauté & Mode',
+          ],
+          'icon': '💫',
+          'maxSelections': 3,
+        },
+        // 9. Type de cadeau souhaité
+        {
+          'section': 'gift',
+          'id': 'categories',
+          'type': 'multiple',
+          'question': 'Quel type de cadeau préfères-tu ?',
+          'subtitle': '💝 Choisis 2-3 catégories',
+          'field': 'preferredCategories',
+          'options': [
+            '💍 Bijoux & Accessoires',
+            '🌹 Fleurs & Plantes',
+            '🍷 Gastronomie & Vins',
+            '💆 Spa & Bien-être',
+            '🎨 Expériences créatives',
+            '✈️ Week-end romantique',
+            '👗 Mode & Lingerie',
+            '🏠 Déco & Maison',
+            '🎁 Coffrets cadeaux',
+            '📚 Livres & Culture',
+            '🎵 Concerts & Spectacles',
+            '💻 High-tech',
+          ],
+          'icon': '🎁',
+          'maxSelections': 3,
+        },
+        // 10. Moment de partage
+        {
+          'section': 'gift',
+          'id': 'occasion',
+          'type': 'single',
+          'question': 'Comment comptez-vous célébrer ?',
+          'subtitle': '🎉 Pour un cadeau adapté à l\'occasion',
+          'field': 'occasion',
+          'options': [
+            '🍽️ Dîner en amoureux',
+            '🏠 Soirée à la maison',
+            '✈️ Week-end surprise',
+            '🎭 Sortie culturelle',
+            '🌹 Moment romantique simple',
+            '🎊 Grande célébration',
+          ],
+          'icon': '💝',
+        },
+      ];
+    }
 
     // Mode express : seulement 7 questions essentielles
     if (expressMode) {
@@ -131,16 +347,36 @@ class OnboardingAdvancedModel {
           ],
           'icon': '📍',
         },
-        // 3. Prénom de la personne
+        // 3. Choix type d'identifiant (prénom OU username)
         {
           'section': 'person',
-          'id': 'personName',
-          'type': 'text',
+          'id': 'personIdentifierType',
+          'type': 'single',
           'question': 'Pour qui cherches-tu un cadeau ?',
-          'subtitle': '✨ Entre le prénom de cette personne',
-          'field': 'personName',
-          'placeholder': 'Son prénom',
-          'icon': '👤',
+          'subtitle': '💡 Choisis comment l\'identifier',
+          'field': 'personIdentifierType',
+          'options': [
+            '👤 Son prénom (si elle n\'a pas encore l\'appli)',
+            '🔗 Son nom d\'utilisateur',
+          ],
+          'icon': '🎯',
+        },
+        // 3b. Champ texte conditionnel selon le choix
+        {
+          'section': 'person',
+          'id': 'personIdentifier',
+          'type': 'text',
+          'question': answers['personIdentifierType']?.contains('utilisateur') == true
+              ? 'Entre son nom d\'utilisateur'
+              : 'Entre son prénom',
+          'subtitle': answers['personIdentifierType']?.contains('utilisateur') == true
+              ? '🔗 Exemple: @marie_dupont'
+              : '✨ Exemple: Marie',
+          'field': 'personIdentifier',
+          'placeholder': answers['personIdentifierType']?.contains('utilisateur') == true
+              ? '@username'
+              : 'Son prénom',
+          'icon': '✏️',
         },
         // 3. Sexe
         {
@@ -356,15 +592,36 @@ class OnboardingAdvancedModel {
     // PARTIE "PERSONNE" - Création du profil destinataire
     if (!onlyUserQuestions) {
       baseSteps.addAll([
+        // Choix du type d'identifiant
         {
           'section': 'person',
-          'id': 'personName',
-          'type': 'text',
+          'id': 'personIdentifierType',
+          'type': 'single',
           'question': 'Pour qui cherches-tu un cadeau ?',
-          'subtitle': '✨ Entre le prénom de cette personne',
-          'field': 'personName',
-          'placeholder': 'Son prénom',
-          'icon': '👤',
+          'subtitle': '💡 Comment souhaites-tu identifier cette personne ?',
+          'field': 'personIdentifierType',
+          'options': [
+            '👤 Son prénom (si elle n\'a pas encore l\'appli)',
+            '🔗 Son nom d\'utilisateur',
+          ],
+          'icon': '🎯',
+        },
+        // Champ texte conditionnel
+        {
+          'section': 'person',
+          'id': 'personIdentifier',
+          'type': 'text',
+          'question': answers['personIdentifierType']?.contains('utilisateur') == true
+              ? 'Entre son nom d\'utilisateur'
+              : 'Entre son prénom',
+          'subtitle': answers['personIdentifierType']?.contains('utilisateur') == true
+              ? '🔗 Exemple: @marie_dupont'
+              : '✨ Le prénom de cette personne',
+          'field': 'personIdentifier',
+          'placeholder': answers['personIdentifierType']?.contains('utilisateur') == true
+              ? '@username'
+              : 'Son prénom',
+          'icon': '✏️',
         },
         {
           'section': 'person',
@@ -726,8 +983,15 @@ class OnboardingAdvancedModel {
       try {
         // ==================== NOUVELLE ARCHITECTURE ====================
         // 1. Créer la première personne (Étape B) avec isPendingFirstGen=true
+
+        // Déterminer si c'est un username ou un prénom
+        final isUsername = answers['personIdentifierType']?.contains('utilisateur') == true;
+        final identifier = answers['personIdentifier'] ?? '';
+
         final personTags = {
-          'name': answers['personName'], // Nom de la personne
+          'name': isUsername ? null : identifier, // Nom de la personne (si prénom)
+          'username': isUsername ? identifier.replaceAll('@', '') : null, // Username (si username)
+          'isUsername': isUsername, // Flag pour savoir si on doit chercher dans Firestore
           'gender': answers['personGender'], // Sexe de la personne
           'recipient': answers['recipient'],
           'budget': answers['budget'],
