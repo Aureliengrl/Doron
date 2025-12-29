@@ -793,107 +793,107 @@ class _OnboardingGiftsResultWidgetState
                         },
                       ),
                     ),
-                // Informations du produit
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Marque
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: violetColor.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          gift['brand'] ?? 'En ligne',
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: violetColor,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      // Nom du produit
-                      Text(
-                        gift['name'] ?? 'Produit',
-                        style: GoogleFonts.poppins(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF1F2937),
-                          height: 1.3,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      // Description
-                      if (gift['description'] != null && gift['description'].toString().isNotEmpty)
-                        Text(
-                          gift['description'] ?? '',
-                          style: GoogleFonts.poppins(
-                            fontSize: 14,
-                            color: const Color(0xFF6B7280),
-                            height: 1.6,
-                          ),
-                          maxLines: 3,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      const SizedBox(height: 16),
-                      // Prix et bouton
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    // Informations du produit
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          // Prix
-                          Text(
-                            '${gift['price']}€',
-                            style: GoogleFonts.poppins(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: violetColor,
+                          // Marque
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: violetColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              gift['brand'] ?? 'En ligne',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: violetColor,
+                              ),
                             ),
                           ),
-                          // Bouton voir
-                          ElevatedButton(
-                            onPressed: () => _openProductUrl(gift['url'] ?? ''),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: violetColor,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 24,
-                                vertical: 12,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              elevation: 2,
+                          const SizedBox(height: 16),
+                          // Nom du produit
+                          Text(
+                            gift['name'] ?? 'Produit',
+                            style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF1F2937),
+                              height: 1.3,
                             ),
-                            child: Row(
-                              children: [
-                                Text(
-                                  'Voir',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
+                          ),
+                          const SizedBox(height: 12),
+                          // Description
+                          if (gift['description'] != null && gift['description'].toString().isNotEmpty)
+                            Text(
+                              gift['description'] ?? '',
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                color: const Color(0xFF6B7280),
+                                height: 1.6,
+                              ),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          const SizedBox(height: 16),
+                          // Prix et bouton
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // Prix
+                              Text(
+                                '${gift['price']}€',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.bold,
+                                  color: violetColor,
+                                ),
+                              ),
+                              // Bouton voir
+                              ElevatedButton(
+                                onPressed: () => _openProductUrl(gift['url'] ?? ''),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: violetColor,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
                                   ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  elevation: 2,
                                 ),
-                                const SizedBox(width: 8),
-                                const Icon(
-                                  Icons.arrow_forward,
-                                  color: Colors.white,
-                                  size: 18,
+                                child: Row(
+                                  children: [
+                                    Text(
+                                      'Voir',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    const Icon(
+                                      Icons.arrow_forward,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
               ],
             ),
             // Checkbox de sélection (overlay top-right)
