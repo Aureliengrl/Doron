@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:spring/spring.dart';
 
 /// Bouton avec effet bounce premium et haptic feedback
 class BounceButton extends StatelessWidget {
@@ -31,15 +30,13 @@ class BounceButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Spring.onTap(
+    return GestureDetector(
       onTap: enabled && onPressed != null
           ? () {
               HapticFeedback.mediumImpact();
               onPressed!();
             }
           : null,
-      animDuration: const Duration(milliseconds: 300),
-      scaleCoefficient: 0.95,
       child: Container(
         padding: padding ?? const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
         decoration: BoxDecoration(
@@ -94,15 +91,13 @@ class BounceIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Spring.onTap(
+    return GestureDetector(
       onTap: onPressed != null
           ? () {
               HapticFeedback.lightImpact();
               onPressed!();
             }
           : null,
-      animDuration: const Duration(milliseconds: 250),
-      scaleCoefficient: 0.9,
       child: Container(
         padding: EdgeInsets.all(padding ?? 12),
         decoration: backgroundColor != null
@@ -149,15 +144,13 @@ class BounceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Spring.onTap(
+    return GestureDetector(
       onTap: onTap != null
           ? () {
               HapticFeedback.lightImpact();
               onTap!();
             }
           : null,
-      animDuration: const Duration(milliseconds: 300),
-      scaleCoefficient: 0.97,
       child: Container(
         padding: padding,
         decoration: BoxDecoration(

@@ -7,7 +7,6 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:spring/spring.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '/services/openai_home_service.dart';
@@ -1548,14 +1547,12 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 28),
-                // Bouton de rafraîchissement avec bounce effect
-                Spring.onTap(
+                // Bouton de rafraîchissement
+                GestureDetector(
                   onTap: () async {
                     HapticFeedback.mediumImpact();
                     await _loadProducts();
                   },
-                  animDuration: const Duration(milliseconds: 300),
-                  scaleCoefficient: 0.95,
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                     decoration: BoxDecoration(
