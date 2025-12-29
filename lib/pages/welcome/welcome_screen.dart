@@ -118,9 +118,9 @@ class WelcomeScreen extends StatelessWidget {
                           final prefs = await SharedPreferences.getInstance();
                           await prefs.setBool('first_time', false);
 
-                          // Aller à l'onboarding express
+                          // Aller vers l'écran de choix du mode (Saint-Valentin/Classique)
                           if (context.mounted) {
-                            context.go('/onboarding-advanced');
+                            context.go('/mode-choice');
                           }
                         },
                         style: ElevatedButton.styleFrom(
@@ -170,7 +170,7 @@ class WelcomeScreen extends StatelessWidget {
 
                     const SizedBox(height: 16),
 
-                    // Bouton secondaire : Découvrir sans compte
+                    // Bouton secondaire : Acheter un billet
                     SizedBox(
                       width: double.infinity,
                       child: OutlinedButton(
@@ -198,10 +198,10 @@ class WelcomeScreen extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Icon(Icons.visibility_outlined, size: 24),
+                            const Icon(Icons.confirmation_number_outlined, size: 24),
                             const SizedBox(width: 12),
                             Text(
-                              'Découvrir sans compte',
+                              'Acheter un billet',
                               style: GoogleFonts.poppins(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,

@@ -180,6 +180,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => WelcomeScreen(),
         ),
         FFRoute(
+          name: ModeChoiceScreen.routeName,
+          path: ModeChoiceScreen.routePath,
+          builder: (context, params) => ModeChoiceScreen(),
+        ),
+        FFRoute(
           name: AuthentificationWidget.routeName,
           path: AuthentificationWidget.routePath,
           builder: (context, params) => AuthentificationWidget(),

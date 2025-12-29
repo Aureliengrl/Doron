@@ -12,6 +12,7 @@ class OnboardingAdvancedModel {
   Map<String, dynamic> answers = {
     // Onboarding "Toi"
     'firstName': '',
+    'department': '', // Département de l'utilisateur
     'age': '',
     'gender': '',
     'interests': <String>[],
@@ -102,7 +103,35 @@ class OnboardingAdvancedModel {
           'placeholder': 'Ton prénom',
           'icon': '👋',
         },
-        // 2. Prénom de la personne
+        // 2. Département
+        {
+          'section': 'user',
+          'id': 'department',
+          'type': 'single',
+          'question': 'Dans quel département es-tu ?',
+          'subtitle': '📍 Pour des suggestions locales',
+          'field': 'department',
+          'options': [
+            '75 - Paris',
+            '13 - Bouches-du-Rhône',
+            '69 - Rhône',
+            '59 - Nord',
+            '33 - Gironde',
+            '44 - Loire-Atlantique',
+            '92 - Hauts-de-Seine',
+            '93 - Seine-Saint-Denis',
+            '94 - Val-de-Marne',
+            '31 - Haute-Garonne',
+            '06 - Alpes-Maritimes',
+            '34 - Hérault',
+            '67 - Bas-Rhin',
+            '35 - Ille-et-Vilaine',
+            '38 - Isère',
+            '🌍 Autre',
+          ],
+          'icon': '📍',
+        },
+        // 3. Prénom de la personne
         {
           'section': 'person',
           'id': 'personName',
