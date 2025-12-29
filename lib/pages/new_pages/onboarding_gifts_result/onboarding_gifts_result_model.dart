@@ -11,6 +11,9 @@ class OnboardingGiftsResultModel {
   Map<String, dynamic>? personTags; // Tags de la personne (recipient, budget, etc.)
   Map<String, dynamic>? voiceProfile; // 🎤 Profil généré par l'assistant vocal
 
+  // Sélection multiple de cadeaux
+  Set<String> selectedGiftIds = {};
+
   void setGifts(List<Map<String, dynamic>> newGifts) {
     gifts = newGifts;
   }
@@ -46,6 +49,33 @@ class OnboardingGiftsResultModel {
     voiceProfile = profile;
     print('🎤 Profil vocal défini dans model: ${profile?.keys.join(", ")}');
   }
+
+  /// Toggle la sélection d'un cadeau
+  void toggleGiftSelection(String giftId) {
+    if (selectedGiftIds.contains(giftId)) {
+      selectedGiftIds.remove(giftId);
+      print('🎁 Cadeau désélectionné: $giftId');
+    } else {
+      selectedGiftIds.add(giftId);
+      print('✅ Cadeau sélectionné: $giftId');
+    }
+  }
+
+  /// Vérifie si un cadeau est sélectionné
+  bool isGiftSelected(String giftId) {
+    return selectedGiftIds.contains(giftId);
+  }
+
+  /// Obtient la liste des cadeaux sélectionnés
+  List<Map<String, dynamic>> getSelectedGifts() {
+    return gifts.where((gift) {
+      final giftId = gift['id']?.toString() ?? '';
+      return selectedGiftIds.contains(giftId);
+    }).toList();
+  }
+
+  /// Nombre de cadeaux sélectionnés
+  int get selectedCount => selectedGiftIds.length;
 
   void dispose() {
     // Cleanup si nécessaire

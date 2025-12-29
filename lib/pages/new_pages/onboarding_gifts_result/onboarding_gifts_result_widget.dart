@@ -679,35 +679,51 @@ class _OnboardingGiftsResultWidgetState
   }
 
   Widget _buildGiftCard(Map<String, dynamic> gift) {
+    final giftId = gift['id']?.toString() ?? '';
+    final isSelected = _model.isGiftSelected(giftId);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _openProductUrl(gift['url'] ?? ''),
+          onTap: () {
+            // Toggle sélection au lieu d'ouvrir l'URL
+            setState(() {
+              _model.toggleGiftSelection(giftId);
+            });
+            HapticFeedback.selectionClick();
+          },
           borderRadius: BorderRadius.circular(24),
           child: Container(
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(24),
+              border: isSelected
+                  ? Border.all(color: violetColor, width: 3)
+                  : null,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
+                  color: isSelected
+                      ? violetColor.withOpacity(0.3)
+                      : Colors.black.withOpacity(0.08),
                   blurRadius: 20,
                   offset: const Offset(0, 4),
                 ),
               ],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Stack(
               children: [
-                // Image du produit - FIX Bug 5: Améliorer le loading et l'erreur
-                ClipRRect(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
-                  ),
-                  child: Image.network(
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Image du produit - FIX Bug 5: Améliorer le loading et l'erreur
+                    ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(24),
+                        topRight: Radius.circular(24),
+                      ),
+                      child: Image.network(
                     gift['image'] ?? '',
                     height: 250,
                     width: double.infinity,
@@ -880,11 +896,44 @@ class _OnboardingGiftsResultWidgetState
                 ),
               ],
             ),
-          ),
+            // Checkbox de sélection (overlay top-right)
+            Positioned(
+              top: 16,
+              right: 16,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: isSelected ? violetColor : Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected ? violetColor : Colors.grey[400]!,
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: isSelected
+                    ? const Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: 20,
+                      )
+                    : null,
+              ),
+            ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildActionButtons() {
     return Container(
@@ -934,129 +983,163 @@ class _OnboardingGiftsResultWidgetState
             ),
           ),
           const SizedBox(height: 12),
-          // Bouton Enregistrer
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _model.isLoading
-                  ? null
-                  : () async {
-                      // Haptic feedback au clic
-                      HapticFeedback.mediumImpact();
+          // Bouton Valider (seulement si des cadeaux sont sélectionnés)
+          if (_model.selectedCount > 0)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _model.isLoading
+                    ? null
+                    : () async {
+                        // Haptic feedback au clic
+                        HapticFeedback.mediumImpact();
 
-                      // Nouvelle architecture: sauvegarder la liste de cadeaux pour une personne
-                      if (_model.personId != null) {
-                        print('💾 Sauvegarde via nouvelle architecture (personId: ${_model.personId})');
+                        // Récupérer uniquement les cadeaux sélectionnés
+                        final selectedGifts = _model.getSelectedGifts();
 
-                        // Sauvegarder la liste de cadeaux
-                        final listName = 'Liste ${DateTime.now().day}/${DateTime.now().month}';
-                        final listId = await FirebaseDataService.saveGiftListForPerson(
-                          personId: _model.personId!,
-                          gifts: _model.gifts,
-                          listName: listName,
-                        );
-                        print('✅ ${_model.gifts.length} cadeaux sauvegardés (liste: $listId)');
+                        if (selectedGifts.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Veuillez sélectionner au moins un cadeau',
+                                style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                              ),
+                              backgroundColor: Colors.orange,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                          );
+                          return;
+                        }
 
-                        // Retirer le flag isPendingFirstGen
-                        await FirebaseDataService.updatePersonPendingFlag(_model.personId!, false);
-                        print('✅ Flag isPendingFirstGen retiré');
+                        // Nouvelle architecture: sauvegarder la liste de cadeaux pour une personne
+                        if (_model.personId != null) {
+                          print('💾 Sauvegarde via nouvelle architecture (personId: ${_model.personId})');
+                          print('🎁 ${selectedGifts.length} cadeaux sélectionnés sur ${_model.gifts.length}');
 
-                        // Définir le contexte pour que les futurs favoris soient liés à cette personne
-                        await FirebaseDataService.setCurrentPersonContext(_model.personId!);
-                        print('✅ Contexte de personne défini: ${_model.personId}');
-                      } else {
-                        // Ancienne méthode (compatibilité)
-                        print('💾 Sauvegarde via ancienne architecture');
-                        if (_model.userProfile != null) {
-                          final profileWithGifts = {
-                            ..._model.userProfile!,
-                            'gifts': _model.gifts,
-                            'savedAt': DateTime.now().toIso8601String(),
-                          };
-                          final profileId = await FirebaseDataService.saveGiftProfile(profileWithGifts);
-                          print('✅ Profil et ${_model.gifts.length} cadeaux sauvegardés');
+                          // Sauvegarder la liste de cadeaux SÉLECTIONNÉS
+                          final listName = 'Liste ${DateTime.now().day}/${DateTime.now().month}';
+                          final listId = await FirebaseDataService.saveGiftListForPerson(
+                            personId: _model.personId!,
+                            gifts: selectedGifts,
+                            listName: listName,
+                          );
+                          print('✅ ${selectedGifts.length} cadeaux sauvegardés (liste: $listId)');
 
-                          if (profileId != null) {
-                            await FirebaseDataService.setCurrentPersonContext(profileId);
-                            print('✅ Contexte de personne défini: $profileId');
+                          // Retirer le flag isPendingFirstGen
+                          await FirebaseDataService.updatePersonPendingFlag(_model.personId!, false);
+                          print('✅ Flag isPendingFirstGen retiré');
+
+                          // Définir le contexte pour que les futurs favoris soient liés à cette personne
+                          await FirebaseDataService.setCurrentPersonContext(_model.personId!);
+                          print('✅ Contexte de personne défini: ${_model.personId}');
+                        } else {
+                          // Ancienne méthode (compatibilité)
+                          print('💾 Sauvegarde via ancienne architecture');
+                          if (_model.userProfile != null) {
+                            final profileWithGifts = {
+                              ..._model.userProfile!,
+                              'gifts': selectedGifts,
+                              'savedAt': DateTime.now().toIso8601String(),
+                            };
+                            final profileId = await FirebaseDataService.saveGiftProfile(profileWithGifts);
+                            print('✅ Profil et ${selectedGifts.length} cadeaux sauvegardés');
+
+                            if (profileId != null) {
+                              await FirebaseDataService.setCurrentPersonContext(profileId);
+                              print('✅ Contexte de personne défini: $profileId');
+                            }
                           }
                         }
-                      }
 
-                      // 🎉 CONFETTIS + HAPTIC lors de la sauvegarde réussie !
-                      if (mounted) {
-                        HapticFeedback.heavyImpact();
-                        _confettiController.play();
+                        // 🎉 CONFETTIS + HAPTIC lors de la sauvegarde réussie !
+                        if (mounted) {
+                          HapticFeedback.heavyImpact();
+                          _confettiController.play();
 
-                        // SnackBar de succès
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Row(
-                              children: [
-                                const Icon(Icons.celebration, color: Colors.white, size: 20),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    '🎉 ${_model.gifts.length} cadeaux enregistrés !',
-                                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                          // SnackBar de succès
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  const Icon(Icons.celebration, color: Colors.white, size: 20),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      '🎉 ${selectedGifts.length} cadeau${selectedGifts.length > 1 ? 'x' : ''} enregistré${selectedGifts.length > 1 ? 's' : ''} !',
+                                      style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
+                              backgroundColor: const Color(0xFF10B981),
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              duration: const Duration(seconds: 2),
                             ),
-                            backgroundColor: const Color(0xFF10B981),
-                            behavior: SnackBarBehavior.floating,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            duration: const Duration(seconds: 2),
-                          ),
-                        );
-                      }
-
-                      // Marquer l'onboarding comme complété
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.setBool('onboarding_completed', true);
-                      await prefs.setString('not_first_time', 'true');
-                      print('✅ Onboarding marqué comme complété');
-
-                      // Naviguer vers la page appropriée
-                      if (mounted) {
-                        // Vérifier si l'utilisateur est déjà authentifié
-                        if (FirebaseAuth.instance.currentUser != null) {
-                          // Si déjà connecté, aller directement à l'accueil
-                          print('✅ Utilisateur déjà connecté, navigation vers home');
-                          context.go('/home-pinterest');
-                        } else {
-                          // Sinon, aller à l'authentification
-                          print('🔐 Pas encore connecté, navigation vers auth');
-                          context.go('/authentification');
+                          );
                         }
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: violetColor,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                elevation: 4,
-                shadowColor: violetColor.withOpacity(0.4),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.white),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Enregistrer',
-                    style: GoogleFonts.poppins(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+
+                        // Marquer l'onboarding comme complété
+                        final prefs = await SharedPreferences.getInstance();
+                        await prefs.setBool('onboarding_completed', true);
+                        await prefs.setString('not_first_time', 'true');
+                        print('✅ Onboarding marqué comme complété');
+
+                        // Naviguer vers la page appropriée
+                        if (mounted) {
+                          // Vérifier si l'utilisateur est déjà authentifié
+                          if (FirebaseAuth.instance.currentUser != null) {
+                            // Si déjà connecté, aller directement à l'accueil
+                            print('✅ Utilisateur déjà connecté, navigation vers home');
+                            context.go('/home-pinterest');
+                          } else {
+                            // Sinon, aller à l'authentification
+                            print('🔐 Pas encore connecté, navigation vers auth');
+                            context.go('/authentification');
+                          }
+                        }
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: violetColor,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                ],
+                  elevation: 4,
+                  shadowColor: violetColor.withOpacity(0.4),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.check_circle, color: Colors.white),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Valider (${_model.selectedCount})',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
+          // Message si aucun cadeau sélectionné
+          if (_model.selectedCount == 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'Sélectionne au moins un cadeau pour continuer',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
         ],
       ),
     );
