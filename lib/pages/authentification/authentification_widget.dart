@@ -54,6 +54,9 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
     _model.displayNameTextController ??= TextEditingController();
     _model.displayNameFocusNode ??= FocusNode();
 
+    _model.usernameTextController ??= TextEditingController();
+    _model.usernameFocusNode ??= FocusNode();
+
     _model.emailAddressCreateTextController ??= TextEditingController();
     _model.emailAddressCreateFocusNode ??= FocusNode();
 
@@ -625,6 +628,145 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
                                                               double.infinity,
                                                           child: TextFormField(
                                                             controller: _model
+                                                                .usernameTextController,
+                                                            focusNode: _model
+                                                                .usernameFocusNode,
+                                                            autofocus: false,
+                                                            obscureText: false,
+                                                            decoration:
+                                                                InputDecoration(
+                                                              labelText: 'Nom d\'utilisateur',
+                                                              hintText: '@tonpseudo',
+                                                              labelStyle:
+                                                                  FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .labelLarge
+                                                                      .override(
+                                                                        font: GoogleFonts
+                                                                            .inter(),
+                                                                        letterSpacing:
+                                                                            0.0,
+                                                                      ),
+                                                              enabledBorder:
+                                                                  OutlineInputBorder(
+                                                                borderSide:
+                                                                    BorderSide(
+                                                                  color: FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .secondary,
+                                                                  width: 2.0,
+                                                                ),
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            40.0),
+                                                              ),
+                                                              focusedBorder:
+                                                                  OutlineInputBorder(
+                                                                borderSide:
+                                                                    BorderSide(
+                                                                  color: FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .primary,
+                                                                  width: 2.0,
+                                                                ),
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            40.0),
+                                                              ),
+                                                              errorBorder:
+                                                                  OutlineInputBorder(
+                                                                borderSide:
+                                                                    BorderSide(
+                                                                  color: FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .error,
+                                                                  width: 2.0,
+                                                                ),
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            40.0),
+                                                              ),
+                                                              focusedErrorBorder:
+                                                                  OutlineInputBorder(
+                                                                borderSide:
+                                                                    BorderSide(
+                                                                  color: FlutterFlowTheme.of(
+                                                                          context)
+                                                                      .error,
+                                                                  width: 2.0,
+                                                                ),
+                                                                borderRadius:
+                                                                    BorderRadius
+                                                                        .circular(
+                                                                            40.0),
+                                                              ),
+                                                              filled: true,
+                                                              fillColor: FlutterFlowTheme
+                                                                      .of(context)
+                                                                  .secondaryBackground,
+                                                              contentPadding:
+                                                                  EdgeInsets
+                                                                      .all(
+                                                                          24.0),
+                                                              suffixIcon: _model.isCheckingUsername
+                                                                  ? Padding(
+                                                                      padding: EdgeInsets.all(12),
+                                                                      child: SizedBox(
+                                                                        width: 20,
+                                                                        height: 20,
+                                                                        child: CircularProgressIndicator(
+                                                                          strokeWidth: 2,
+                                                                        ),
+                                                                      ),
+                                                                    )
+                                                                  : null,
+                                                            ),
+                                                            style: FlutterFlowTheme
+                                                                    .of(context)
+                                                                .bodyLarge
+                                                                .override(
+                                                                  font:
+                                                                      GoogleFonts
+                                                                          .inter(),
+                                                                  letterSpacing:
+                                                                      0.0,
+                                                                ),
+                                                            keyboardType:
+                                                                TextInputType
+                                                                    .text,
+                                                            validator: _model
+                                                                .usernameTextControllerValidator
+                                                                .asValidator(
+                                                                    context),
+                                                            onChanged: (value) async {
+                                                              // Vérifier l'unicité du username avec un debounce
+                                                              if (value.length >= 3) {
+                                                                await Future.delayed(Duration(milliseconds: 500));
+                                                                if (_model.usernameTextController.text == value) {
+                                                                  final isAvailable = await _model.checkUsernameAvailability(value);
+                                                                  safeSetState(() {});
+                                                                }
+                                                              }
+                                                            },
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      Padding(
+                                                        padding:
+                                                            EdgeInsetsDirectional
+                                                                .fromSTEB(
+                                                                    0.0,
+                                                                    0.0,
+                                                                    0.0,
+                                                                    16.0),
+                                                        child: Container(
+                                                          width:
+                                                              double.infinity,
+                                                          child: TextFormField(
+                                                            controller: _model
                                                                 .emailAddressCreateTextController,
                                                             focusNode: _model
                                                                 .emailAddressCreateFocusNode,
@@ -1176,10 +1318,31 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
 
                                                               print('✅ INSCRIPTION: Mots de passe correspondent');
 
+                                                              // Vérifier l'unicité du username
+                                                              print('🔄 INSCRIPTION: Vérification unicité du username...');
+                                                              final usernameAvailable = await _model.checkUsernameAvailability(
+                                                                _model.usernameTextController.text
+                                                              );
+
+                                                              if (!usernameAvailable) {
+                                                                print('❌ INSCRIPTION: Username déjà pris');
+                                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                                  SnackBar(
+                                                                    content: Text('Ce nom d\'utilisateur existe déjà'),
+                                                                    backgroundColor: Colors.red,
+                                                                  ),
+                                                                );
+                                                                safeSetState(() {}); // Refresh pour afficher l'erreur
+                                                                return;
+                                                              }
+
+                                                              print('✅ INSCRIPTION: Username disponible');
+
                                                               try {
                                                                 print('🔄 INSCRIPTION: Création du compte Firebase...');
                                                                 print('   Email: ${_model.emailAddressCreateTextController.text}');
                                                                 print('   Nom: ${_model.displayNameTextController.text}');
+                                                                print('   Username: ${_model.usernameTextController.text}');
 
                                                                 final user =
                                                                     await authManager
@@ -1200,23 +1363,25 @@ class _AuthentificationWidgetState extends State<AuthentificationWidget>
 
                                                                 print('✅ INSCRIPTION: Compte Firebase créé - UID: ${user.uid}');
 
-                                                                // Mise à jour du displayName - NON BLOQUANT
+                                                                // Mise à jour du displayName et username - NON BLOQUANT
                                                                 try {
-                                                                  print('🔄 INSCRIPTION: Mise à jour du displayName dans Firestore...');
+                                                                  print('🔄 INSCRIPTION: Mise à jour des informations utilisateur dans Firestore...');
+
+                                                                  // Créer les données de base
+                                                                  final userData = {
+                                                                    'display_name': _model.displayNameTextController.text,
+                                                                    'username': _model.usernameTextController.text.toLowerCase(),
+                                                                    'email': _model.emailAddressCreateTextController.text,
+                                                                    'uid': user.uid,
+                                                                    'created_time': DateTime.now(),
+                                                                  };
+
                                                                   await UsersRecord
                                                                       .collection
                                                                       .doc(user.uid)
-                                                                      .set(
-                                                                          createUsersRecordData(
-                                                                        displayName:
-                                                                            _model
-                                                                                .displayNameTextController
-                                                                                .text,
-                                                                        email: _model.emailAddressCreateTextController.text,
-                                                                        uid: user.uid,
-                                                                        createdTime: DateTime.now(),
-                                                                      ), SetOptions(merge: true));
-                                                                  print('✅ INSCRIPTION: DisplayName mis à jour dans Firestore');
+                                                                      .set(userData, SetOptions(merge: true));
+
+                                                                  print('✅ INSCRIPTION: Informations utilisateur mises à jour dans Firestore');
                                                                 } catch (firestoreError) {
                                                                   // Erreur Firestore NON BLOQUANTE - l'auth a réussi
                                                                   print('⚠️ INSCRIPTION: Erreur Firestore (non bloquante): $firestoreError');

@@ -48,6 +48,36 @@ class AuthentificationModel extends FlutterFlowModel<AuthentificationWidget> {
     return null;
   }
 
+  // State field(s) for username widget.
+  FocusNode? usernameFocusNode;
+  TextEditingController? usernameTextController;
+  String? Function(BuildContext, String?)? usernameTextControllerValidator;
+  bool isCheckingUsername = false;
+  String? usernameError;
+
+  String? _usernameTextControllerValidator(
+      BuildContext context, String? val) {
+    if (val == null || val.isEmpty) {
+      return 'Le nom d\'utilisateur est requis';
+    }
+
+    if (val.length < 3) {
+      return 'Au moins 3 caractères';
+    }
+
+    // Vérifier que le username ne contient que des lettres, chiffres, - et _
+    if (!RegExp(r'^[a-zA-Z0-9_-]+$').hasMatch(val)) {
+      return 'Uniquement lettres, chiffres, - et _';
+    }
+
+    // L'erreur d'unicité sera gérée séparément
+    if (usernameError != null) {
+      return usernameError;
+    }
+
+    return null;
+  }
+
   // State field(s) for emailAddress_Create widget.
   FocusNode? emailAddressCreateFocusNode;
   TextEditingController? emailAddressCreateTextController;
@@ -138,9 +168,39 @@ class AuthentificationModel extends FlutterFlowModel<AuthentificationWidget> {
     return null;
   }
 
+  /// Vérifie si le username est unique dans Firestore
+  Future<bool> checkUsernameAvailability(String username) async {
+    try {
+      isCheckingUsername = true;
+      usernameError = null;
+
+      // Rechercher dans la collection users si le username existe déjà
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .where('username', isEqualTo: username.toLowerCase())
+          .limit(1)
+          .get();
+
+      isCheckingUsername = false;
+
+      if (querySnapshot.docs.isNotEmpty) {
+        usernameError = 'Ce nom d\'utilisateur existe déjà';
+        return false;
+      }
+
+      return true;
+    } catch (e) {
+      print('❌ Erreur vérification username: $e');
+      isCheckingUsername = false;
+      usernameError = 'Erreur de vérification';
+      return false;
+    }
+  }
+
   @override
   void initState(BuildContext context) {
     displayNameTextControllerValidator = _displayNameTextControllerValidator;
+    usernameTextControllerValidator = _usernameTextControllerValidator;
     emailAddressCreateTextControllerValidator =
         _emailAddressCreateTextControllerValidator;
     passwordCreateVisibility = false;
@@ -159,6 +219,9 @@ class AuthentificationModel extends FlutterFlowModel<AuthentificationWidget> {
     tabBarController?.dispose();
     displayNameFocusNode?.dispose();
     displayNameTextController?.dispose();
+
+    usernameFocusNode?.dispose();
+    usernameTextController?.dispose();
 
     emailAddressCreateFocusNode?.dispose();
     emailAddressCreateTextController?.dispose();
