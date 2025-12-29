@@ -298,10 +298,9 @@ class _NavBarPageState extends State<NavBarPage> {
   Widget build(BuildContext context) {
     final tabs = {
       'HomePinterest': HomePinterestWidget(),
-      'Favourites': FavouritesWidget(),
       'SearchPage': SearchPageWidget(),
       'Inspiration': TikTokInspirationPageWidget(),
-      'profile': ProfileWidget(),
+      'UserProfile': UserProfileWidget(),
     };
     final currentIndex = tabs.keys.toList().indexOf(_currentPageName);
 
@@ -316,18 +315,8 @@ class _NavBarPageState extends State<NavBarPage> {
 
           // Bloquer certaines pages en mode anonyme
           if (isAnonymous) {
-            // Index 1 = Favourites, Index 2 = SearchPage
+            // Index 1 = SearchPage, Index 3 = UserProfile
             if (i == 1) {
-              // Afficher le dialog pour Favourites
-              if (context.mounted) {
-                await showConnectionRequiredDialog(
-                  context,
-                  title: 'Sauvegarde tes favoris',
-                  message: 'Crée ton compte pour sauvegarder tes produits préférés et les retrouver sur tous tes appareils',
-                );
-              }
-              return; // Ne pas changer de page
-            } else if (i == 2) {
               // Afficher le dialog pour SearchPage
               if (context.mounted) {
                 await showConnectionRequiredDialog(
@@ -337,8 +326,18 @@ class _NavBarPageState extends State<NavBarPage> {
                 );
               }
               return; // Ne pas changer de page
+            } else if (i == 3) {
+              // Afficher le dialog pour UserProfile
+              if (context.mounted) {
+                await showConnectionRequiredDialog(
+                  context,
+                  title: 'Connexion requise',
+                  message: 'Crée ton compte pour accéder à ton profil et tes favoris',
+                );
+              }
+              return; // Ne pas changer de page
             }
-            // L'onglet Inspiration (index 3) est accessible en mode anonyme
+            // Les onglets Accueil (index 0) et Inspiration (index 2) sont accessibles en mode anonyme
           }
 
           // Navigation normale
@@ -363,63 +362,43 @@ class _NavBarPageState extends State<NavBarPage> {
               Icons.home,
               size: 24.0,
             ),
-            label: FFLocalizations.of(context).getText(
-              'dvsaxnjn' /* Home */,
-            ),
+            label: 'Accueil',
             tooltip: '',
           ),
           BottomNavigationBarItem(
             icon: Icon(
-              Icons.favorite_border,
-              size: 24.0,
-            ),
-            activeIcon: Icon(
-              Icons.favorite,
-              size: 24.0,
-            ),
-            label: FFLocalizations.of(context).getText(
-              'jfrmi7vm' /* Favorites */,
-            ),
-            tooltip: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.search,
+              Icons.search_outlined,
               size: 24.0,
             ),
             activeIcon: Icon(
               Icons.search,
               size: 24.0,
             ),
-            label: FFLocalizations.of(context).getText(
-              '8ty3kok9' /* Search */,
-            ),
+            label: 'Recherche',
             tooltip: '',
           ),
           BottomNavigationBarItem(
             icon: Icon(
               Icons.play_circle_outline,
-              size: 26.0,
+              size: 28.0,
             ),
             activeIcon: Icon(
               Icons.play_circle,
-              size: 26.0,
+              size: 28.0,
             ),
-            label: 'Inspiration',
+            label: 'TikTok',
             tooltip: '',
           ),
           BottomNavigationBarItem(
             icon: Icon(
-              Icons.person_outlined,
+              Icons.person_outline,
               size: 24.0,
             ),
             activeIcon: Icon(
               Icons.person,
               size: 24.0,
             ),
-            label: FFLocalizations.of(context).getText(
-              '5m4dt1tl' /* Profile */,
-            ),
+            label: 'Profil',
             tooltip: '',
           )
         ],

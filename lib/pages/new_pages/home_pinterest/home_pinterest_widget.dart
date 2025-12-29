@@ -133,13 +133,13 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
               .where('active', isEqualTo: true)
               .where('categories', arrayContains: categoryLower)
               .orderBy('popularity', descending: true)
-              .limit(50);
+              .limit(100); // Augmenté de 50 à 100 pour plus de contenu
         } else {
           query = FirebaseFirestore.instance
               .collection('gifts')
               .where('active', isEqualTo: true)
               .orderBy('popularity', descending: true)
-              .limit(50);
+              .limit(100); // Augmenté de 50 à 100 pour plus de contenu
         }
 
         snapshot = await query.get();
@@ -155,12 +155,12 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
               .collection('gifts')
               .where('active', isEqualTo: true)
               .where('categories', arrayContains: categoryLower)
-              .limit(50);
+              .limit(100); // Augmenté de 50 à 100 pour plus de contenu
         } else {
           fallbackQuery = FirebaseFirestore.instance
               .collection('gifts')
               .where('active', isEqualTo: true)
-              .limit(50);
+              .limit(100); // Augmenté de 50 à 100 pour plus de contenu
         }
 
         snapshot = await fallbackQuery.get();
@@ -1595,21 +1595,22 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
       );
     }
     // Layout Masonry désordonné façon Pinterest
+    // Plus de colonnes et moins d'espacement pour un effet plus dense et inspirant
     return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
+      padding: const EdgeInsets.fromLTRB(12, 16, 12, 0),
       sliver: SliverMasonryGrid.count(
-        crossAxisCount: 2,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
+        crossAxisCount: 2, // 2 colonnes pour garder des produits bien visibles
+        mainAxisSpacing: 8, // Réduit pour effet "dans tous les sens"
+        crossAxisSpacing: 8,
         childCount: filteredProducts.length,
         itemBuilder: (context, index) {
           final product = filteredProducts[index];
           return AnimationConfiguration.staggeredGrid(
             position: index,
-            duration: const Duration(milliseconds: 375),
+            duration: const Duration(milliseconds: 300), // Plus rapide pour effet dynamique
             columnCount: 2,
             child: SlideAnimation(
-              verticalOffset: 50.0,
+              verticalOffset: 40.0,
               child: FadeInAnimation(
                 child: _buildProductCard(product, index),
               ),
@@ -1623,8 +1624,12 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
   Widget _buildProductCard(Map<String, dynamic> product, int index) {
     final isLiked = _model.likedProductTitles.contains(product['name'] ?? '');
 
-    // Variation des aspect ratios pour un look plus désordonné/Pinterest
-    final aspectRatios = [0.7, 0.85, 0.65, 0.75, 0.8, 0.7, 0.9, 0.65];
+    // AMÉLIORATION: Plus de variation dans les hauteurs pour un look plus dynamique et inspirant
+    // Alternance forte entre petites et grandes cartes pour effet "dans tous les sens"
+    final aspectRatios = [
+      0.55, 0.95, 0.7, 0.85, 0.6, 0.9, 0.65, 0.8,
+      0.75, 0.6, 0.85, 0.7, 0.95, 0.65, 0.8, 0.55
+    ];
     final aspectRatio = aspectRatios[index % aspectRatios.length];
 
     return Spring.onTap(

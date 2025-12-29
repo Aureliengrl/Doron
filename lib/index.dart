@@ -34,3 +34,5 @@ export '/pages/welcome/welcome_screen.dart' show WelcomeScreen;
 export '/pages/welcome/mode_choice_screen.dart' show ModeChoiceScreen;
 export '/pages/tiktok_inspiration/tiktok_inspiration_page_widget.dart'
     show TikTokInspirationPageWidget;
+export '/pages/new_pages/user_profile/user_profile_widget.dart'
+    show UserProfileWidget;
