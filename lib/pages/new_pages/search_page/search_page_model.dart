@@ -14,6 +14,8 @@ class SearchPageModel {
 
   List<Map<String, dynamic>> profiles = [];
   Map<String, List<Map<String, dynamic>>> personGifts = {}; // Cache des cadeaux par personId
+  Map<String, List<Map<String, dynamic>>> personSuggestions = {}; // Cache des suggestions par personId
+  bool isLoadingSuggestions = false;
 
   /// Normalise un ID (String ou int) en int pour cohérence
   int _normalizeId(dynamic id) {
@@ -143,6 +145,15 @@ class SearchPageModel {
 
         // Définir le contexte actuel
         await FirebaseDataService.setCurrentPersonContext(personId);
+
+        // Charger les suggestions pour cette personne (ne pas bloquer si ça échoue)
+        if (personGifts[personId]?.isNotEmpty == true) {
+          try {
+            await loadSuggestionsForPerson(personId);
+          } catch (e) {
+            print('⚠️ Could not load suggestions (non-blocking): $e');
+          }
+        }
       }
 
       isLoading = false;
@@ -300,6 +311,11 @@ class SearchPageModel {
 
       // Définir le contexte actuel pour que les nouveaux favoris soient liés à cette personne
       await FirebaseDataService.setCurrentPersonContext(personId);
+
+      // Charger les suggestions pour cette personne (si pas déjà chargées)
+      if (!personSuggestions.containsKey(personId) && personGifts[personId]?.isNotEmpty == true) {
+        await loadSuggestionsForPerson(personId);
+      }
     }
   }
 
@@ -316,6 +332,90 @@ class SearchPageModel {
     return likedProductTitles.contains(productTitle);
   }
 
+  /// Charge les suggestions pour une personne spécifique
+  /// Basé sur les cadeaux déjà sauvegardés + tags de la personne
+  Future<void> loadSuggestionsForPerson(String personId) async {
+    try {
+      isLoadingSuggestions = true;
+      print('🔮 Génération de suggestions pour $personId...');
+
+      // Récupérer le profil de la personne
+      final profile = profiles.firstWhere(
+        (p) => p['id'] == personId,
+        orElse: () => {},
+      );
+
+      if (profile.isEmpty) {
+        print('⚠️ Profil non trouvé pour $personId');
+        isLoadingSuggestions = false;
+        return;
+      }
+
+      // Récupérer les tags (onboarding answers) de la personne
+      final tags = profile['tags'] as Map<String, dynamic>? ?? {};
+
+      // Récupérer les cadeaux déjà sauvegardés pour cette personne
+      final existingGifts = personGifts[personId] ?? [];
+
+      // Extraire les IDs des produits existants pour les exclure
+      final excludeProductIds = existingGifts
+          .map((gift) => gift['id'])
+          .whereType<int>()
+          .toList();
+
+      print('📦 ${existingGifts.length} cadeaux existants pour $personId');
+      print('🚫 Exclusion de ${excludeProductIds.length} produits déjà sauvegardés');
+
+      // Générer des suggestions basées sur les tags + exclusion des produits existants
+      final rawSuggestions = await ProductMatchingService.getPersonalizedProducts(
+        userTags: tags,
+        count: 20, // Générer 20 suggestions supplémentaires
+        excludeProductIds: excludeProductIds,
+        filteringMode: "person",
+      );
+
+      // Convertir au format attendu
+      final suggestions = rawSuggestions.map((product) {
+        return {
+          'id': product['id'],
+          'name': product['name'] ?? 'Produit',
+          'brand': product['brand'] ?? '',
+          'price': product['price'] ?? 0,
+          'image': product['image'] ?? product['imageUrl'] ?? '',
+          'url': ProductUrlService.generateProductUrl(product),
+          'source': product['source'] ?? 'Amazon',
+          'categories': product['categories'] ?? [],
+          'match': (product['_matchScore'] is int
+              ? product['_matchScore'] as int
+              : (product['_matchScore'] is double ? (product['_matchScore'] as double).toInt() : 0)).clamp(0, 100),
+        };
+      }).toList();
+
+      // Stocker les suggestions dans le cache
+      personSuggestions[personId] = suggestions;
+      isLoadingSuggestions = false;
+
+      print('✅ ${suggestions.length} suggestions générées pour $personId');
+    } catch (e) {
+      print('❌ Erreur lors de la génération de suggestions: $e');
+      isLoadingSuggestions = false;
+      personSuggestions[personId] = [];
+    }
+  }
+
+  /// Récupère les suggestions pour la personne actuellement sélectionnée
+  List<Map<String, dynamic>> getSuggestions() {
+    if (selectedProfileId == null) return [];
+
+    final currentProf = currentProfile;
+    if (currentProf != null) {
+      final personId = currentProf['id'] as String;
+      return personSuggestions[personId] ?? [];
+    }
+
+    return [];
+  }
+
   void handleAddNewPerson(BuildContext context) {
     print('🎯 Redirection vers l\'onboarding "Pour qui veux-tu faire un cadeau ?"');
     // Navigation vers l'onboarding avec skip des questions utilisateur
@@ -327,6 +427,8 @@ class SearchPageModel {
     profiles.clear();
     likedProducts.clear();
     likedProductTitles.clear();
+    personGifts.clear();
+    personSuggestions.clear();
     selectedProfileId = null;
   }
 }
