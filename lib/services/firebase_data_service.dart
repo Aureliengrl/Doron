@@ -809,7 +809,7 @@ class FirebaseDataService {
         // Les deux ont des données: merger (local en priorité)
         AppLogger.info('🔄 MERGE: local ${localPeople.length} + firebase ${firebasePeople.length}', 'Firebase');
         final localIds = localPeople.map((p) => p['id']).toSet();
-        final merged = [...localPeople]; // Local en premier
+        final merged = [...localPeople];
 
         for (var fbPerson in firebasePeople) {
           if (!localIds.contains(fbPerson['id'])) {
@@ -817,20 +817,25 @@ class FirebaseDataService {
           }
         }
 
-        final result = _deduplicatePeopleByName(merged);
-        AppLogger.success('✅ RETURN: ${result.length} people (merged)', 'Firebase');
-        return result;
+        final deduplicated = _deduplicatePeopleByName(merged);
+        // Sort by createdAt descending (most recent first)
+        final sorted = _sortPeopleByDate(deduplicated);
+        AppLogger.success('✅ RETURN: ${sorted.length} people (merged & sorted)', 'Firebase');
+        return sorted;
       } else {
-        // Seulement local
-        AppLogger.success('✅ RETURN: ${localPeople.length} people (local only)', 'Firebase');
-        return _deduplicatePeopleByName(localPeople);
+        // Seulement local - trier par date
+        final deduplicated = _deduplicatePeopleByName(localPeople);
+        final sorted = _sortPeopleByDate(deduplicated);
+        AppLogger.success('✅ RETURN: ${sorted.length} people (local only, sorted)', 'Firebase');
+        return sorted;
       }
     }
 
-    // Local vide: retourner Firebase si disponible
+    // Local vide: retourner Firebase si disponible (déjà trié par Firebase)
     if (firebasePeople != null && firebasePeople.isNotEmpty) {
-      AppLogger.success('✅ RETURN: ${firebasePeople.length} people (firebase only)', 'Firebase');
-      return _deduplicatePeopleByName(firebasePeople);
+      final deduplicated = _deduplicatePeopleByName(firebasePeople);
+      AppLogger.success('✅ RETURN: ${deduplicated.length} people (firebase only)', 'Firebase');
+      return deduplicated;
     }
 
     // Aucune donnée
@@ -879,6 +884,37 @@ class FirebaseDataService {
       AppLogger.success('✅ Déduplication: ${people.length} → ${result.length} personnes', 'Firebase');
     }
     return result;
+  }
+
+  /// Trie les personnes par date de création (plus récent d'abord)
+  static List<Map<String, dynamic>> _sortPeopleByDate(List<Map<String, dynamic>> people) {
+    people.sort((a, b) {
+      final aMeta = a['meta'] as Map<String, dynamic>? ?? {};
+      final bMeta = b['meta'] as Map<String, dynamic>? ?? {};
+
+      final aDate = aMeta['createdAt'];
+      final bDate = bMeta['createdAt'];
+
+      // Si les deux ont des timestamps Firestore
+      if (aDate is Timestamp && bDate is Timestamp) {
+        return bDate.compareTo(aDate); // Descending (newest first)
+      }
+
+      // Si les deux sont des strings
+      if (aDate is String && bDate is String) {
+        return bDate.compareTo(aDate); // Descending
+      }
+
+      // Si un seul a une date, le mettre en premier
+      if (aDate != null && bDate == null) return -1;
+      if (aDate == null && bDate != null) return 1;
+
+      // Si aucun n'a de date, garder l'ordre actuel
+      return 0;
+    });
+
+    AppLogger.debug('✅ Personnes triées par date (plus récent d\'abord)', 'Firebase');
+    return people;
   }
 
   /// FIX ONBOARDING: Charge une personne par ID sans déduplication
