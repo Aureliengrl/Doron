@@ -286,29 +286,40 @@ class NavBarPage extends StatefulWidget {
 class _NavBarPageState extends State<NavBarPage> {
   String _currentPageName = 'HomePinterest';
   late Widget? _currentPage;
+  int _currentIndex = 0;
+
+  // Créer les widgets UNE SEULE FOIS pour éviter les rebuilds
+  late final List<Widget> _pages;
+  late final List<String> _pageNames;
 
   @override
   void initState() {
     super.initState();
+
+    // Initialiser les pages une seule fois
+    _pageNames = ['HomePinterest', 'SearchPage', 'Inspiration', 'UserProfile'];
+    _pages = [
+      HomePinterestWidget(),
+      SearchPageWidget(),
+      TikTokInspirationPageWidget(),
+      UserProfileWidget(),
+    ];
+
     _currentPageName = widget.initialPage ?? _currentPageName;
     _currentPage = widget.page;
+    _currentIndex = _pageNames.indexOf(_currentPageName);
   }
 
   @override
   Widget build(BuildContext context) {
-    final tabs = {
-      'HomePinterest': HomePinterestWidget(),
-      'SearchPage': SearchPageWidget(),
-      'Inspiration': TikTokInspirationPageWidget(),
-      'UserProfile': UserProfileWidget(),
-    };
-    final currentIndex = tabs.keys.toList().indexOf(_currentPageName);
-
     return Scaffold(
       resizeToAvoidBottomInset: !widget.disableResizeToAvoidBottomInset,
-      body: _currentPage ?? tabs[_currentPageName],
+      body: _currentPage ?? IndexedStack(
+        index: _currentIndex,
+        children: _pages,
+      ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: currentIndex,
+        currentIndex: _currentIndex,
         onTap: (i) async {
           final prefs = await SharedPreferences.getInstance();
           final isAnonymous = prefs.getBool('anonymous_mode') ?? false;
@@ -343,7 +354,8 @@ class _NavBarPageState extends State<NavBarPage> {
           // Navigation normale
           safeSetState(() {
             _currentPage = null;
-            _currentPageName = tabs.keys.toList()[i];
+            _currentIndex = i;
+            _currentPageName = _pageNames[i];
           });
         },
         backgroundColor: Colors.white,
