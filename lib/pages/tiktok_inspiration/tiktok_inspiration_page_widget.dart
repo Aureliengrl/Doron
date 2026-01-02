@@ -5,9 +5,13 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '/auth/firebase_auth/auth_util.dart';
 import '/backend/backend.dart';
 import '/backend/schema/structs/index.dart';
+import '/services/firebase_data_service.dart';
+import '/services/product_url_service.dart';
+import '/components/connection_required_dialog.dart';
 import 'tiktok_inspiration_page_model.dart';
 export 'tiktok_inspiration_page_model.dart';
 
@@ -472,6 +476,13 @@ class _TikTokInspirationPageWidgetState extends State<TikTokInspirationPageWidge
           ),
         ),
 
+        // Bouton wishlist à droite
+        Positioned(
+          right: 16,
+          bottom: 190,
+          child: _buildWishlistButton(product),
+        ),
+
         // Bouton coeur à droite
         Positioned(
           right: 16,
@@ -670,6 +681,410 @@ class _TikTokInspirationPageWidgetState extends State<TikTokInspirationPageWidge
           _model.likedProductTitles.remove(productName);
         }
       });
+    }
+  }
+
+  Widget _buildWishlistButton(Map<String, dynamic> product) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        _showWishlistModal(product);
+      },
+      child: Container(
+        width: 56,
+        height: 56,
+        decoration: BoxDecoration(
+          color: Colors.black.withOpacity(0.5),
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white30, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: const Icon(
+          Icons.bookmark_border,
+          color: Colors.white,
+          size: 26,
+        ),
+      ),
+    );
+  }
+
+  /// Affiche le modal de sélection de wishlist
+  Future<void> _showWishlistModal(Map<String, dynamic> product) async {
+    // Vérifier si l'utilisateur est connecté
+    final prefs = await SharedPreferences.getInstance();
+    final isAnonymous = prefs.getBool('anonymous_mode') ?? false;
+
+    if (isAnonymous || !loggedIn) {
+      if (mounted) {
+        await showConnectionRequiredDialog(
+          context,
+          title: 'Connexion requise',
+          message: 'Crée ton compte pour organiser tes cadeaux en wishlists',
+        );
+      }
+      return;
+    }
+
+    // Charger les wishlists existantes
+    final wishlists = await FirebaseDataService.loadWishlists();
+
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Handle bar
+              Container(
+                margin: const EdgeInsets.only(top: 12, bottom: 8),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+
+              // Titre
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    const Icon(Icons.bookmark_border, color: _violetColor, size: 28),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Ajouter à une wishlist',
+                            style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: const Color(0xFF111827),
+                            ),
+                          ),
+                          Text(
+                            product['name'] as String? ?? '',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: const Color(0xFF6B7280),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const Divider(height: 1),
+
+              // Liste des wishlists
+              if (wishlists.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(40),
+                  child: Column(
+                    children: [
+                      Icon(Icons.list_alt, size: 60, color: Colors.grey[400]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Aucune wishlist',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Crée ta première wishlist ci-dessous',
+                        style: GoogleFonts.poppins(
+                          fontSize: 14,
+                          color: Colors.grey[500],
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 300),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: wishlists.length,
+                    itemBuilder: (context, index) {
+                      final wishlist = wishlists[index];
+                      final giftCount = (wishlist['giftIds'] as List?)?.length ?? 0;
+
+                      return ListTile(
+                        leading: Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: _violetColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.bookmark,
+                            color: _violetColor,
+                            size: 24,
+                          ),
+                        ),
+                        title: Text(
+                          wishlist['name'] as String? ?? 'Wishlist',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF111827),
+                          ),
+                        ),
+                        subtitle: Text(
+                          '$giftCount cadeau${giftCount > 1 ? 's' : ''}',
+                          style: GoogleFonts.poppins(
+                            fontSize: 13,
+                            color: const Color(0xFF6B7280),
+                          ),
+                        ),
+                        trailing: const Icon(
+                          Icons.add_circle,
+                          color: _violetColor,
+                          size: 28,
+                        ),
+                        onTap: () async {
+                          Navigator.pop(context);
+                          await _addToWishlist(product, wishlist['id'] as String);
+                        },
+                      );
+                    },
+                  ),
+                ),
+
+              const Divider(height: 1),
+
+              // Bouton créer nouvelle wishlist
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      await _createNewWishlist(product);
+                    },
+                    icon: const Icon(Icons.add, color: Colors.white),
+                    label: Text(
+                      'Créer une nouvelle wishlist',
+                      style: GoogleFonts.poppins(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _violetColor,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 2,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Crée une nouvelle wishlist et y ajoute le produit
+  Future<void> _createNewWishlist(Map<String, dynamic> product) async {
+    final nameController = TextEditingController();
+    final descriptionController = TextEditingController();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(
+          'Nouvelle wishlist',
+          style: GoogleFonts.poppins(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameController,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: 'Nom de la wishlist',
+                hintText: 'Ex: Anniversaire Maman',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _violetColor, width: 2),
+                ),
+              ),
+              style: GoogleFonts.poppins(),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: descriptionController,
+              decoration: InputDecoration(
+                labelText: 'Description (optionnel)',
+                hintText: 'Ex: Idées cadeaux pour ses 50 ans',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _violetColor, width: 2),
+                ),
+              ),
+              style: GoogleFonts.poppins(),
+              maxLines: 2,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Annuler',
+              style: GoogleFonts.poppins(color: Colors.grey[600]),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _violetColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              'Créer',
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (result == true && nameController.text.isNotEmpty) {
+      final wishlistId = await FirebaseDataService.createWishlist(
+        name: nameController.text,
+        description: descriptionController.text,
+      );
+
+      if (wishlistId != null) {
+        await _addToWishlist(product, wishlistId);
+      }
+    }
+  }
+
+  /// Ajoute un produit à une wishlist
+  Future<void> _addToWishlist(Map<String, dynamic> product, String wishlistId) async {
+    try {
+      // Créer d'abord le favori avec le produit
+      final productTitle = product['name'] as String? ?? '';
+      final productImage = product['image'] as String? ?? '';
+      final productUrl = product['url'] ?? ProductUrlService.generateProductUrl(product);
+      final brandOrSource = product['brand'] ?? product['source'] ?? 'Amazon';
+
+      // Ajouter aux favoris Firebase avec wishlistId
+      final docRef = await FavouritesRecord.collection.add(
+        createFavouritesRecordData(
+          uid: currentUserReference,
+          platform: brandOrSource.toString().toLowerCase(),
+          timeStamp: DateTime.now(),
+          personId: null,
+          product: ProductsStruct(
+            productTitle: productTitle,
+            productPrice: '${product['price'] ?? 0}€',
+            productUrl: productUrl,
+            productPhoto: productImage,
+            productStarRating: '',
+            productOriginalPrice: '',
+            productNumRatings: 0,
+            platform: brandOrSource.toString().toLowerCase(),
+          ),
+        ),
+      );
+
+      // Ajouter à la wishlist
+      await FirebaseDataService.addToWishlist(wishlistId, docRef.id);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.bookmark, color: Colors.white, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Ajouté à la wishlist !',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Erreur ajout wishlist: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Erreur lors de l\'ajout à la wishlist',
+              style: GoogleFonts.poppins(),
+            ),
+            backgroundColor: Colors.red[700],
+          ),
+        );
+      }
     }
   }
 }
