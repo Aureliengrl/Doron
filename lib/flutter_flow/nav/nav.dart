@@ -204,9 +204,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: ProfileWidget.routeName,
           path: ProfileWidget.routePath,
-          builder: (context, params) => params.isEmpty
-              ? NavBarPage(initialPage: 'profile')
-              : ProfileWidget(),
+          builder: (context, params) => ProfileWidget(),
         ),
         FFRoute(
             name: ChatHistoryWidget.routeName,
