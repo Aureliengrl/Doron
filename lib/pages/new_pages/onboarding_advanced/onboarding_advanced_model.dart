@@ -19,12 +19,11 @@ class OnboardingAdvancedModel {
     'style': '',
     'giftTypes': <String>[],
     // Onboarding "Personne" - Étape de création du profil destinataire
-    'personName': '', // Nom de la personne
-    'personIdentifierType': '', // 'name' ou 'username'
-    'personIdentifier': '', // Le prénom OU le username
+    'personName': '', // Prénom de la personne (REQUIS)
+    'personIdentifier': '', // Username DORON (OPTIONNEL - si la personne utilise l'app)
     'personGender': '', // Sexe de la personne
     // Onboarding "Cadeau" - AMÉLIORÉ
-    'recipient': '',
+    'recipient': '', // Type de relation (maman, papa, ami, etc.)
     'budget': 50.0,
     'recipientAge': '',
     'recipientRelationDuration': '',
@@ -133,53 +132,7 @@ class OnboardingAdvancedModel {
           ],
           'icon': '📍',
         },
-        // 3. Choix type d'identifiant
-        {
-          'section': 'person',
-          'id': 'personIdentifierType',
-          'type': 'single',
-          'question': 'Pour qui est ce cadeau ?',
-          'subtitle': '💡 Comment souhaites-tu l\'identifier ?',
-          'field': 'personIdentifierType',
-          'options': [
-            '👤 Son prénom (si elle n\'a pas encore l\'appli)',
-            '🔗 Son nom d\'utilisateur',
-          ],
-          'icon': '💕',
-        },
-        // 3b. Champ identifiant
-        {
-          'section': 'person',
-          'id': 'personIdentifier',
-          'type': 'text',
-          'question': answers['personIdentifierType']?.contains('utilisateur') == true
-              ? 'Entre son nom d\'utilisateur'
-              : 'Entre son prénom',
-          'subtitle': answers['personIdentifierType']?.contains('utilisateur') == true
-              ? '🔗 Exemple: @marie_dupont'
-              : '💝 Le prénom de ton/ta chéri(e)',
-          'field': 'personIdentifier',
-          'placeholder': answers['personIdentifierType']?.contains('utilisateur') == true
-              ? '@username'
-              : 'Son prénom',
-          'icon': '✏️',
-        },
-        // 4. Sexe
-        {
-          'section': 'person',
-          'id': 'personGender',
-          'type': 'single',
-          'question': 'Son sexe ?',
-          'subtitle': '🎯 Pour des suggestions personnalisées',
-          'field': 'personGender',
-          'options': [
-            '🙋‍♀️ Femme',
-            '🙋‍♂️ Homme',
-            '🌈 Autre',
-          ],
-          'icon': '👥',
-        },
-        // 5. Durée de la relation
+        // 3. Durée de la relation (MOVED UP - before person details)
         {
           'section': 'gift',
           'id': 'relationDuration',
@@ -195,7 +148,47 @@ class OnboardingAdvancedModel {
           ],
           'icon': '⏰',
         },
-        // 6. Budget
+        // 4. Prénom de la personne (REQUIRED - toujours visible)
+        {
+          'section': 'person',
+          'id': 'personName',
+          'type': 'text',
+          'question': 'Quel est son prénom ?',
+          'subtitle': '💝 REQUIS - Le prénom de ton/ta chéri(e)',
+          'field': 'personName',
+          'placeholder': 'Exemple: Marie',
+          'icon': '👤',
+          'required': true,
+        },
+        // 5. Username de la personne (OPTIONAL - clairement marqué)
+        {
+          'section': 'person',
+          'id': 'personUsername',
+          'type': 'text',
+          'question': 'Son nom d\'utilisateur (optionnel)',
+          'subtitle': '🔗 OPTIONNEL - Si la personne utilise DORON (@username)',
+          'field': 'personIdentifier',
+          'placeholder': '@username (facultatif)',
+          'icon': '🔗',
+          'required': false,
+          'canSkip': true,
+        },
+        // 6. Sexe
+        {
+          'section': 'person',
+          'id': 'personGender',
+          'type': 'single',
+          'question': 'Son sexe ?',
+          'subtitle': '🎯 Pour des suggestions personnalisées',
+          'field': 'personGender',
+          'options': [
+            '🙋‍♀️ Femme',
+            '🙋‍♂️ Homme',
+            '🌈 Autre',
+          ],
+          'icon': '👥',
+        },
+        // 7. Budget
         {
           'section': 'gift',
           'id': 'budget',
@@ -207,7 +200,7 @@ class OnboardingAdvancedModel {
           'max': 500,
           'icon': '💶',
         },
-        // 7. Style de relation
+        // 8. Style de relation
         {
           'section': 'gift',
           'id': 'relationStyle',
@@ -225,7 +218,7 @@ class OnboardingAdvancedModel {
           ],
           'icon': '💞',
         },
-        // 8. Centres d'intérêt
+        // 9. Centres d'intérêt
         {
           'section': 'gift',
           'id': 'hobbies',
@@ -250,7 +243,7 @@ class OnboardingAdvancedModel {
           'icon': '💫',
           'maxSelections': 3,
         },
-        // 9. Type de cadeau souhaité
+        // 10. Type de cadeau souhaité
         {
           'section': 'gift',
           'id': 'categories',
@@ -275,7 +268,7 @@ class OnboardingAdvancedModel {
           'icon': '🎁',
           'maxSelections': 3,
         },
-        // 10. Moment de partage
+        // 11. Moment de partage
         {
           'section': 'gift',
           'id': 'occasion',
@@ -347,38 +340,52 @@ class OnboardingAdvancedModel {
           ],
           'icon': '📍',
         },
-        // 3. Choix type d'identifiant (prénom OU username)
+        // 3. Relation (MOVED UP - now before person details)
         {
-          'section': 'person',
-          'id': 'personIdentifierType',
+          'section': 'gift',
+          'id': 'recipient',
           'type': 'single',
           'question': 'Pour qui cherches-tu un cadeau ?',
-          'subtitle': '💡 Choisis comment l\'identifier',
-          'field': 'personIdentifierType',
+          'subtitle': '🎯 Quelle est votre relation ?',
+          'field': 'recipient',
           'options': [
-            '👤 Son prénom (si elle n\'a pas encore l\'appli)',
-            '🔗 Son nom d\'utilisateur',
+            '👩 Ma mère',
+            '👨 Mon père',
+            '💑 Mon/Ma partenaire',
+            '👶 Mon enfant',
+            '👯 Un(e) ami(e)',
+            '👔 Un collègue',
+            '👴 Grand-parent',
+            '🎓 Autre'
           ],
-          'icon': '🎯',
+          'icon': '🎁',
         },
-        // 3b. Champ texte conditionnel selon le choix
+        // 4. Prénom de la personne (REQUIRED - toujours visible)
         {
           'section': 'person',
-          'id': 'personIdentifier',
+          'id': 'personName',
           'type': 'text',
-          'question': answers['personIdentifierType']?.contains('utilisateur') == true
-              ? 'Entre son nom d\'utilisateur'
-              : 'Entre son prénom',
-          'subtitle': answers['personIdentifierType']?.contains('utilisateur') == true
-              ? '🔗 Exemple: @marie_dupont'
-              : '✨ Exemple: Marie',
-          'field': 'personIdentifier',
-          'placeholder': answers['personIdentifierType']?.contains('utilisateur') == true
-              ? '@username'
-              : 'Son prénom',
-          'icon': '✏️',
+          'question': 'Quel est son prénom ?',
+          'subtitle': '✨ REQUIS - Pour personnaliser les suggestions',
+          'field': 'personName',
+          'placeholder': 'Exemple: Marie',
+          'icon': '👤',
+          'required': true,
         },
-        // 3. Sexe
+        // 5. Username de la personne (OPTIONAL - clairement marqué)
+        {
+          'section': 'person',
+          'id': 'personUsername',
+          'type': 'text',
+          'question': 'Son nom d\'utilisateur (optionnel)',
+          'subtitle': '🔗 OPTIONNEL - Si la personne utilise DORON (@username)',
+          'field': 'personIdentifier',
+          'placeholder': '@username (facultatif)',
+          'icon': '🔗',
+          'required': false,
+          'canSkip': true,
+        },
+        // 6. Sexe
         {
           'section': 'person',
           'id': 'personGender',
@@ -393,27 +400,7 @@ class OnboardingAdvancedModel {
           ],
           'icon': '👥',
         },
-        // 4. Relation
-        {
-          'section': 'gift',
-          'id': 'recipient',
-          'type': 'single',
-          'question': 'Quelle est votre relation ?',
-          'subtitle': '🎯 Trouve le cadeau parfait',
-          'field': 'recipient',
-          'options': [
-            '👩 Ma mère',
-            '👨 Mon père',
-            '💑 Mon/Ma partenaire',
-            '👶 Mon enfant',
-            '👯 Un(e) ami(e)',
-            '👔 Un collègue',
-            '👴 Grand-parent',
-            '🎓 Autre'
-          ],
-          'icon': '🎁',
-        },
-        // 5. Budget
+        // 7. Budget
         {
           'section': 'gift',
           'id': 'budget',
@@ -425,7 +412,7 @@ class OnboardingAdvancedModel {
           'max': 500,
           'icon': '💶',
         },
-        // 6. Occasion
+        // 8. Occasion
         {
           'section': 'gift',
           'id': 'occasion',
@@ -444,7 +431,7 @@ class OnboardingAdvancedModel {
           ],
           'icon': '🎉',
         },
-        // 7. Hobbies (1-2 principaux)
+        // 9. Hobbies (1-2 principaux)
         {
           'section': 'gift',
           'id': 'hobbies',
