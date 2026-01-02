@@ -707,6 +707,7 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
     // Vérifier si ce produit est dans les favoris de cette personne (dans Firebase)
     final productName = product['name'] as String? ?? product['title'] as String? ?? '';
     final isLikedInFirebase = _model.isProductLiked(productName);
+    final matchScore = product['match'] as int? ?? 0;
 
     return Material(
       color: Colors.transparent,
@@ -739,6 +740,53 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                       topRight: Radius.circular(20),
                     ),
                   ),
+                  // Match score badge (si >0)
+                  if (matchScore > 0)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              violetColor,
+                              const Color(0xFFEC4899),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: violetColor.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.stars_rounded,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '$matchScore%',
+                              style: GoogleFonts.poppins(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   // Bouton coeur - affiche rouge si déjà liké dans Firebase
                   if (isLikedInFirebase)
                     Positioned(
@@ -752,7 +800,7 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                           shape: BoxShape.circle,
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.2),
+                              color: Colors.red.withOpacity(0.4),
                               blurRadius: 12,
                               offset: const Offset(0, 4),
                             ),
@@ -768,66 +816,75 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                 ],
               ),
 
-              // Info produit
+              // Info produit avec hiérarchie claire
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        product['name'] as String? ?? 'Produit',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF1F2937),
-                          height: 1.2,
+                      // Badge source/marque discret en haut
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: violetColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          product['brand'] as String? ?? product['source'] as String? ?? 'Amazon',
+                          style: GoogleFonts.poppins(
+                            fontSize: 10,
+                            color: violetColor,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        product['brand'] as String? ?? 'Amazon',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: const Color(0xFF6B7280),
+                      const SizedBox(height: 10),
+                      // Nom du produit (hiérarchie principale)
+                      Expanded(
+                        child: Text(
+                          productName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF111827),
+                            height: 1.3,
+                            letterSpacing: -0.2,
+                          ),
                         ),
                       ),
-                      const Spacer(),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${product['price']}€',
-                            style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: violetColor,
+                      const SizedBox(height: 12),
+                      // Prix (position uniforme, toujours en bas)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            top: BorderSide(
+                              color: const Color(0xFFE5E7EB),
+                              width: 1,
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF3F4F6),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              product['brand'] as String? ?? product['source'] as String? ?? 'Amazon',
-                              style: GoogleFonts.poppins(
-                                fontSize: 11,
-                                color: const Color(0xFF9CA3AF),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                        ),
+                        child: Text(
+                          '${product['price']}€',
+                          style: GoogleFonts.poppins(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: violetColor,
+                            height: 1,
                           ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
