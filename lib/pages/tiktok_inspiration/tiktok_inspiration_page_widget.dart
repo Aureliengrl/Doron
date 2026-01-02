@@ -239,13 +239,6 @@ class _TikTokInspirationPageWidgetState extends State<TikTokInspirationPageWidge
           },
         ),
 
-        // Bouton retour
-        Positioned(
-          top: 16,
-          left: 16,
-          child: _buildBackButton(),
-        ),
-
         // Indicateur de progression (pas de ratio pour infinite scroll)
         Positioned(
           right: 12,
@@ -314,29 +307,6 @@ class _TikTokInspirationPageWidgetState extends State<TikTokInspirationPageWidge
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildBackButton() {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.mediumImpact();
-        Navigator.pop(context);
-      },
-      child: Container(
-        width: 44,
-        height: 44,
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.5),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white30, width: 1),
-        ),
-        child: const Icon(
-          Icons.arrow_back,
-          color: Colors.white,
-          size: 22,
-        ),
-      ),
     );
   }
 
