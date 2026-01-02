@@ -391,12 +391,12 @@ class _NavBarPageState extends State<NavBarPage> {
           ),
           BottomNavigationBarItem(
             icon: Icon(
-              Icons.play_circle_outline,
-              size: 28.0,
+              Icons.play_arrow_rounded,
+              size: 32.0,
             ),
             activeIcon: Icon(
-              Icons.play_circle,
-              size: 28.0,
+              Icons.play_arrow_rounded,
+              size: 32.0,
             ),
             label: 'TikTok',
             tooltip: '',
