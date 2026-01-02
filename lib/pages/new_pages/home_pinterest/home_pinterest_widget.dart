@@ -750,9 +750,6 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
             // Message de bienvenue
             SliverToBoxAdapter(child: _buildWelcomeMessage()),
 
-            // Bouton Inspiration (BÊTA)
-            SliverToBoxAdapter(child: _buildInspirationButton()),
-
             // Catégories
             SliverToBoxAdapter(child: _buildCategories()),
 
@@ -879,126 +876,6 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildInspirationButton() {
-    // FIX CRASH: Suppression des animations .repeat() qui causent NaN/Infinity
-    // Les animations chaînées avec .repeat() + .then() peuvent provoquer
-    // des erreurs de calcul dans flutter_animate
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () {
-            // Haptic feedback
-            HapticFeedback.mediumImpact();
-            context.push('/inspiration');
-          },
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  const Color(0xFFEC4899),
-                  const Color(0xFF8A2BE2),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: const Color(0xFF8A2BE2).withOpacity(0.3),
-                  blurRadius: 16,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                // Icône - FIX: Animation simple sans repeat
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(
-                    Icons.wb_twilight,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                // Texte
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(
-                            'Mode Inspiration',
-                            style: GoogleFonts.poppins(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          // Badge BÊTA - FIX: Animation simple sans repeat
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 3,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.25),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'BÊTA',
-                              style: GoogleFonts.poppins(
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Découvre les cadeaux en format TikTok',
-                        style: GoogleFonts.poppins(
-                          fontSize: 13,
-                          color: Colors.white.withOpacity(0.9),
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                // Flèche - FIX: Pas d'animation repeat
-                const Icon(
-                  Icons.arrow_forward_ios,
-                  color: Colors.white,
-                  size: 18,
-                ),
-              ],
-            ),
-          )
-              // FIX: Animation d'entrée simple, sans repeat
-              .animate()
-              .fadeIn(duration: 400.ms, curve: Curves.easeOut)
-              .slideY(begin: 0.3, end: 0, duration: 400.ms, curve: Curves.easeOut),
-        ),
       ),
     );
   }
