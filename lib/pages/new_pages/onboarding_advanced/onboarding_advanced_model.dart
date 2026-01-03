@@ -360,30 +360,30 @@ class OnboardingAdvancedModel {
           ],
           'icon': '🎁',
         },
-        // 4. Prénom de la personne (REQUIRED - toujours visible)
+        // 4. Prénom ET Pseudo (MÊME PAGE - dual fields)
         {
           'section': 'person',
-          'id': 'personName',
-          'type': 'text',
-          'question': 'Quel est son prénom ?',
-          'subtitle': '✨ REQUIS - Pour personnaliser les suggestions',
-          'field': 'personName',
-          'placeholder': 'Exemple: Marie',
-          'icon': '👤',
-          'required': true,
-        },
-        // 5. Username de la personne (OPTIONAL - clairement marqué)
-        {
-          'section': 'person',
-          'id': 'personUsername',
-          'type': 'text',
-          'question': 'Son nom d\'utilisateur (optionnel)',
-          'subtitle': '🔗 OPTIONNEL - Si la personne utilise DORON (@username)',
-          'field': 'personIdentifier',
-          'placeholder': '@username (facultatif)',
-          'icon': '🔗',
-          'required': false,
-          'canSkip': true,
+          'id': 'personInfo',
+          'type': 'dual_text',
+          'question': 'Informations sur cette personne',
+          'subtitle': '👤 Prénom requis • 🔗 Pseudo optionnel',
+          'icon': '✍️',
+          'fields': [
+            {
+              'field': 'personName',
+              'label': 'Prénom',
+              'placeholder': 'Ex: Marie',
+              'required': true,
+              'hint': 'REQUIS',
+            },
+            {
+              'field': 'personIdentifier',
+              'label': 'Nom d\'utilisateur DORON',
+              'placeholder': '@username (optionnel)',
+              'required': false,
+              'hint': 'OPTIONNEL - Si la personne utilise l\'app',
+            },
+          ],
         },
         // 6. Sexe
         {

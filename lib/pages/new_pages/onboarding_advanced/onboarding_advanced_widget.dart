@@ -290,6 +290,8 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
       return _buildTransitionScreen(stepData);
     } else if (type == 'text') {
       return _buildTextInputScreen(stepData);
+    } else if (type == 'dual_text') {
+      return _buildDualTextInputScreen(stepData);
     } else if (type == 'single' || type == 'multiple') {
       return _buildQuestionScreen(stepData);
     } else if (type == 'slider') {
@@ -520,6 +522,126 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
         ),
         // Espace supplémentaire en bas pour s'assurer que le champ reste visible
         const SizedBox(height: 40),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDualTextInputScreen(Map<String, dynamic> stepData) {
+    final fields = stepData['fields'] as List;
+
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(height: 40),
+          Text(
+            stepData['question'] as String,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.poppins(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: violetColor,
+            ),
+          ),
+          if (stepData['subtitle'] != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              stepData['subtitle'] as String,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+          const SizedBox(height: 32),
+          // Afficher les 2 champs
+          ...fields.map((fieldData) {
+            final field = fieldData['field'] as String;
+            final label = fieldData['label'] as String;
+            final placeholder = fieldData['placeholder'] as String;
+            final required = fieldData['required'] as bool;
+            final hint = fieldData['hint'] as String;
+            final currentValue = _model.answers[field] as String? ?? '';
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        label,
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: const Color(0xFF111827),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: required ? violetColor : Colors.grey[300],
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          hint,
+                          style: GoogleFonts.poppins(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: required ? Colors.white : Colors.grey[700],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    key: ValueKey('${field}_${currentValue.hashCode}'),
+                    initialValue: currentValue,
+                    onChanged: (value) {
+                      _model.answers[field] = value;
+                    },
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: violetColor,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: placeholder,
+                      hintStyle: GoogleFonts.poppins(
+                        fontSize: 16,
+                        color: Colors.grey[400],
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: violetColor.withOpacity(0.3)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: violetColor.withOpacity(0.3)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: violetColor, width: 2),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            );
+          }).toList(),
+          const SizedBox(height: 24),
         ],
       ),
     );
@@ -780,6 +902,58 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 24),
+              // Bouton "Raisonnable"
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    setState(() {
+                      // Valeur raisonnable : 80€ (mix accessible + premium)
+                      _model.answers[field] = 80.0;
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          violetColor.withOpacity(0.1),
+                          const Color(0xFFEC4899).withOpacity(0.1),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: violetColor.withOpacity(0.3),
+                        width: 2,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.lightbulb_outline,
+                          color: violetColor,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Rester dans la limite du raisonnable',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: violetColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ),
             ],
           ),

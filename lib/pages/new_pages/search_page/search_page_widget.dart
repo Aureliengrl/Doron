@@ -6,6 +6,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '/components/cached_image.dart';
 import '/services/product_url_service.dart';
 import '/services/firebase_data_service.dart';
+import '/backend/backend.dart';
+import '/auth/firebase_auth/auth_util.dart';
 import 'search_page_model.dart';
 export 'search_page_model.dart';
 
@@ -1365,21 +1367,32 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                               color: violetColor,
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF3F4F6),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              product['brand'] as String? ?? product['source'] as String? ?? 'Amazon',
-                              style: GoogleFonts.poppins(
-                                fontSize: 10,
-                                color: const Color(0xFF9CA3AF),
-                                fontWeight: FontWeight.w600,
+                          // Bouton "+" pour ajout direct à wishlist
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => _showAddToWishlistDialog(product),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [violetColor, const Color(0xFFEC4899)],
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: violetColor.withOpacity(0.3),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: const Icon(
+                                  Icons.add,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
                               ),
                             ),
                           ),
@@ -1432,6 +1445,277 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
           ),
         ),
       ],
+    );
+  }
+
+  /// Affiche un dialog pour ajouter un produit à une wishlist
+  Future<void> _showAddToWishlistDialog(Map<String, dynamic> product) async {
+    final currentProf = _model.currentProfile;
+    if (currentProf == null) return;
+
+    final personId = currentProf['id'] as String;
+
+    // Charger les wishlists pour cette personne
+    final wishlists = await FirebaseDataService.loadWishlists(personId: personId);
+
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(24),
+            topRight: Radius.circular(24),
+          ),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // En-tête
+            Row(
+              children: [
+                Icon(Icons.bookmark_add, color: violetColor, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Ajouter à une wishlist',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1F2937),
+                    ),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Liste des wishlists existantes
+            if (wishlists.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                child: Center(
+                  child: Text(
+                    'Aucune wishlist pour ${currentProf['name']}',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: const Color(0xFF6B7280),
+                    ),
+                  ),
+                ),
+              )
+            else
+              ...wishlists.map((wishlist) {
+                return ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [violetColor, const Color(0xFFEC4899)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.bookmark, color: Colors.white, size: 20),
+                  ),
+                  title: Text(
+                    wishlist['name'] as String,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Text(
+                    '${(wishlist['productIds'] as List?)?.length ?? 0} produits',
+                    style: GoogleFonts.poppins(
+                      fontSize: 12,
+                      color: const Color(0xFF6B7280),
+                    ),
+                  ),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () async {
+                    Navigator.pop(context);
+                    await _addProductToWishlist(
+                      product,
+                      wishlist['id'] as String,
+                      personId,
+                    );
+                  },
+                );
+              }).toList(),
+
+            const SizedBox(height: 12),
+
+            // Bouton créer nouvelle wishlist
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await _createAndAddToWishlist(product, personId, currentProf['name'] as String);
+                },
+                icon: const Icon(Icons.add_circle_outline),
+                label: Text(
+                  'Créer une nouvelle wishlist',
+                  style: GoogleFonts.poppins(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: violetColor,
+                  side: BorderSide(color: violetColor, width: 2),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Ajoute un produit à une wishlist existante
+  Future<void> _addProductToWishlist(
+    Map<String, dynamic> product,
+    String wishlistId,
+    String personId,
+  ) async {
+    try {
+      // 1. Créer un FavouritesRecord pour ce produit (s'il n'existe pas déjà)
+      final productName = product['name'] as String? ?? 'Produit';
+      final favoriteId = await _createOrGetFavoriteId(product, personId);
+
+      if (favoriteId == null) {
+        _showSnackBar('Erreur lors de l\'ajout du produit', isError: true);
+        return;
+      }
+
+      // 2. Ajouter à la wishlist
+      final success = await FirebaseDataService.addToWishlist(wishlistId, favoriteId);
+
+      if (success) {
+        _showSnackBar('✓ $productName ajouté à la wishlist');
+      } else {
+        _showSnackBar('Erreur lors de l\'ajout à la wishlist', isError: true);
+      }
+    } catch (e) {
+      _showSnackBar('Erreur: ${e.toString()}', isError: true);
+    }
+  }
+
+  /// Crée une nouvelle wishlist et y ajoute le produit
+  Future<void> _createAndAddToWishlist(
+    Map<String, dynamic> product,
+    String personId,
+    String personName,
+  ) async {
+    try {
+      final productName = product['name'] as String? ?? 'Produit';
+
+      // Créer la wishlist
+      final wishlistName = 'Wishlist ${personName}';
+      final wishlistId = await FirebaseDataService.createWishlist(
+        name: wishlistName,
+        personId: personId,
+      );
+
+      if (wishlistId == null) {
+        _showSnackBar('Erreur lors de la création de la wishlist', isError: true);
+        return;
+      }
+
+      // Ajouter le produit à cette nouvelle wishlist
+      await _addProductToWishlist(product, wishlistId, personId);
+    } catch (e) {
+      _showSnackBar('Erreur: ${e.toString()}', isError: true);
+    }
+  }
+
+  /// Crée ou récupère l'ID d'un FavouritesRecord pour un produit
+  Future<String?> _createOrGetFavoriteId(
+    Map<String, dynamic> product,
+    String personId,
+  ) async {
+    try {
+      // Vérifier si ce produit existe déjà dans les favoris de cette personne
+      final productName = product['name'] as String? ?? 'Produit';
+      final existingFavorites = await queryFavouritesRecordOnce(
+        queryBuilder: (query) => query
+            .where('uid', isEqualTo: currentUserReference)
+            .where('personId', isEqualTo: personId)
+            .where('product.productTitle', isEqualTo: productName)
+            .limit(1),
+      );
+
+      if (existingFavorites.isNotEmpty) {
+        // Le produit existe déjà dans les favoris
+        return existingFavorites.first.reference.id;
+      }
+
+      // Créer un nouveau FavouritesRecord
+      final favoriteRef = await FavouritesRecord.collection.add(
+        createFavouritesRecordData(
+          uid: currentUserReference,
+          platform: product['source'] as String? ?? 'Amazon',
+          personId: personId,
+          timeStamp: DateTime.now(),
+          product: createProductsStructData(
+            productTitle: productName,
+            productImage: product['image'] as String? ?? '',
+            productPrice: (product['price'] as num?)?.toDouble() ?? 0.0,
+            productLink: product['url'] as String? ?? '',
+            productBrand: product['brand'] as String? ?? '',
+          ),
+        ),
+      );
+
+      return favoriteRef.id;
+    } catch (e) {
+      print('❌ Error creating favorite: $e');
+      return null;
+    }
+  }
+
+  void _showSnackBar(String message, {bool isError = false}) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              isError ? Icons.error_outline : Icons.check_circle,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: isError ? Colors.red : violetColor,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 3),
+      ),
     );
   }
 
