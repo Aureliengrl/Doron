@@ -1673,12 +1673,13 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
           platform: product['source'] as String? ?? 'Amazon',
           personId: personId,
           timeStamp: DateTime.now(),
-          product: createProductsStructData(
+          product: createProductsStruct(
             productTitle: productName,
-            productImage: product['image'] as String? ?? '',
-            productPrice: (product['price'] as num?)?.toDouble() ?? 0.0,
-            productLink: product['url'] as String? ?? '',
-            productBrand: product['brand'] as String? ?? '',
+            productPhoto: product['image'] as String? ?? '',
+            productPrice: '${product['price'] ?? 0}',
+            productUrl: product['url'] as String? ?? '',
+            platform: product['source'] as String? ?? 'Amazon',
+            create: true,
           ),
         ),
       );
