@@ -369,20 +369,23 @@ class FirebaseDataService {
 
   // ============= WISHLISTS =============
 
-  /// Crée une nouvelle liste de souhaits
+  /// Crée une nouvelle liste de souhaits liée à une personne
   static Future<String?> createWishlist({
     required String name,
     String? description,
+    String? personId, // Lier la wishlist à une personne (optionnel)
   }) async {
     if (!isLoggedIn) return null;
 
     try {
       final docRef = await _firestore.collection('wishlists').add({
         'userId': currentUserId,
+        'personId': personId, // Peut être null pour wishlists globales
         'name': name,
         'description': description ?? '',
-        'giftIds': [],
+        'productIds': [], // IDs des FavouritesRecord
         'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
       });
 
       AppLogger.firebase('Wishlist created: ${docRef.id}');
@@ -393,16 +396,21 @@ class FirebaseDataService {
     }
   }
 
-  /// Charge toutes les listes de souhaits
-  static Future<List<Map<String, dynamic>>> loadWishlists() async {
+  /// Charge toutes les listes de souhaits (ou filtrées par personne)
+  static Future<List<Map<String, dynamic>>> loadWishlists({String? personId}) async {
     if (!isLoggedIn) return [];
 
     try {
-      final snapshot = await _firestore
+      var query = _firestore
           .collection('wishlists')
-          .where('userId', isEqualTo: currentUserId)
-          .orderBy('createdAt', descending: true)
-          .get();
+          .where('userId', isEqualTo: currentUserId);
+
+      // Filtrer par personne si spécifié
+      if (personId != null) {
+        query = query.where('personId', isEqualTo: personId);
+      }
+
+      final snapshot = await query.orderBy('createdAt', descending: true).get();
 
       return snapshot.docs.map((doc) {
         return {'id': doc.id, ...doc.data()};
@@ -413,18 +421,85 @@ class FirebaseDataService {
     }
   }
 
-  /// Ajoute un cadeau à une liste de souhaits
-  static Future<void> addToWishlist(String wishlistId, String giftId) async {
-    if (!isLoggedIn) return;
+  /// Ajoute un produit favori à une wishlist
+  static Future<bool> addToWishlist(String wishlistId, String favoriteId) async {
+    if (!isLoggedIn) return false;
 
     try {
       await _firestore.collection('wishlists').doc(wishlistId).update({
-        'giftIds': FieldValue.arrayUnion([giftId]),
+        'productIds': FieldValue.arrayUnion([favoriteId]),
+        'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      AppLogger.firebase('Gift added to wishlist');
+      AppLogger.firebase('Product added to wishlist: $favoriteId');
+      return true;
     } catch (e) {
       AppLogger.error('Error adding to wishlist', 'Firebase', e);
+      return false;
+    }
+  }
+
+  /// Retire un produit d'une wishlist
+  static Future<bool> removeFromWishlist(String wishlistId, String favoriteId) async {
+    if (!isLoggedIn) return false;
+
+    try {
+      await _firestore.collection('wishlists').doc(wishlistId).update({
+        'productIds': FieldValue.arrayRemove([favoriteId]),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      AppLogger.firebase('Product removed from wishlist: $favoriteId');
+      return true;
+    } catch (e) {
+      AppLogger.error('Error removing from wishlist', 'Firebase', e);
+      return false;
+    }
+  }
+
+  /// Charge les produits d'une wishlist spécifique
+  static Future<List<FavouritesRecord>> loadWishlistProducts(String wishlistId) async {
+    if (!isLoggedIn) return [];
+
+    try {
+      // Charger la wishlist
+      final wishlistDoc = await _firestore.collection('wishlists').doc(wishlistId).get();
+
+      if (!wishlistDoc.exists) {
+        AppLogger.warning('Wishlist not found: $wishlistId', 'Firebase');
+        return [];
+      }
+
+      final productIds = (wishlistDoc.data()?['productIds'] as List?)?.cast<String>() ?? [];
+
+      if (productIds.isEmpty) return [];
+
+      // Charger tous les produits de la wishlist
+      final favorites = await queryFavouritesRecordOnce(
+        queryBuilder: (query) => query
+            .where('uid', isEqualTo: currentUserReference)
+            .where(FieldPath.documentId, whereIn: productIds.take(10).toList()), // Firestore limit: 10 max
+      );
+
+      AppLogger.success('Loaded ${favorites.length} products from wishlist', 'Firebase');
+      return favorites;
+    } catch (e) {
+      AppLogger.error('Error loading wishlist products', 'Firebase', e);
+      return [];
+    }
+  }
+
+  /// Supprime une wishlist
+  static Future<bool> deleteWishlist(String wishlistId) async {
+    if (!isLoggedIn) return false;
+
+    try {
+      await _firestore.collection('wishlists').doc(wishlistId).delete();
+      AppLogger.firebase('Wishlist deleted: $wishlistId');
+      return true;
+    } catch (e) {
+      AppLogger.error('Error deleting wishlist', 'Firebase', e);
+      return false;
     }
   }
 
