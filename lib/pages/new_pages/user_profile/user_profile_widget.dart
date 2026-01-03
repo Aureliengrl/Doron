@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:ui';
 import '/auth/firebase_auth/auth_util.dart';
 import '/backend/backend.dart';
 import '/services/product_url_service.dart';
@@ -27,21 +29,33 @@ class _UserProfileWidgetState extends State<UserProfileWidget> with SingleTicker
   final Color violetColor = const Color(0xFF8A2BE2);
   final Color pinkColor = const Color(0xFFEC4899);
 
+  bool _isAnonymous = false;
+
   @override
   void initState() {
     super.initState();
     _model = UserProfileModel();
     _tabController = TabController(length: 2, vsync: this);
 
+    // Vérifier le mode anonyme
+    _checkAnonymousMode();
+
     // Charger les favoris après le premier frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
+      if (mounted && !_isAnonymous) {
         _model.loadFavourites();
       }
     });
 
     // Écouter les changements du model
     _model.addListener(_onModelChanged);
+  }
+
+  Future<void> _checkAnonymousMode() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isAnonymous = prefs.getBool('anonymous_mode') ?? false;
+    });
   }
 
   void _onModelChanged() {
@@ -60,6 +74,10 @@ class _UserProfileWidgetState extends State<UserProfileWidget> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
+    if (_isAnonymous) {
+      return _buildAnonymousView();
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       body: CustomScrollView(
@@ -72,6 +90,107 @@ class _UserProfileWidgetState extends State<UserProfileWidget> with SingleTicker
 
           // Contenu des tabs
           _buildTabContent(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnonymousView() {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF9FAFB),
+      body: Stack(
+        children: [
+          // Contenu flouté
+          CustomScrollView(
+            slivers: [
+              _buildAppBar(),
+              _buildTabBar(),
+              _buildTabContent(),
+            ],
+          ),
+
+          // Overlay flouté
+          BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+            child: Container(
+              color: Colors.white.withOpacity(0.3),
+            ),
+          ),
+
+          // Message connexion
+          Center(
+            child: Container(
+              margin: const EdgeInsets.all(32),
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 30,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [violetColor, pinkColor],
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.lock_outline, color: Colors.white, size: 40),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Connecte-toi',
+                    style: GoogleFonts.poppins(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF111827),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Crée ton compte pour accéder à ton profil, tes produits likés et tes wishlists',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.poppins(
+                      fontSize: 15,
+                      color: const Color(0xFF6B7280),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => context.go('/auth'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: violetColor,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        'Se connecter',
+                        style: GoogleFonts.poppins(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
