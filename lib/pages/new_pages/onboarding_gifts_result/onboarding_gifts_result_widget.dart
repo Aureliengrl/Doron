@@ -425,7 +425,7 @@ class _OnboardingGiftsResultWidgetState
                     context.go(_returnTo!);
                   } else {
                     // Sinon, aller à l'accueil
-                    context.go('/home-pinterest');
+                    context.go('/search-page');
                   }
                 },
                 icon: Icon(
@@ -646,7 +646,7 @@ class _OnboardingGiftsResultWidgetState
 
                 if (mounted) {
                   if (FirebaseAuth.instance.currentUser != null) {
-                    context.go('/home-pinterest');
+                    context.go('/search-page');
                   } else {
                     context.go('/authentification');
                   }
@@ -1093,7 +1093,7 @@ class _OnboardingGiftsResultWidgetState
                           if (FirebaseAuth.instance.currentUser != null) {
                             // Si déjà connecté, aller directement à l'accueil
                             print('✅ Utilisateur déjà connecté, navigation vers home');
-                            context.go('/home-pinterest');
+                            context.go('/search-page');
                           } else {
                             // Sinon, aller à l'authentification
                             print('🔐 Pas encore connecté, navigation vers auth');

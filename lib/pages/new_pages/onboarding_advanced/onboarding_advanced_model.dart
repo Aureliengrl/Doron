@@ -431,30 +431,55 @@ class OnboardingAdvancedModel {
           ],
           'icon': '🎉',
         },
-        // 9. Hobbies (1-2 principaux)
+        // 9. Hobbies (2-3 principaux) - OPTIONS ENRICHIES
         {
           'section': 'gift',
           'id': 'hobbies',
           'type': 'multiple',
           'question': 'Ses hobbies principaux ?',
-          'subtitle': '🎯 Choisis 1 ou 2 maximum',
+          'subtitle': '🎯 Choisis 2 ou 3 maximum',
           'field': 'recipientHobbies',
           'options': [
             '🎨 Art & Créativité',
-            '⚽ Sport',
-            '🎮 Gaming',
-            '📚 Lecture',
+            '🖌️ Dessin & Peinture',
+            '⚽ Sport & Fitness',
+            '🏃 Running & Cardio',
+            '🚴 Cyclisme',
+            '🏊 Natation',
+            '🎮 Gaming & Jeux vidéo',
+            '🎲 Jeux de société',
+            '📚 Lecture & Littérature',
+            '✍️ Écriture',
             '🎵 Musique',
-            '✈️ Voyages',
-            '🍳 Cuisine',
-            '🎬 Cinéma',
-            '🧘 Bien-être',
-            '🔬 Sciences',
-            '🎭 Spectacles',
-            '🌱 Nature'
+            '🎸 Instruments de musique',
+            '✈️ Voyages & Découvertes',
+            '🗺️ Randonnée & Trek',
+            '🍳 Cuisine & Gastronomie',
+            '🍷 Œnologie',
+            '☕ Café & Thé',
+            '🎬 Cinéma & Séries',
+            '📺 Streaming',
+            '🧘 Bien-être & Yoga',
+            '💆 Spa & Relaxation',
+            '🔬 Sciences & Technologies',
+            '💻 Informatique & Code',
+            '🎭 Spectacles & Théâtre',
+            '🎤 Concerts & Musique live',
+            '🌱 Nature & Écologie',
+            '🌸 Jardinage',
+            '🐕 Animaux',
+            '📷 Photographie',
+            '🎥 Vidéo & Création',
+            '🧶 DIY & Artisanat',
+            '👗 Mode & Style',
+            '💄 Beauté & Cosmétiques',
+            '🏠 Décoration intérieure',
+            '📖 BD & Mangas',
+            '🧩 Puzzles & Énigmes',
+            '🎯 Collection & Figurines',
           ],
           'icon': '💫',
-          'maxSelections': 2, // Limiter à 2 choix
+          'maxSelections': 3, // Augmenté à 3 choix
         },
       ];
     }
@@ -944,13 +969,13 @@ class OnboardingAdvancedModel {
           );
         }
 
-        // Retourner à la page d'origine
+        // Retourner à la page d'origine (ou page Recherche par défaut)
         await Future.delayed(const Duration(milliseconds: 500));
         if (context.mounted) {
           if (returnTo != null && returnTo.isNotEmpty) {
             context.go(returnTo);
           } else {
-            context.go('/home-pinterest');
+            context.go('/search-page'); // Redirection vers page Recherche
           }
         }
         isNavigating = false; // Reset le flag avant de return
