@@ -1241,6 +1241,90 @@ class FirebaseDataService {
     return lists.isEmpty ? null : lists.first;
   }
 
+  /// Ajoute un cadeau à la liste de cadeaux d'une personne
+  static Future<bool> addGiftToPerson({
+    required String personId,
+    required Map<String, dynamic> gift,
+  }) async {
+    try {
+      // Charger la liste actuelle
+      final currentList = await loadLatestGiftListForPerson(personId);
+
+      if (currentList == null) {
+        // Aucune liste existante, créer une nouvelle
+        await saveGiftListForPerson(
+          personId: personId,
+          gifts: [gift],
+          listName: 'Liste ${DateTime.now().day}/${DateTime.now().month}',
+        );
+        AppLogger.success('New gift list created with gift for person $personId', 'Firebase');
+        return true;
+      }
+
+      // Liste existante, ajouter le cadeau
+      final List<Map<String, dynamic>> gifts =
+          (currentList['gifts'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+
+      // Vérifier si le cadeau existe déjà (par ID ou nom)
+      final giftId = gift['id'];
+      final giftName = gift['name'];
+      final alreadyExists = gifts.any((g) =>
+        (g['id'] != null && g['id'] == giftId) ||
+        (g['name'] != null && g['name'] == giftName)
+      );
+
+      if (alreadyExists) {
+        AppLogger.warning('Gift already exists in list for person $personId', 'Firebase');
+        return false;
+      }
+
+      gifts.add(gift);
+
+      // Sauvegarder la liste mise à jour
+      final listId = currentList['id'] as String;
+
+      // Sauvegarder localement
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        final listsJson = prefs.getString('local_gift_lists_$personId') ?? '[]';
+        final lists = (json.decode(listsJson) as List).cast<Map<String, dynamic>>();
+
+        final listIndex = lists.indexWhere((l) => l['id'] == listId);
+        if (listIndex != -1) {
+          lists[listIndex]['gifts'] = gifts;
+          await prefs.setString('local_gift_lists_$personId', json.encode(lists));
+        }
+
+        AppLogger.success('Gift added locally for person $personId', 'Firebase');
+      } catch (e) {
+        AppLogger.error('Error adding gift locally', 'Firebase', e);
+      }
+
+      // Sauvegarder sur Firebase si connecté
+      if (isLoggedIn) {
+        try {
+          await _firestore
+              .collection('users')
+              .doc(currentUserId)
+              .collection('people')
+              .doc(personId)
+              .collection('gift_lists')
+              .doc(listId)
+              .update({'gifts': gifts});
+
+          AppLogger.firebase('Gift added to Firebase for person $personId');
+        } catch (e) {
+          AppLogger.error('Error adding gift to Firebase', 'Firebase', e);
+        }
+      }
+
+      return true;
+    } catch (e) {
+      AppLogger.error('Error adding gift to person', 'Firebase', e);
+      return false;
+    }
+  }
+
   // ============= HOME FEED =============
 
   /// Sauvegarde un feed d'accueil généré

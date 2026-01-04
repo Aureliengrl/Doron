@@ -541,11 +541,10 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                     await prefs.clear();
                     print('✅ SharedPreferences cleared after logout');
 
-                    // Rediriger vers l'onboarding initial (comme première connexion)
-                    context.goNamedAuth(
-                      OnboardingAdvancedWidget.routeName,
-                      context.mounted,
-                    );
+                    // Rediriger vers l'écran initial (comme si l'app venait d'être installée)
+                    if (context.mounted) {
+                      context.go('/initial-choice');
+                    }
                   },
                   child: Container(
                     width: double.infinity,
@@ -638,8 +637,10 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                       await prefs.clear();
                       print('✅ SharedPreferences cleared after account deletion');
 
-                      // Rediriger vers l'onboarding initial (comme première connexion)
-                      context.go('/onboarding-advanced');
+                      // Rediriger vers l'écran initial (comme si l'app venait d'être installée)
+                      if (context.mounted) {
+                        context.go('/initial-choice');
+                      }
                     } else {
                       context.pushNamed(ProfileWidget.routeName);
                     }

@@ -943,7 +943,7 @@ class _OnboardingAdvancedWidgetState extends State<OnboardingAdvancedWidget>
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Rester dans la limite du raisonnable',
+                          'Budget raisonnable',
                           style: GoogleFonts.poppins(
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
