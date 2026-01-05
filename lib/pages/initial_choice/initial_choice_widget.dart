@@ -145,13 +145,9 @@ class _InitialChoiceWidgetState extends State<InitialChoiceWidget> with SingleTi
                       gradient: LinearGradient(
                         colors: [const Color(0xFFF59E0B), const Color(0xFFEF4444)],
                       ),
-                      onTap: () async {
-                        // Activer le mode anonyme
-                        final prefs = await SharedPreferences.getInstance();
-                        await prefs.setBool('anonymous_mode', true);
-                        if (mounted) {
-                          context.go('/HomePinterest');
-                        }
+                      onTap: () {
+                        // Rediriger vers la page dédiée du gala
+                        context.go('/gala-ticket');
                       },
                     ),
                   ],

@@ -940,6 +940,27 @@ class OnboardingAdvancedModel {
       return true;
     }
 
+    // Gestion du type dual_text (Prénom + Pseudo)
+    if (type == 'dual_text') {
+      final fields = stepData['fields'] as List;
+      // Vérifier que tous les champs requis sont remplis
+      for (var fieldData in fields) {
+        final field = fieldData['field'] as String;
+        final required = fieldData['required'] as bool? ?? false;
+        final value = answers[field];
+
+        if (required && (value == null || value.toString().trim().isEmpty)) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    // Pour les autres types, vérifier que le champ existe
+    if (!stepData.containsKey('field')) {
+      return true; // Si pas de field, on peut continuer
+    }
+
     final field = stepData['field'] as String;
     final fieldValue = answers[field];
 
