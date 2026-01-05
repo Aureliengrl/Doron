@@ -15,6 +15,8 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '/services/openai_service.dart';
 import '/services/openai_onboarding_service.dart';
+import '/components/aesthetic_buttons.dart';
+import '/components/micro_interactions.dart';
 import 'profile_model.dart';
 export 'profile_model.dart';
 
@@ -60,7 +62,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
           mainAxisSize: MainAxisSize.max,
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
-          // Violet gradient header
+          // Violet gradient header with enhanced aesthetics
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
@@ -78,9 +80,16 @@ class _ProfileWidgetState extends State<ProfileWidget> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF8A2BE2).withOpacity(0.3),
-                  blurRadius: 24,
-                  offset: const Offset(0, 8),
+                  color: const Color(0xFF8A2BE2).withOpacity(0.4),
+                  blurRadius: 30,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 10),
+                ),
+                BoxShadow(
+                  color: const Color(0xFFEC4899).withOpacity(0.3),
+                  blurRadius: 20,
+                  spreadRadius: 0,
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
@@ -90,16 +99,20 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Text(
-                      FFLocalizations.of(context).getText(
-                        's2pb5jum' /* Profil */,
-                      ),
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 0.5,
+                    ShimmerEffect(
+                      shimmerColor: Colors.white,
+                      duration: const Duration(milliseconds: 3000),
+                      child: Text(
+                        FFLocalizations.of(context).getText(
+                          's2pb5jum' /* Profil */,
+                        ),
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.poppins(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 4),
