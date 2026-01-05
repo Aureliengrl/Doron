@@ -104,7 +104,8 @@ class ConnectionRequiredDialog extends StatelessWidget {
 
                   if (context.mounted) {
                     Navigator.pop(context);
-                    context.go('/onboarding-advanced');
+                    // Rediriger vers le choix du mode (Classique ou Saint-Valentin)
+                    context.go('/mode-choice');
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -123,7 +124,7 @@ class ConnectionRequiredDialog extends StatelessWidget {
                     const Icon(Icons.rocket_launch, size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      'Créer un compte (3 min)',
+                      'Commencer (3 min)',
                       style: GoogleFonts.poppins(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,

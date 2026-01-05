@@ -20,6 +20,7 @@ import '/backend/schema/enums/enums.dart';
 import '/components/cached_image.dart';
 import '/components/skeleton_loader.dart';
 import '/components/connection_required_dialog.dart';
+import '/components/tutorial_overlay.dart';
 import 'home_pinterest_model.dart';
 import 'home_pinterest_widgets_extra.dart';
 export 'home_pinterest_model.dart';
@@ -52,6 +53,48 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
 
     // Écouter le scroll pour l'infinite scroll
     _scrollController.addListener(_onScroll);
+
+    // Afficher le tutoriel en mode découverte
+    _showTutorialIfNeeded();
+  }
+
+  Future<void> _showTutorialIfNeeded() async {
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (!mounted) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final isAnonymous = prefs.getBool('anonymous_mode') ?? false;
+
+    if (isAnonymous) {
+      await TutorialOverlay.showIfNeeded(
+        context,
+        tutorialKey: 'home_discovery',
+        steps: [
+          const TutorialStep(
+            title: 'Bienvenue en mode découverte !',
+            description: 'Explore l\'app librement et découvre des idées cadeaux exceptionnelles.',
+            icon: Icons.explore,
+          ),
+          const TutorialStep(
+            title: 'Parcours les suggestions',
+            description: 'Fais défiler pour découvrir des cadeaux personnalisés selon tes goûts.',
+            icon: Icons.card_giftcard,
+          ),
+          const TutorialStep(
+            title: 'Like tes favoris',
+            description: 'Appuie sur le cœur pour sauvegarder tes coups de cœur.',
+            icon: Icons.favorite,
+          ),
+          const TutorialStep(
+            title: 'Prêt à acheter un billet ?',
+            description: 'Clique sur l\'icône billet en haut de ton profil pour réserver ta place au gala DORÕN !',
+            icon: Icons.local_activity,
+            buttonText: 'C\'est parti !',
+          ),
+        ],
+        onComplete: () {},
+      );
+    }
   }
 
   /// Charge les favoris depuis Firebase (FlutterFlow system)

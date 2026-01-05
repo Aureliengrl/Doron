@@ -75,8 +75,13 @@ class _ModeChoiceWidgetState extends State<ModeChoiceWidget> with SingleTickerPr
                     child: Row(
                       children: [
                         IconButton(
-                          onPressed: () => context.go('/initial-choice'),
+                          onPressed: () {
+                            if (context.mounted) {
+                              context.go('/initial-choice');
+                            }
+                          },
                           icon: const Icon(Icons.arrow_back),
+                          color: const Color(0xFF6B7280),
                         ),
                       ],
                     ),

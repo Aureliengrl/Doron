@@ -339,6 +339,17 @@ class _UserProfileWidgetState extends State<UserProfileWidget> with SingleTicker
         ),
       ),
       actions: [
+        // Bouton billet (mode découverte)
+        IconButton(
+          icon: const Icon(
+            Icons.local_activity,
+            color: Colors.white,
+            size: 24,
+          ),
+          onPressed: () {
+            context.push('/gala-ticket'); // Vers la page du gala
+          },
+        ),
         // Bouton paramètres
         IconButton(
           icon: const Icon(
