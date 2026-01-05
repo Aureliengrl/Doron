@@ -21,6 +21,7 @@ import '/components/cached_image.dart';
 import '/components/skeleton_loader.dart';
 import '/components/connection_required_dialog.dart';
 import '/components/tutorial_overlay.dart';
+import '/components/brand_filters.dart';
 import 'home_pinterest_model.dart';
 import 'home_pinterest_widgets_extra.dart';
 export 'home_pinterest_model.dart';
@@ -795,6 +796,19 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
 
             // Catégories
             SliverToBoxAdapter(child: _buildCategories()),
+
+            // Filtres par marques
+            SliverToBoxAdapter(
+              child: BrandFiltersWidget(
+                activeBrandId: _model.activeBrand,
+                onBrandSelected: (brandId) {
+                  setState(() {
+                    _model.activeBrand = brandId;
+                  });
+                },
+                primaryColor: violetColor,
+              ),
+            ),
 
             // Filtres par prix
             SliverToBoxAdapter(child: _buildPriceFilters()),

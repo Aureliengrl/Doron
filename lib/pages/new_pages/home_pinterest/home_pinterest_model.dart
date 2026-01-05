@@ -1,6 +1,7 @@
 class HomePinterestModel {
   String activeCategory = 'Pour toi';
   String activePriceFilter = 'all';
+  String activeBrand = 'all'; // Filtre par marque/retailer
   Set<int> likedProducts = {};
   Set<String> likedProductTitles = {}; // Pour FlutterFlow system (par titre)
   Map<String, dynamic>? selectedProduct;
@@ -140,9 +141,25 @@ class HomePinterestModel {
     errorDetails = null;
   }
 
-  /// Retourne les produits filtrés selon le prix, la recherche et les quick filters
+  /// Retourne les produits filtrés selon le prix, la marque, la recherche et les quick filters
   List<Map<String, dynamic>> getFilteredProducts() {
     var filtered = products;
+
+    // Filtre par marque/retailer
+    if (activeBrand != 'all') {
+      filtered = filtered.where((product) {
+        final brand = (product['brand'] as String? ?? '').toLowerCase();
+        final source = (product['source'] as String? ?? '').toLowerCase();
+        final platform = (product['platform'] as String? ?? '').toLowerCase();
+
+        final brandFilter = activeBrand.toLowerCase();
+
+        // Chercher dans brand, source ou platform
+        return brand.contains(brandFilter) ||
+               source.contains(brandFilter) ||
+               platform.contains(brandFilter);
+      }).toList();
+    }
 
     // Filtre par prix
     if (activePriceFilter != 'all') {
