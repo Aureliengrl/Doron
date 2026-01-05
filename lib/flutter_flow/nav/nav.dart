@@ -303,6 +303,27 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: AdminProductsPage.routePath,
           builder: (context, params) => AdminProductsPage(),
         ),
+        // Initial Choice & Gala Ticket Pages
+        FFRoute(
+          name: InitialChoiceWidget.routeName,
+          path: InitialChoiceWidget.routePath,
+          builder: (context, params) => InitialChoiceWidget(),
+        ),
+        FFRoute(
+          name: GalaTicketWidget.routeName,
+          path: GalaTicketWidget.routePath,
+          builder: (context, params) => GalaTicketWidget(),
+        ),
+        FFRoute(
+          name: TicketPaymentWebView.routeName,
+          path: TicketPaymentWebView.routePath,
+          builder: (context, params) => TicketPaymentWebView(),
+        ),
+        FFRoute(
+          name: TicketSuccessWidget.routeName,
+          path: TicketSuccessWidget.routePath,
+          builder: (context, params) => TicketSuccessWidget(),
+        ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
 

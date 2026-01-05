@@ -36,3 +36,10 @@ export '/pages/tiktok_inspiration/tiktok_inspiration_page_widget.dart'
     show TikTokInspirationPageWidget;
 export '/pages/new_pages/user_profile/user_profile_widget.dart'
     show UserProfileWidget;
+export '/pages/initial_choice/initial_choice_widget.dart'
+    show InitialChoiceWidget;
+export '/pages/gala_ticket/gala_ticket_widget.dart' show GalaTicketWidget;
+export '/pages/ticket_payment/ticket_payment_webview.dart'
+    show TicketPaymentWebView;
+export '/pages/ticket_payment/ticket_success_widget.dart'
+    show TicketSuccessWidget;
