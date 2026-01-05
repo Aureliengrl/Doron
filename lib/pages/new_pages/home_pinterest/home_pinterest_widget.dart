@@ -22,6 +22,8 @@ import '/components/skeleton_loader.dart';
 import '/components/connection_required_dialog.dart';
 import '/components/tutorial_overlay.dart';
 import '/components/brand_filters.dart';
+import '/components/aesthetic_buttons.dart';
+import '/components/micro_interactions.dart';
 import 'home_pinterest_model.dart';
 import 'home_pinterest_widgets_extra.dart';
 export 'home_pinterest_model.dart';
@@ -861,9 +863,16 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF8A2BE2).withOpacity(0.3),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF8A2BE2).withOpacity(0.4),
+            blurRadius: 30,
+            spreadRadius: 2,
+            offset: const Offset(0, 10),
+          ),
+          BoxShadow(
+            color: const Color(0xFFEC4899).withOpacity(0.3),
+            blurRadius: 20,
+            spreadRadius: 0,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -873,18 +882,22 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                _model.isAnonymousMode
-                    ? 'Découvre 🎁'
-                    : (_model.firstName.isNotEmpty
-                        ? 'Salut ${_model.firstName} ! 👋'
-                        : 'Accueil'),
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
+              ShimmerEffect(
+                shimmerColor: Colors.white,
+                duration: const Duration(milliseconds: 3000),
+                child: Text(
+                  _model.isAnonymousMode
+                      ? 'Découvre 🎁'
+                      : (_model.firstName.isNotEmpty
+                          ? 'Salut ${_model.firstName} ! 👋'
+                          : 'Accueil'),
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
               const SizedBox(height: 4),
@@ -1430,26 +1443,17 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                 const SizedBox(height: 20),
 
                 // Bouton réessayer
-                ElevatedButton.icon(
-                  onPressed: () {
-                    _model.clearError();
-                    _loadProducts();
-                  },
-                  icon: const Icon(Icons.refresh, color: Colors.white),
-                  label: Text(
-                    'Réessayer',
-                    style: GoogleFonts.poppins(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red[600],
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
+                SizedBox(
+                  width: 200,
+                  child: PrimaryGradientButton(
+                    onPressed: () {
+                      _model.clearError();
+                      _loadProducts();
+                    },
+                    text: 'Réessayer',
+                    icon: Icons.refresh,
+                    gradientColors: [Colors.red[600]!, Colors.red[400]!],
+                    height: 50,
                   ),
                 ),
               ],
@@ -1516,10 +1520,9 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 28),
-                // Bouton de rafraîchissement
-                GestureDetector(
+                // Bouton de rafraîchissement avec effet tap scale
+                TapScaleEffect(
                   onTap: () async {
-                    HapticFeedback.mediumImpact();
                     await _loadProducts();
                   },
                   child: Container(
