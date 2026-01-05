@@ -43,3 +43,7 @@ export '/pages/ticket_payment/ticket_payment_webview.dart'
     show TicketPaymentWebView;
 export '/pages/ticket_payment/ticket_success_widget.dart'
     show TicketSuccessWidget;
+export '/pages/wishlists/wishlists_page_widget.dart'
+    show WishlistsPageWidget;
+export '/pages/liked_products/liked_products_page_widget.dart'
+    show LikedProductsPageWidget;

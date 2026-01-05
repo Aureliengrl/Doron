@@ -324,6 +324,17 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: TicketSuccessWidget.routePath,
           builder: (context, params) => TicketSuccessWidget(),
         ),
+        // Wishlists & Liked Products
+        FFRoute(
+          name: WishlistsPageWidget.routeName,
+          path: WishlistsPageWidget.routePath,
+          builder: (context, params) => WishlistsPageWidget(),
+        ),
+        FFRoute(
+          name: LikedProductsPageWidget.routeName,
+          path: LikedProductsPageWidget.routePath,
+          builder: (context, params) => LikedProductsPageWidget(),
+        ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
 
