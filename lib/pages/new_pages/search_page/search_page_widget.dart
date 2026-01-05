@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '/components/cached_image.dart';
+import '/components/aesthetic_buttons.dart';
+import '/components/micro_interactions.dart';
 import '/services/product_url_service.dart';
 import '/services/firebase_data_service.dart';
 import '/backend/backend.dart';
@@ -79,15 +81,14 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () => _loadData(),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: violetColor,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  ),
-                  child: Text(
-                    'Réessayer',
-                    style: GoogleFonts.poppins(color: Colors.white),
+                SizedBox(
+                  width: 200,
+                  child: PrimaryGradientButton(
+                    onPressed: () => _loadData(),
+                    text: 'Réessayer',
+                    icon: Icons.refresh,
+                    gradientColors: const [Color(0xFF8A2BE2), Color(0xFFEC4899)],
+                    height: 50,
                   ),
                 ),
               ],
@@ -103,23 +104,49 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
         key: scaffoldKey,
         backgroundColor: const Color(0xFFF9FAFB),
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(
-                color: violetColor,
-                strokeWidth: 3,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Chargement...',
-                style: GoogleFonts.poppins(
-                  fontSize: 16,
-                  color: const Color(0xFF6B7280),
-                  fontWeight: FontWeight.w500,
+          child: FadeSlideIn(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                PulseEffect(
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      gradient: const RadialGradient(
+                        colors: [Color(0xFF8A2BE2), Color(0xFFEC4899)],
+                      ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: violetColor.withOpacity(0.5),
+                          blurRadius: 30,
+                          spreadRadius: 10,
+                        ),
+                      ],
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.person_search,
+                        color: Colors.white,
+                        size: 40,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 32),
+                ShimmerEffect(
+                  child: Text(
+                    'Chargement...',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      color: const Color(0xFF6B7280),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -204,9 +231,16 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF8A2BE2).withOpacity(0.3),
-            blurRadius: 24,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF8A2BE2).withOpacity(0.4),
+            blurRadius: 30,
+            spreadRadius: 2,
+            offset: const Offset(0, 10),
+          ),
+          BoxShadow(
+            color: const Color(0xFFEC4899).withOpacity(0.3),
+            blurRadius: 20,
+            spreadRadius: 0,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -216,14 +250,18 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                'Recherche',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
+              ShimmerEffect(
+                shimmerColor: Colors.white,
+                duration: const Duration(milliseconds: 3000),
+                child: Text(
+                  'Recherche',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
                 ),
               ),
               const SizedBox(height: 4),
