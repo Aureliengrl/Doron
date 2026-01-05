@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class GalaTicketWidget extends StatefulWidget {
   const GalaTicketWidget({super.key});
@@ -245,12 +244,9 @@ class _GalaTicketWidgetState extends State<GalaTicketWidget> with SingleTickerPr
                             text: 'Acheter mon billet',
                             icon: Icons.shopping_cart,
                             gradient: LinearGradient(colors: [goldColor, redColor]),
-                            onTap: () async {
-                              // Ouvrir le lien pour acheter le billet
-                              final url = Uri.parse('https://doron.app/gala-tickets');
-                              if (await canLaunchUrl(url)) {
-                                await launchUrl(url, mode: LaunchMode.externalApplication);
-                              }
+                            onTap: () {
+                              // Ouvrir la WebView sécurisée LYF PAY
+                              context.push('/ticket-payment');
                             },
                           ),
 
