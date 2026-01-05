@@ -13,7 +13,7 @@ import '/services/firebase_data_service.dart';
 import '/services/product_url_service.dart';
 import '/components/connection_required_dialog.dart';
 import '/components/aesthetic_buttons.dart';
-import '/components/micro_interactions.dart';
+import '/components/micro_interactions.dart' as micro;
 import 'tiktok_inspiration_page_model.dart';
 export 'tiktok_inspiration_page_model.dart';
 
@@ -101,11 +101,11 @@ class _TikTokInspirationPageWidgetState extends State<TikTokInspirationPageWidge
     return Container(
       color: Colors.black,
       child: Center(
-        child: FadeSlideIn(
+        child: micro.FadeSlideIn(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              PulseEffect(
+              micro.PulseEffect(
                 child: Container(
                   width: 80,
                   height: 80,
@@ -132,7 +132,7 @@ class _TikTokInspirationPageWidgetState extends State<TikTokInspirationPageWidge
                 ),
               ),
               const SizedBox(height: 32),
-              ShimmerEffect(
+              micro.ShimmerEffect(
                 child: Text(
                   'Chargement des inspirations...',
                   style: GoogleFonts.poppins(
@@ -529,7 +529,7 @@ class _TikTokInspirationPageWidgetState extends State<TikTokInspirationPageWidge
       placeholder: (context, url) => Container(
         color: Colors.grey[900],
         child: const Center(
-          child: ShimmerLoading(
+          child: micro.ShimmerLoading(
             width: double.infinity,
             height: double.infinity,
             borderRadius: BorderRadius.zero,

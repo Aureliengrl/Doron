@@ -247,7 +247,7 @@ class _LikedProductsPageWidgetState extends State<LikedProductsPageWidget> {
                   topRight: Radius.circular(20),
                 ),
                 child: CachedNetworkImage(
-                  imageUrl: product.imageUrl ?? '',
+                  imageUrl: product.productPhoto,
                   width: double.infinity,
                   height: 140,
                   fit: BoxFit.cover,
@@ -304,7 +304,7 @@ class _LikedProductsPageWidgetState extends State<LikedProductsPageWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    product.name ?? 'Produit',
+                    product.productTitle,
                     style: GoogleFonts.poppins(
                       fontSize: 14,
                       fontWeight: FontWeight.bold,
@@ -314,7 +314,7 @@ class _LikedProductsPageWidgetState extends State<LikedProductsPageWidget> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const Spacer(),
-                  if (product.price != null)
+                  if (product.productPrice.isNotEmpty)
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -330,7 +330,7 @@ class _LikedProductsPageWidgetState extends State<LikedProductsPageWidget> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        '${product.price}€',
+                        product.productPrice,
                         style: GoogleFonts.poppins(
                           fontSize: 13,
                           fontWeight: FontWeight.bold,

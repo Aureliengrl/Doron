@@ -23,7 +23,7 @@ import '/components/connection_required_dialog.dart';
 import '/components/tutorial_overlay.dart';
 import '/components/brand_filters.dart';
 import '/components/aesthetic_buttons.dart';
-import '/components/micro_interactions.dart';
+import '/components/micro_interactions.dart' as micro;
 import 'home_pinterest_model.dart';
 import 'home_pinterest_widgets_extra.dart';
 export 'home_pinterest_model.dart';
@@ -882,7 +882,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              ShimmerEffect(
+              micro.ShimmerEffect(
                 shimmerColor: Colors.white,
                 duration: const Duration(milliseconds: 3000),
                 child: Text(
@@ -1521,7 +1521,7 @@ class _HomePinterestWidgetState extends State<HomePinterestWidget> {
                 ),
                 const SizedBox(height: 28),
                 // Bouton de rafraîchissement avec effet tap scale
-                TapScaleEffect(
+                micro.TapScaleEffect(
                   onTap: () async {
                     await _loadProducts();
                   },

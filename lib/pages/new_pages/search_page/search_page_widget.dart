@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '/components/cached_image.dart';
 import '/components/aesthetic_buttons.dart';
-import '/components/micro_interactions.dart';
+import '/components/micro_interactions.dart' as micro;
 import '/services/product_url_service.dart';
 import '/services/firebase_data_service.dart';
 import '/backend/backend.dart';
@@ -104,11 +104,11 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
         key: scaffoldKey,
         backgroundColor: const Color(0xFFF9FAFB),
         body: Center(
-          child: FadeSlideIn(
+          child: micro.FadeSlideIn(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                PulseEffect(
+                micro.PulseEffect(
                   child: Container(
                     width: 80,
                     height: 80,
@@ -135,7 +135,7 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                ShimmerEffect(
+                micro.ShimmerEffect(
                   child: Text(
                     'Chargement...',
                     style: GoogleFonts.poppins(
@@ -250,7 +250,7 @@ class _SearchPageWidgetState extends State<SearchPageWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              ShimmerEffect(
+              micro.ShimmerEffect(
                 shimmerColor: Colors.white,
                 duration: const Duration(milliseconds: 3000),
                 child: Text(

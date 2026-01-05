@@ -16,7 +16,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '/services/openai_service.dart';
 import '/services/openai_onboarding_service.dart';
 import '/components/aesthetic_buttons.dart';
-import '/components/micro_interactions.dart';
+import '/components/micro_interactions.dart' as micro;
 import 'profile_model.dart';
 export 'profile_model.dart';
 
@@ -99,7 +99,7 @@ class _ProfileWidgetState extends State<ProfileWidget> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    ShimmerEffect(
+                    micro.ShimmerEffect(
                       shimmerColor: Colors.white,
                       duration: const Duration(milliseconds: 3000),
                       child: Text(
