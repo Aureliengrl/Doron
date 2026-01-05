@@ -12,6 +12,8 @@ import '/backend/schema/structs/index.dart';
 import '/services/firebase_data_service.dart';
 import '/services/product_url_service.dart';
 import '/components/connection_required_dialog.dart';
+import '/components/aesthetic_buttons.dart';
+import '/components/micro_interactions.dart';
 import 'tiktok_inspiration_page_model.dart';
 export 'tiktok_inspiration_page_model.dart';
 
@@ -99,27 +101,49 @@ class _TikTokInspirationPageWidgetState extends State<TikTokInspirationPageWidge
     return Container(
       color: Colors.black,
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: 60,
-              height: 60,
-              child: CircularProgressIndicator(
-                color: _violetColor,
-                strokeWidth: 4,
+        child: FadeSlideIn(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              PulseEffect(
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: const RadialGradient(
+                      colors: [_violetColor, _pinkColor],
+                    ),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: _violetColor.withOpacity(0.5),
+                        blurRadius: 30,
+                        spreadRadius: 10,
+                      ),
+                    ],
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.card_giftcard,
+                      color: Colors.white,
+                      size: 40,
+                    ),
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Chargement des inspirations...',
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
+              const SizedBox(height: 32),
+              ShimmerEffect(
+                child: Text(
+                  'Chargement des inspirations...',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -157,19 +181,14 @@ class _TikTokInspirationPageWidgetState extends State<TikTokInspirationPageWidge
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => _model.loadProducts(),
-              icon: const Icon(Icons.refresh, color: Colors.white),
-              label: Text(
-                'Réessayer',
-                style: GoogleFonts.poppins(color: Colors.white),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _violetColor,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+            SizedBox(
+              width: 200,
+              child: PrimaryGradientButton(
+                onPressed: () => _model.loadProducts(),
+                text: 'Réessayer',
+                icon: Icons.refresh,
+                gradientColors: const [_violetColor, _pinkColor],
+                height: 50,
               ),
             ),
             const SizedBox(height: 16),
@@ -398,22 +417,11 @@ class _TikTokInspirationPageWidgetState extends State<TikTokInspirationPageWidge
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Badge marque
+                // Badge marque avec effet néon
                 if (brand.isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: _violetColor.withOpacity(0.9),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      brand,
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
+                  NeonBadge(
+                    text: brand.toUpperCase(),
+                    color: _violetColor,
                   ),
                 if (brand.isNotEmpty) const SizedBox(height: 8),
 
@@ -442,35 +450,15 @@ class _TikTokInspirationPageWidgetState extends State<TikTokInspirationPageWidge
                 ),
                 const SizedBox(height: 16),
 
-                // Bouton voir le produit
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: url.isNotEmpty ? () => _openProductUrl(url) : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _violetColor,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'Voir le produit',
-                          style: GoogleFonts.poppins(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Icon(Icons.open_in_new, color: Colors.white, size: 18),
-                      ],
-                    ),
+                // Bouton voir le produit avec effet gradient
+                if (url.isNotEmpty)
+                  PrimaryGradientButton(
+                    onPressed: () => _openProductUrl(url),
+                    text: 'Voir le produit',
+                    icon: Icons.open_in_new,
+                    gradientColors: const [_violetColor, _pinkColor],
+                    height: 52,
                   ),
-                ),
               ],
             ),
           ),
@@ -541,9 +529,10 @@ class _TikTokInspirationPageWidgetState extends State<TikTokInspirationPageWidge
       placeholder: (context, url) => Container(
         color: Colors.grey[900],
         child: const Center(
-          child: CircularProgressIndicator(
-            color: _violetColor,
-            strokeWidth: 3,
+          child: ShimmerLoading(
+            width: double.infinity,
+            height: double.infinity,
+            borderRadius: BorderRadius.zero,
           ),
         ),
       ),
@@ -567,29 +556,12 @@ class _TikTokInspirationPageWidgetState extends State<TikTokInspirationPageWidge
   }
 
   Widget _buildLikeButton(Map<String, dynamic> product, bool isLiked) {
-    return GestureDetector(
-      onTap: () => _toggleFavorite(product),
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          color: isLiked ? Colors.red : Colors.black.withOpacity(0.5),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white30, width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: isLiked ? Colors.red.withOpacity(0.4) : Colors.black.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Icon(
-          isLiked ? Icons.favorite : Icons.favorite_border,
-          color: Colors.white,
-          size: 26,
-        ),
-      ),
+    return GlassmorphicButton(
+      onPressed: () => _toggleFavorite(product),
+      icon: isLiked ? Icons.favorite : Icons.favorite_border,
+      color: isLiked ? Colors.red : _violetColor,
+      size: 56,
+      isActive: isLiked,
     );
   }
 
@@ -685,32 +657,12 @@ class _TikTokInspirationPageWidgetState extends State<TikTokInspirationPageWidge
   }
 
   Widget _buildWishlistButton(Map<String, dynamic> product) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        _showWishlistModal(product);
-      },
-      child: Container(
-        width: 56,
-        height: 56,
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.5),
-          shape: BoxShape.circle,
-          border: Border.all(color: Colors.white30, width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: const Icon(
-          Icons.bookmark_border,
-          color: Colors.white,
-          size: 26,
-        ),
-      ),
+    return GlassmorphicButton(
+      onPressed: () => _showWishlistModal(product),
+      icon: Icons.bookmark_border,
+      color: _pinkColor,
+      size: 56,
+      isActive: false,
     );
   }
 
@@ -885,31 +837,15 @@ class _TikTokInspirationPageWidgetState extends State<TikTokInspirationPageWidge
               // Bouton créer nouvelle wishlist
               Padding(
                 padding: const EdgeInsets.all(20),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () async {
-                      Navigator.pop(context);
-                      await _createNewWishlist(product);
-                    },
-                    icon: const Icon(Icons.add, color: Colors.white),
-                    label: Text(
-                      'Créer une nouvelle wishlist',
-                      style: GoogleFonts.poppins(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _violetColor,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 2,
-                    ),
-                  ),
+                child: PrimaryGradientButton(
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    await _createNewWishlist(product);
+                  },
+                  text: 'Créer une nouvelle wishlist',
+                  icon: Icons.add,
+                  gradientColors: const [_violetColor, _pinkColor],
+                  height: 56,
                 ),
               ),
             ],
