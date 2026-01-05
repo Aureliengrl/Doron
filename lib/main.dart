@@ -19,6 +19,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'flutter_flow/nav/nav.dart';
 import '/components/connection_required_dialog.dart';
+import '/components/modern_nav_bar.dart';
 import 'index.dart';
 
 /// Service de logging d'erreurs global pour capturer les crashs en release
@@ -314,105 +315,88 @@ class _NavBarPageState extends State<NavBarPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: !widget.disableResizeToAvoidBottomInset,
-      body: _currentPage ?? IndexedStack(
-        index: _currentIndex,
-        children: _pages,
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (i) async {
-          final prefs = await SharedPreferences.getInstance();
-          final isAnonymous = prefs.getBool('anonymous_mode') ?? false;
+      body: Stack(
+        children: [
+          // Contenu principal
+          _currentPage ?? IndexedStack(
+            index: _currentIndex,
+            children: _pages,
+          ),
 
-          // Bloquer certaines pages en mode anonyme
-          if (isAnonymous) {
-            // Index 1 = SearchPage, Index 3 = UserProfile
-            if (i == 1) {
-              // Afficher le dialog pour SearchPage
-              if (context.mounted) {
-                await showConnectionRequiredDialog(
-                  context,
-                  title: 'Connexion requise',
-                  message: 'Crée ton compte pour rechercher des cadeaux personnalisés pour tes proches',
-                );
-              }
-              return; // Ne pas changer de page
-            } else if (i == 3) {
-              // Afficher le dialog pour UserProfile
-              if (context.mounted) {
-                await showConnectionRequiredDialog(
-                  context,
-                  title: 'Connexion requise',
-                  message: 'Crée ton compte pour accéder à ton profil et tes favoris',
-                );
-              }
-              return; // Ne pas changer de page
-            }
-            // Les onglets Accueil (index 0) et Inspiration (index 2) sont accessibles en mode anonyme
-          }
+          // Navbar flottante moderne
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: FloatingModernNavBar(
+              currentIndex: _currentIndex,
+              onTap: (i) async {
+                final prefs = await SharedPreferences.getInstance();
+                final isAnonymous = prefs.getBool('anonymous_mode') ?? false;
 
-          // Navigation normale
-          safeSetState(() {
-            _currentPage = null;
-            _currentIndex = i;
-            _currentPageName = _pageNames[i];
-          });
-        },
-        backgroundColor: Colors.white,
-        selectedItemColor: Color(0xFF8A2BE2),
-        unselectedItemColor: Color(0xFF9E9E9E),
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        type: BottomNavigationBarType.fixed,
-        items: <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.home_outlined,
-              size: 24.0,
+                // Bloquer certaines pages en mode anonyme
+                if (isAnonymous) {
+                  // Index 1 = SearchPage, Index 3 = UserProfile
+                  if (i == 1) {
+                    // Afficher le dialog pour SearchPage
+                    if (context.mounted) {
+                      await showConnectionRequiredDialog(
+                        context,
+                        title: 'Connexion requise',
+                        message: 'Crée ton compte pour rechercher des cadeaux personnalisés pour tes proches',
+                      );
+                    }
+                    return; // Ne pas changer de page
+                  } else if (i == 3) {
+                    // Afficher le dialog pour UserProfile
+                    if (context.mounted) {
+                      await showConnectionRequiredDialog(
+                        context,
+                        title: 'Connexion requise',
+                        message: 'Crée ton compte pour accéder à ton profil et tes favoris',
+                      );
+                    }
+                    return; // Ne pas changer de page
+                  }
+                  // Les onglets Accueil (index 0) et Inspiration (index 2) sont accessibles en mode anonyme
+                }
+
+                // Navigation normale
+                safeSetState(() {
+                  _currentPage = null;
+                  _currentIndex = i;
+                  _currentPageName = _pageNames[i];
+                });
+              },
+              items: const [
+                NavBarItem(
+                  icon: Icons.home_outlined,
+                  activeIcon: Icons.home_rounded,
+                  label: 'Accueil',
+                  iconSize: 24.0,
+                ),
+                NavBarItem(
+                  icon: Icons.search_outlined,
+                  activeIcon: Icons.search_rounded,
+                  label: 'Recherche',
+                  iconSize: 24.0,
+                ),
+                NavBarItem(
+                  icon: Icons.play_arrow_rounded,
+                  activeIcon: Icons.play_circle_rounded,
+                  label: 'Inspo',
+                  iconSize: 28.0,
+                ),
+                NavBarItem(
+                  icon: Icons.person_outline_rounded,
+                  activeIcon: Icons.person_rounded,
+                  label: 'Profil',
+                  iconSize: 24.0,
+                ),
+              ],
+              primaryColor: const Color(0xFF8A2BE2),
             ),
-            activeIcon: Icon(
-              Icons.home,
-              size: 24.0,
-            ),
-            label: 'Accueil',
-            tooltip: '',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.search_outlined,
-              size: 24.0,
-            ),
-            activeIcon: Icon(
-              Icons.search,
-              size: 24.0,
-            ),
-            label: 'Recherche',
-            tooltip: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.play_arrow_rounded,
-              size: 32.0,
-            ),
-            activeIcon: Icon(
-              Icons.play_arrow_rounded,
-              size: 32.0,
-            ),
-            label: 'TikTok',
-            tooltip: '',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(
-              Icons.person_outline,
-              size: 24.0,
-            ),
-            activeIcon: Icon(
-              Icons.person,
-              size: 24.0,
-            ),
-            label: 'Profil',
-            tooltip: '',
-          )
         ],
       ),
     );
