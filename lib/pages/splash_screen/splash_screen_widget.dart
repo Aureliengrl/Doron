@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '/services/first_time_service.dart';
 import '/auth/firebase_auth/auth_util.dart';
+import '/components/micro_interactions.dart' as micro;
 
 class SplashScreenWidget extends StatefulWidget {
   const SplashScreenWidget({super.key});
@@ -118,7 +119,7 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget>
             'assets/images/splash_screen.jpeg',
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) {
-              // Fallback en cas d'erreur de chargement
+              // Fallback en cas d'erreur de chargement avec effets esthétiques
               return Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -135,18 +136,46 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Image.asset(
-                        'assets/images/doron_logo.png',
-                        width: 150,
-                        height: 150,
+                      micro.PulseEffect(
+                        child: Container(
+                          width: 180,
+                          height: 180,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withOpacity(0.2),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.white.withOpacity(0.3),
+                                blurRadius: 40,
+                                spreadRadius: 10,
+                              ),
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(15),
+                          child: Image.asset(
+                            'assets/images/doron_logo.png',
+                            width: 150,
+                            height: 150,
+                          ),
+                        ),
                       ),
-                      const SizedBox(height: 20),
-                      Text(
-                        'DORÕN',
-                        style: GoogleFonts.poppins(
-                          fontSize: 48,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                      const SizedBox(height: 32),
+                      micro.ShimmerEffect(
+                        child: Text(
+                          'DORÕN',
+                          style: GoogleFonts.poppins(
+                            fontSize: 48,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: 2,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withOpacity(0.3),
+                                blurRadius: 20,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
+import '/components/micro_interactions.dart' as micro;
 import 'voice_listening_page_model.dart';
 
 class VoiceListeningPageWidget extends StatefulWidget {
@@ -140,49 +141,21 @@ class _VoiceListeningPageWidgetState extends State<VoiceListeningPageWidget> {
 
                   const Spacer(),
 
-                  // Microphone animé - FIX: Animation simple sans repeat
-                  GestureDetector(
-                    onTap: () {
-                      if (model.isListening) {
-                        _model.stopListening();
-                      } else {
-                        _model.startListening();
-                      }
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      width: model.isListening ? 180 : 160,
-                      height: model.isListening ? 180 : 160,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          colors: model.isListening
-                              ? [
-                                  const Color(0xFFFF6B9D),
-                                  const Color(0xFFC74375),
-                                ]
-                              : [
-                                  Colors.white.withOpacity(0.2),
-                                  Colors.white.withOpacity(0.1),
-                                ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        boxShadow: model.isListening
-                            ? [
-                                BoxShadow(
-                                  color: const Color(0xFFFF6B9D).withOpacity(0.5),
-                                  blurRadius: 40,
-                                  spreadRadius: 10,
-                                ),
-                              ]
-                            : [],
-                      ),
-                      child: Icon(
-                        model.isListening ? Icons.mic : Icons.mic_none,
-                        size: 80,
-                        color: Colors.white,
-                      ),
+                  // Microphone animé avec PulseEffect quand écoute
+                  micro.TapScaleEffect(
+                    child: GestureDetector(
+                      onTap: () {
+                        if (model.isListening) {
+                          _model.stopListening();
+                        } else {
+                          _model.startListening();
+                        }
+                      },
+                      child: model.isListening
+                          ? micro.PulseEffect(
+                              child: _buildMicrophoneCircle(model),
+                            )
+                          : _buildMicrophoneCircle(model),
                     ),
                   ),
 
@@ -315,6 +288,49 @@ class _VoiceListeningPageWidgetState extends State<VoiceListeningPageWidget> {
             },
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildMicrophoneCircle(VoiceListeningPageModel model) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      width: model.isListening ? 180 : 160,
+      height: model.isListening ? 180 : 160,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: model.isListening
+              ? [
+                  const Color(0xFFFF6B9D),
+                  const Color(0xFFC74375),
+                ]
+              : [
+                  Colors.white.withOpacity(0.2),
+                  Colors.white.withOpacity(0.1),
+                ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: model.isListening
+            ? [
+                BoxShadow(
+                  color: const Color(0xFFFF6B9D).withOpacity(0.5),
+                  blurRadius: 40,
+                  spreadRadius: 10,
+                ),
+                BoxShadow(
+                  color: const Color(0xFFFF6B9D).withOpacity(0.3),
+                  blurRadius: 60,
+                  spreadRadius: 20,
+                ),
+              ]
+            : [],
+      ),
+      child: Icon(
+        model.isListening ? Icons.mic : Icons.mic_none,
+        size: 80,
+        color: Colors.white,
       ),
     );
   }
