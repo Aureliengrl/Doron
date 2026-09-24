@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '/components/micro_interactions.dart' as micro;
+import '/components/aesthetic_buttons.dart';
 
 class InitialChoiceWidget extends StatefulWidget {
   const InitialChoiceWidget({super.key});
@@ -72,42 +75,51 @@ class _InitialChoiceWidgetState extends State<InitialChoiceWidget> with SingleTi
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Logo / Titre
-                    Container(
-                      width: 140,
-                      height: 140,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [violetColor, pinkColor],
-                        ),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: violetColor.withOpacity(0.3),
-                            blurRadius: 30,
-                            offset: const Offset(0, 10),
+                    // Logo / Titre avec PulseEffect
+                    micro.PulseEffect(
+                      child: Container(
+                        width: 140,
+                        height: 140,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [violetColor, pinkColor],
                           ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.card_giftcard,
-                        size: 70,
-                        color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: violetColor.withOpacity(0.4),
+                              blurRadius: 40,
+                              offset: const Offset(0, 10),
+                            ),
+                            BoxShadow(
+                              color: pinkColor.withOpacity(0.3),
+                              blurRadius: 30,
+                              offset: const Offset(0, 5),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.card_giftcard,
+                          size: 70,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
 
                     const SizedBox(height: 40),
 
-                    // Titre
-                    Text(
-                      'DORÕN',
-                      style: GoogleFonts.poppins(
-                        fontSize: 48,
-                        fontWeight: FontWeight.bold,
-                        foreground: Paint()
-                          ..shader = LinearGradient(
-                            colors: [violetColor, pinkColor],
-                          ).createShader(const Rect.fromLTWH(0, 0, 200, 70)),
+                    // Titre avec ShimmerEffect
+                    micro.ShimmerEffect(
+                      child: Text(
+                        'DORÕN',
+                        style: GoogleFonts.poppins(
+                          fontSize: 48,
+                          fontWeight: FontWeight.bold,
+                          foreground: Paint()
+                            ..shader = LinearGradient(
+                              colors: [violetColor, pinkColor],
+                            ).createShader(const Rect.fromLTWH(0, 0, 200, 70)),
+                        ),
                       ),
                     ),
 
@@ -166,42 +178,55 @@ class _InitialChoiceWidgetState extends State<InitialChoiceWidget> with SingleTi
     required Gradient gradient,
     required VoidCallback onTap,
   }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          decoration: BoxDecoration(
-            gradient: gradient,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.15),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: Colors.white, size: 24),
-              const SizedBox(width: 12),
-              Text(
-                text,
-                style: GoogleFonts.poppins(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+    return micro.TapScaleEffect(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            decoration: BoxDecoration(
+              gradient: gradient,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.15),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
                 ),
-              ),
-            ],
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.08),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: Colors.white, size: 24),
+                const SizedBox(width: 12),
+                Text(
+                  text,
+                  style: GoogleFonts.poppins(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-      ),
+      ).animate().fadeIn(duration: 600.ms, delay: 400.ms).slideY(
+            begin: 0.2,
+            end: 0,
+            duration: 600.ms,
+            delay: 400.ms,
+            curve: Curves.easeOutCubic,
+          ),
     );
   }
 }
