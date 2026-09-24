@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:confetti/confetti.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '/components/micro_interactions.dart' as micro;
 
 /// Écran de confirmation après paiement réussi
 class TicketSuccessWidget extends StatefulWidget {
@@ -120,50 +121,59 @@ class _TicketSuccessWidgetState extends State<TicketSuccessWidget>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Icône de succès animée
+                      // Icône de succès animée avec PulseEffect
                       ScaleTransition(
                         scale: _scaleAnimation,
-                        child: Container(
-                          width: 140,
-                          height: 140,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [violetColor, goldColor],
-                            ),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: violetColor.withOpacity(0.4),
-                                blurRadius: 40,
-                                offset: const Offset(0, 15),
+                        child: micro.PulseEffect(
+                          child: Container(
+                            width: 140,
+                            height: 140,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [violetColor, goldColor],
                               ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.check_circle,
-                            size: 80,
-                            color: Colors.white,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: violetColor.withOpacity(0.4),
+                                  blurRadius: 40,
+                                  offset: const Offset(0, 15),
+                                ),
+                                BoxShadow(
+                                  color: goldColor.withOpacity(0.3),
+                                  blurRadius: 50,
+                                  spreadRadius: 5,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.check_circle,
+                              size: 80,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),
 
                       const SizedBox(height: 40),
 
-                      // Titre
+                      // Titre avec ShimmerEffect
                       FadeTransition(
                         opacity: _fadeAnimation,
-                        child: ShaderMask(
-                          shaderCallback: (bounds) => LinearGradient(
-                            colors: [violetColor, goldColor],
-                          ).createShader(bounds),
-                          child: Text(
-                            'Paiement réussi !',
-                            style: GoogleFonts.poppins(
-                              fontSize: 36,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                        child: micro.ShimmerEffect(
+                          child: ShaderMask(
+                            shaderCallback: (bounds) => LinearGradient(
+                              colors: [violetColor, goldColor],
+                            ).createShader(bounds),
+                            child: Text(
+                              'Paiement réussi !',
+                              style: GoogleFonts.poppins(
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                            textAlign: TextAlign.center,
                           ),
                         ),
                       ),
@@ -285,62 +295,66 @@ class _TicketSuccessWidgetState extends State<TicketSuccessWidget>
   Widget _buildActionButtons() {
     return Column(
       children: [
-        // Bouton principal : Découvrir l'app
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: () {
-              context.go('/HomePinterest');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: violetColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              elevation: 8,
-              shadowColor: violetColor.withOpacity(0.4),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(Icons.explore, size: 24),
-                const SizedBox(width: 12),
-                Text(
-                  'Découvrir l\'app',
-                  style: GoogleFonts.poppins(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+        // Bouton principal : Découvrir l'app avec TapScaleEffect
+        micro.TapScaleEffect(
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                context.go('/HomePinterest');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: violetColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                elevation: 8,
+                shadowColor: violetColor.withOpacity(0.4),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
                 ),
-              ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.explore, size: 24),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Découvrir l\'app',
+                    style: GoogleFonts.poppins(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
 
         const SizedBox(height: 16),
 
-        // Bouton secondaire : Retour à l'accueil
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton(
-            onPressed: () {
-              context.go('/initial-choice');
-            },
-            style: OutlinedButton.styleFrom(
-              foregroundColor: violetColor,
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              side: BorderSide(color: violetColor, width: 2),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
+        // Bouton secondaire : Retour à l'accueil avec TapScaleEffect
+        micro.TapScaleEffect(
+          child: SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () {
+                context.go('/initial-choice');
+              },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: violetColor,
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                side: BorderSide(color: violetColor, width: 2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
               ),
-            ),
-            child: Text(
-              'Retour à l\'accueil',
-              style: GoogleFonts.poppins(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+              child: Text(
+                'Retour à l\'accueil',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
