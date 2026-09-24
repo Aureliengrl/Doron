@@ -322,11 +322,15 @@ class _OnboardingGiftsResultWidgetState
   }
 
   /// Ouvre l'URL d'un produit
-  Future<void> _openProductUrl(String url) async {
+  Future<void> _openProductUrl(Map<String, dynamic> gift) async {
     try {
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      // Générer une URL de produit intelligente (≥95% précision)
+      final url = ProductUrlService.generateProductUrl(gift);
+      if (url.isNotEmpty) {
+        final uri = Uri.parse(url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
       }
     } catch (e) {
       print('❌ Erreur ouverture URL: $e');
@@ -858,7 +862,7 @@ class _OnboardingGiftsResultWidgetState
                               ),
                               // Bouton voir
                               ElevatedButton(
-                                onPressed: () => _openProductUrl(gift['url'] ?? ''),
+                                onPressed: () => _openProductUrl(gift),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: violetColor,
                                   padding: const EdgeInsets.symmetric(

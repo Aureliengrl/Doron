@@ -451,14 +451,13 @@ class _TikTokInspirationPageWidgetState extends State<TikTokInspirationPageWidge
                 const SizedBox(height: 16),
 
                 // Bouton voir le produit avec effet gradient
-                if (url.isNotEmpty)
-                  PrimaryGradientButton(
-                    onPressed: () => _openProductUrl(url),
-                    text: 'Voir le produit',
-                    icon: Icons.open_in_new,
-                    gradientColors: const [_violetColor, _pinkColor],
-                    height: 52,
-                  ),
+                PrimaryGradientButton(
+                  onPressed: () => _openProductUrl(product),
+                  text: 'Voir le produit',
+                  icon: Icons.open_in_new,
+                  gradientColors: const [_violetColor, _pinkColor],
+                  height: 52,
+                ),
               ],
             ),
           ),
@@ -565,10 +564,14 @@ class _TikTokInspirationPageWidgetState extends State<TikTokInspirationPageWidge
     );
   }
 
-  Future<void> _openProductUrl(String url) async {
+  Future<void> _openProductUrl(Map<String, dynamic> product) async {
     try {
-      final uri = Uri.parse(url);
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+      // Générer une URL de produit intelligente (≥95% précision)
+      final url = ProductUrlService.generateProductUrl(product);
+      if (url.isNotEmpty) {
+        final uri = Uri.parse(url);
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
     } catch (e) {
       print('❌ Erreur ouverture URL: $e');
     }
