@@ -39,6 +39,14 @@ class HomePinterestModel {
     {'id': 'food', 'name': 'Food', 'emoji': '🍷'},
   ];
 
+  // Événements/occasions (catégories vides retirées: Halloween, Fête nationale, Pot de départ)
+  final List<Map<String, String>> occasions = [
+    {'id': 'marriage', 'name': 'Mariage', 'emoji': '💍'},
+    {'id': 'birth', 'name': 'Naissance', 'emoji': '👶'},
+    {'id': 'housewarming', 'name': 'Crémaillère', 'emoji': '🏠'},
+    {'id': 'graduation', 'name': 'Diplôme', 'emoji': '🎓'},
+  ];
+
   final List<Map<String, dynamic>> priceFilters = [
     {'id': 'all', 'name': 'Tous les prix', 'min': 0, 'max': 999999},
     {'id': 'low', 'name': '< 50€', 'min': 0, 'max': 50},
